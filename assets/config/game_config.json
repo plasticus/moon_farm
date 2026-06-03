@@ -1,0 +1,1093 @@
+{
+  "game_version": "0.1.0",
+  "website_url": "moonfarm.oaf.monster",
+  "difficulty_settings": {
+    "easy": {
+      "milestone_penalty": "warning_only",
+      "raid_frequency_weeks": 15,
+      "crop_decay_rate": 0.5,
+      "market_price_modifier": 1.0,
+      "starting_scrip": 500,
+      "starting_resources": {
+        "water": 100,
+        "moon_dirt": 50,
+        "chemicals": 20,
+        "seeds": 10
+      }
+    },
+    "normal": {
+      "milestone_penalty": "three_strikes",
+      "raid_frequency_weeks": 10,
+      "crop_decay_rate": 1.0,
+      "market_price_modifier": 1.0,
+      "starting_scrip": 250,
+      "starting_resources": {
+        "water": 60,
+        "moon_dirt": 30,
+        "chemicals": 10,
+        "seeds": 6
+      }
+    },
+    "hard": {
+      "milestone_penalty": "one_strike",
+      "raid_frequency_weeks": 7,
+      "crop_decay_rate": 2.0,
+      "market_price_modifier": 0.8,
+      "starting_scrip": 100,
+      "starting_resources": {
+        "water": 30,
+        "moon_dirt": 15,
+        "chemicals": 5,
+        "seeds": 3
+      }
+    }
+  },
+  "crops": [
+    {
+      "id": "spacetatoes",
+      "name": "Spacetatoes",
+      "emoji": "\ud83e\udd54",
+      "tier": 1,
+      "dome_tier_required": 1,
+      "growth_weeks": 3,
+      "water_per_week": 2,
+      "calories_per_unit": 80,
+      "base_scrip_value": 5,
+      "compost_yield": 2,
+      "description": "The foundational staple. Highly resilient.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.2,
+      "volume_m3": 0.8,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "lunar_carrots",
+      "name": "Lunar Carrots",
+      "emoji": "\ud83d\udfe3",
+      "tier": 1,
+      "dome_tier_required": 1,
+      "growth_weeks": 2,
+      "water_per_week": 3,
+      "calories_per_unit": 40,
+      "base_scrip_value": 8,
+      "compost_yield": 1,
+      "description": "Deep violet neon roots that grow inverted.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.3,
+      "volume_m3": 0.6,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "moon_wheat",
+      "name": "Moon Wheat",
+      "emoji": "\ud83c\udf3e",
+      "tier": 1,
+      "dome_tier_required": 1,
+      "growth_weeks": 3,
+      "water_per_week": 2,
+      "calories_per_unit": 60,
+      "base_scrip_value": 6,
+      "compost_yield": 3,
+      "description": "Luminescent golden stalks.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.2,
+      "volume_m3": 0.9,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "terran_radishes",
+      "name": "Terran Radishes",
+      "emoji": "\ud83d\udd34",
+      "tier": 1,
+      "dome_tier_required": 1,
+      "growth_weeks": 1,
+      "water_per_week": 2,
+      "calories_per_unit": 20,
+      "base_scrip_value": 4,
+      "compost_yield": 1,
+      "description": "Extremely rapid growth. Ideal for emergencies.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.1,
+      "volume_m3": 0.4,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "hydro_lettuce",
+      "name": "Hydro-Lettuce",
+      "emoji": "\ud83e\udd6c",
+      "tier": 1,
+      "dome_tier_required": 1,
+      "growth_weeks": 2,
+      "water_per_week": 5,
+      "calories_per_unit": 15,
+      "base_scrip_value": 7,
+      "compost_yield": 2,
+      "description": "Translucent leafy greens. Guzzles water.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.4,
+      "volume_m3": 0.5,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "bio_mash_pods",
+      "name": "Bio-Mash Pods",
+      "emoji": "\ud83e\udee7",
+      "tier": 2,
+      "dome_tier_required": 2,
+      "growth_weeks": 4,
+      "water_per_week": 3,
+      "calories_per_unit": 0,
+      "base_scrip_value": 2,
+      "compost_yield": 15,
+      "description": "Rupture into high-nitrogen mulch when harvested.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 1.2,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "fiber_kelp",
+      "name": "Fiber-Kelp",
+      "emoji": "\ud83e\udeb8",
+      "tier": 2,
+      "dome_tier_required": 2,
+      "growth_weeks": 5,
+      "water_per_week": 4,
+      "calories_per_unit": 0,
+      "base_scrip_value": 3,
+      "compost_yield": 20,
+      "description": "Expands aggressively. Forms dense foliage blocks.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 1.5,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "nitrate_squash",
+      "name": "Nitrate Squash",
+      "emoji": "\ud83c\udf83",
+      "tier": 2,
+      "dome_tier_required": 2,
+      "growth_weeks": 4,
+      "water_per_week": 6,
+      "calories_per_unit": 0,
+      "base_scrip_value": 2,
+      "compost_yield": 18,
+      "description": "Hollow inedible rind. Perfect for compost.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 1.3,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "pulp_gourd",
+      "name": "Pulp-Gourd",
+      "emoji": "\ud83e\uded1",
+      "tier": 2,
+      "dome_tier_required": 2,
+      "growth_weeks": 3,
+      "water_per_week": 3,
+      "calories_per_unit": 5,
+      "base_scrip_value": 2,
+      "compost_yield": 12,
+      "description": "Fleshy gourds that turn to mulch when cut.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 1.0,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "sludge_fern",
+      "name": "Sludge-Fern",
+      "emoji": "\ud83c\udf3f",
+      "tier": 2,
+      "dome_tier_required": 2,
+      "growth_weeks": 3,
+      "water_per_week": 1,
+      "calories_per_unit": 0,
+      "base_scrip_value": 1,
+      "compost_yield": 10,
+      "description": "Thrives on mechanical runoff.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 0.7,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "glow_stalks",
+      "name": "Glow-Stalks",
+      "emoji": "\u2728",
+      "tier": 3,
+      "dome_tier_required": 3,
+      "growth_weeks": 4,
+      "water_per_week": 4,
+      "calories_per_unit": 30,
+      "base_scrip_value": 45,
+      "compost_yield": 3,
+      "description": "Radiates electric green. Needs perfect hydration.",
+      "can_decay": true,
+      "decay_if_not_watered": true,
+      "fertilizer_bonus": 1.5,
+      "volume_m3": 0.6,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "neon_berries",
+      "name": "Neon Berries",
+      "emoji": "\ud83e\uded0",
+      "tier": 3,
+      "dome_tier_required": 3,
+      "growth_weeks": 3,
+      "water_per_week": 3,
+      "calories_per_unit": 25,
+      "base_scrip_value": 60,
+      "compost_yield": 2,
+      "description": "Decay rapidly if left unharvested for one week.",
+      "can_decay": true,
+      "decay_if_not_harvested_on_ready": true,
+      "fertilizer_bonus": 1.5,
+      "volume_m3": 0.4,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "glass_fronds",
+      "name": "Glass-Fronds",
+      "emoji": "\ud83d\udd37",
+      "tier": 3,
+      "dome_tier_required": 3,
+      "growth_weeks": 5,
+      "water_per_week": 2,
+      "calories_per_unit": 0,
+      "base_scrip_value": 80,
+      "compost_yield": 1,
+      "description": "Transparent crystalline leaves. Premium corporate decor.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.3,
+      "volume_m3": 0.5,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "crystalline_beans",
+      "name": "Crystalline Beans",
+      "emoji": "\ud83d\udc8e",
+      "tier": 3,
+      "dome_tier_required": 3,
+      "growth_weeks": 8,
+      "water_per_week": 2,
+      "calories_per_unit": 10,
+      "base_scrip_value": 100,
+      "compost_yield": 1,
+      "description": "Calcified pods. Mimic precious gem growths.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.2,
+      "volume_m3": 0.3,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "nebula_melons",
+      "name": "Nebula Melons",
+      "emoji": "\ud83c\udf08",
+      "tier": 3,
+      "dome_tier_required": 3,
+      "growth_weeks": 6,
+      "water_per_week": 5,
+      "calories_per_unit": 50,
+      "base_scrip_value": 90,
+      "compost_yield": 4,
+      "description": "Heavy fruits with shifting neon color bands.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.4,
+      "volume_m3": 1.1,
+      "resource_yield_amount": 0
+    },
+    {
+      "id": "copper_root",
+      "name": "Copper-Root",
+      "emoji": "\ud83d\udfe4",
+      "tier": 4,
+      "dome_tier_required": 4,
+      "growth_weeks": 6,
+      "water_per_week": 3,
+      "calories_per_unit": 0,
+      "base_scrip_value": 20,
+      "compost_yield": 2,
+      "yields_resource": "metals",
+      "resource_yield_amount": 5,
+      "description": "Concentrates raw Metals into root nodules.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.2,
+      "volume_m3": 0.7
+    },
+    {
+      "id": "silicon_shoots",
+      "name": "Silicon Shoots",
+      "emoji": "\u26a1",
+      "tier": 4,
+      "dome_tier_required": 4,
+      "growth_weeks": 5,
+      "water_per_week": 2,
+      "calories_per_unit": 0,
+      "base_scrip_value": 15,
+      "compost_yield": 1,
+      "yields_resource": "sand",
+      "resource_yield_amount": 8,
+      "description": "Processes moon sand into glass matrices.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.1,
+      "volume_m3": 0.5
+    },
+    {
+      "id": "battery_bulbs",
+      "name": "Battery-Bulbs",
+      "emoji": "\ud83d\udd0b",
+      "tier": 4,
+      "dome_tier_required": 4,
+      "growth_weeks": 4,
+      "water_per_week": 3,
+      "calories_per_unit": 0,
+      "base_scrip_value": 30,
+      "compost_yield": 1,
+      "yields_resource": "power_kwh",
+      "resource_yield_amount": 10,
+      "description": "Provide instant power spikes upon harvest.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 0.6
+    },
+    {
+      "id": "protocol_peas",
+      "name": "Protocol Peas",
+      "emoji": "\ud83d\udfe2",
+      "tier": 4,
+      "dome_tier_required": 4,
+      "growth_weeks": 3,
+      "water_per_week": 2,
+      "calories_per_unit": 5,
+      "base_scrip_value": 25,
+      "compost_yield": 1,
+      "yields_resource": "components",
+      "resource_yield_amount": 2,
+      "description": "Rigid spheres used as low-grade Components.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.1,
+      "volume_m3": 0.3
+    },
+    {
+      "id": "matrix_moss",
+      "name": "Matrix Moss",
+      "emoji": "\ud83c\udf11",
+      "tier": 4,
+      "dome_tier_required": 4,
+      "growth_weeks": 12,
+      "water_per_week": 1,
+      "calories_per_unit": 0,
+      "base_scrip_value": 500,
+      "compost_yield": 5,
+      "yields_resource": "components",
+      "resource_yield_amount": 10,
+      "description": "Slowest growing. Immense fortune in Star-Scrip.",
+      "can_decay": false,
+      "fertilizer_bonus": 1.0,
+      "volume_m3": 0.8
+    }
+  ],
+  "buildings": {
+    "dome": {
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic Dome",
+          "cost_scrip": 0,
+          "cost_metals": 0,
+          "cost_glass": 0,
+          "power_draw_kwh": 5,
+          "crop_tiers_allowed": [
+            1
+          ],
+          "emoji": "\ud83d\udd35"
+        },
+        {
+          "tier": 2,
+          "name": "Refined Dome",
+          "cost_scrip": 200,
+          "cost_metals": 20,
+          "cost_glass": 10,
+          "power_draw_kwh": 8,
+          "crop_tiers_allowed": [
+            1,
+            2
+          ],
+          "emoji": "\ud83d\udfe2"
+        },
+        {
+          "tier": 3,
+          "name": "Atmospheric Dome",
+          "cost_scrip": 500,
+          "cost_metals": 50,
+          "cost_glass": 30,
+          "power_draw_kwh": 12,
+          "crop_tiers_allowed": [
+            1,
+            2,
+            3
+          ],
+          "emoji": "\ud83d\udfe1"
+        },
+        {
+          "tier": 4,
+          "name": "Tech Dome",
+          "cost_scrip": 1200,
+          "cost_metals": 100,
+          "cost_glass": 80,
+          "power_draw_kwh": 20,
+          "crop_tiers_allowed": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "emoji": "\ud83d\udfe0"
+        }
+      ],
+      "new_dome_cost": {
+        "star_scrip": 150,
+        "metals": 15,
+        "glass": 8
+      }
+    },
+    "dome_robot": {
+      "levels": [
+        {
+          "level": 1,
+          "name": "Domebot Mk1",
+          "cost_scrip": 300,
+          "cost_components": 5,
+          "power_draw_kwh": 3,
+          "can_water": true,
+          "can_fertilize": false,
+          "can_harvest": false,
+          "can_turn_soil": false,
+          "can_plant": false,
+          "maintenance_cost_metals": 2,
+          "maintenance_cost_components": 1,
+          "wear_per_week": 10,
+          "emoji": "\ud83e\udd16"
+        },
+        {
+          "level": 2,
+          "name": "Domebot Mk2",
+          "cost_scrip": 500,
+          "cost_components": 10,
+          "power_draw_kwh": 4,
+          "can_water": true,
+          "can_fertilize": true,
+          "can_harvest": false,
+          "can_turn_soil": false,
+          "can_plant": false,
+          "maintenance_cost_metals": 3,
+          "maintenance_cost_components": 2,
+          "wear_per_week": 10,
+          "emoji": "\ud83e\udd16"
+        },
+        {
+          "level": 3,
+          "name": "Domebot Mk3",
+          "cost_scrip": 800,
+          "cost_components": 20,
+          "power_draw_kwh": 5,
+          "can_water": true,
+          "can_fertilize": true,
+          "can_harvest": true,
+          "can_turn_soil": false,
+          "can_plant": false,
+          "maintenance_cost_metals": 4,
+          "maintenance_cost_components": 3,
+          "wear_per_week": 10,
+          "emoji": "\ud83e\udd16"
+        },
+        {
+          "level": 4,
+          "name": "Domebot Mk4",
+          "cost_scrip": 1200,
+          "cost_components": 35,
+          "power_draw_kwh": 6,
+          "can_water": true,
+          "can_fertilize": true,
+          "can_harvest": true,
+          "can_turn_soil": true,
+          "can_plant": false,
+          "maintenance_cost_metals": 5,
+          "maintenance_cost_components": 4,
+          "wear_per_week": 10,
+          "emoji": "\ud83e\udd16"
+        },
+        {
+          "level": 5,
+          "name": "Domebot Mk5",
+          "cost_scrip": 2000,
+          "cost_components": 60,
+          "power_draw_kwh": 8,
+          "can_water": true,
+          "can_fertilize": true,
+          "can_harvest": true,
+          "can_turn_soil": true,
+          "can_plant": true,
+          "maintenance_cost_metals": 6,
+          "maintenance_cost_components": 5,
+          "wear_per_week": 10,
+          "emoji": "\ud83e\udd16"
+        }
+      ]
+    },
+    "silo": {
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic Silo",
+          "capacity_cubic_meters": 100,
+          "cost_scrip": 100,
+          "cost_metals": 10,
+          "power_draw_kwh": 1,
+          "emoji": "\ud83c\udfd7\ufe0f"
+        },
+        {
+          "tier": 2,
+          "name": "Large Silo",
+          "capacity_cubic_meters": 300,
+          "cost_scrip": 350,
+          "cost_metals": 30,
+          "power_draw_kwh": 2,
+          "emoji": "\ud83c\udfd7\ufe0f"
+        },
+        {
+          "tier": 3,
+          "name": "Mega Silo",
+          "capacity_cubic_meters": 800,
+          "cost_scrip": 900,
+          "cost_metals": 80,
+          "power_draw_kwh": 4,
+          "emoji": "\ud83c\udfd7\ufe0f"
+        }
+      ],
+      "new_silo_cost": {
+        "star_scrip": 100,
+        "metals": 10
+      }
+    },
+    "refinery": {
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic Refinery",
+          "cost_scrip": 200,
+          "cost_metals": 25,
+          "power_draw_kwh": 8,
+          "unlocked_recipes": [
+            "moon_dirt_to_zsoil"
+          ],
+          "emoji": "\u2697\ufe0f"
+        },
+        {
+          "tier": 2,
+          "name": "Advanced Refinery",
+          "cost_scrip": 600,
+          "cost_metals": 60,
+          "power_draw_kwh": 15,
+          "unlocked_recipes": [
+            "moon_dirt_to_zsoil",
+            "ore_to_metals",
+            "sand_to_glass"
+          ],
+          "emoji": "\u2697\ufe0f"
+        },
+        {
+          "tier": 3,
+          "name": "Industrial Refinery",
+          "cost_scrip": 1500,
+          "cost_metals": 120,
+          "power_draw_kwh": 25,
+          "unlocked_recipes": [
+            "moon_dirt_to_zsoil",
+            "ore_to_metals",
+            "sand_to_glass",
+            "compost_to_zsoil",
+            "advanced_processing"
+          ],
+          "emoji": "\u2697\ufe0f"
+        }
+      ]
+    },
+    "power": {
+      "solar_array": {
+        "name": "Solar Array",
+        "cost_scrip": 150,
+        "cost_metals": 8,
+        "cost_glass": 5,
+        "power_output_kwh": 20,
+        "emoji": "\u2600\ufe0f"
+      },
+      "wind_turbine": {
+        "name": "Wind Turbine",
+        "cost_scrip": 400,
+        "cost_metals": 25,
+        "power_output_kwh": 45,
+        "emoji": "\ud83c\udf2c\ufe0f"
+      },
+      "geothermal_tap": {
+        "name": "Geothermal Core Tap",
+        "cost_scrip": 2000,
+        "cost_metals": 100,
+        "cost_components": 20,
+        "power_output_kwh": 200,
+        "emoji": "\ud83c\udf0b"
+      }
+    },
+    "laser_sentry": {
+      "levels": [
+        {
+          "level": 1,
+          "name": "Sentry Mk1",
+          "cost_scrip": 200,
+          "cost_metals": 15,
+          "cost_components": 5,
+          "power_draw_kwh": 2,
+          "damage": 10,
+          "fire_rate": 1,
+          "range": 2,
+          "emoji": "\ud83d\udd2b"
+        },
+        {
+          "level": 2,
+          "name": "Sentry Mk2",
+          "cost_scrip": 400,
+          "cost_metals": 30,
+          "cost_components": 12,
+          "power_draw_kwh": 3,
+          "damage": 20,
+          "fire_rate": 2,
+          "range": 3,
+          "emoji": "\ud83d\udd2b"
+        },
+        {
+          "level": 3,
+          "name": "Sentry Mk3",
+          "cost_scrip": 800,
+          "cost_metals": 60,
+          "cost_components": 25,
+          "power_draw_kwh": 5,
+          "damage": 40,
+          "fire_rate": 3,
+          "range": 4,
+          "emoji": "\ud83d\udd2b"
+        }
+      ]
+    }
+  },
+  "refinery_recipes": [
+    {
+      "id": "moon_dirt_to_zsoil",
+      "name": "Refine Z Soil",
+      "inputs": {
+        "moon_dirt": 5,
+        "chemicals": 2,
+        "water": 3
+      },
+      "outputs": {
+        "z_soil": 4
+      },
+      "emoji": "\ud83e\uddea"
+    },
+    {
+      "id": "ore_to_metals",
+      "name": "Smelt Ore to Metals",
+      "inputs": {
+        "ore": 3
+      },
+      "outputs": {
+        "metals": 2
+      },
+      "emoji": "\u2699\ufe0f"
+    },
+    {
+      "id": "sand_to_glass",
+      "name": "Melt Sand to Glass",
+      "inputs": {
+        "sand": 4
+      },
+      "outputs": {
+        "glass": 3
+      },
+      "emoji": "\ud83e\ude9f"
+    },
+    {
+      "id": "compost_to_zsoil",
+      "name": "Compost to Z Soil",
+      "inputs": {
+        "compost": 8
+      },
+      "outputs": {
+        "z_soil": 5
+      },
+      "emoji": "\u267b\ufe0f"
+    },
+    {
+      "id": "advanced_processing",
+      "name": "Advanced Material Processing",
+      "inputs": {
+        "ore": 5,
+        "chemicals": 3
+      },
+      "outputs": {
+        "metals": 4,
+        "components": 1
+      },
+      "emoji": "\ud83d\udd2c"
+    }
+  ],
+  "milestones": {
+    "easy": [
+      {
+        "id": "m1",
+        "name": "First Shipment",
+        "description": "Deliver 10m\u00b3 of cargo to the colony",
+        "target_volume_m3": 10,
+        "by_week": 20,
+        "reward_scrip": 100
+      },
+      {
+        "id": "m2",
+        "name": "Steady Supply",
+        "description": "Deliver 50m\u00b3 of cargo to the colony",
+        "target_volume_m3": 50,
+        "by_week": 60,
+        "reward_scrip": 300
+      },
+      {
+        "id": "m3",
+        "name": "Colony Cornerstone",
+        "description": "Deliver 200m\u00b3 of cargo to the colony",
+        "target_volume_m3": 200,
+        "by_week": 150,
+        "reward_scrip": 1000
+      }
+    ],
+    "normal": [
+      {
+        "id": "m1",
+        "name": "First Shipment",
+        "description": "Deliver 10m\u00b3 of cargo to the colony",
+        "target_volume_m3": 10,
+        "by_week": 12,
+        "reward_scrip": 100
+      },
+      {
+        "id": "m2",
+        "name": "Steady Supply",
+        "description": "Deliver 50m\u00b3 of cargo to the colony",
+        "target_volume_m3": 50,
+        "by_week": 40,
+        "reward_scrip": 300
+      },
+      {
+        "id": "m3",
+        "name": "Colony Cornerstone",
+        "description": "Deliver 200m\u00b3 of cargo to the colony",
+        "target_volume_m3": 200,
+        "by_week": 100,
+        "reward_scrip": 1000
+      }
+    ],
+    "hard": [
+      {
+        "id": "m1",
+        "name": "First Shipment",
+        "description": "Deliver 10m\u00b3 of cargo to the colony",
+        "target_volume_m3": 10,
+        "by_week": 8,
+        "reward_scrip": 100
+      },
+      {
+        "id": "m2",
+        "name": "Steady Supply",
+        "description": "Deliver 50m\u00b3 of cargo to the colony",
+        "target_volume_m3": 50,
+        "by_week": 25,
+        "reward_scrip": 300
+      },
+      {
+        "id": "m3",
+        "name": "Colony Cornerstone",
+        "description": "Deliver 200m\u00b3 of cargo to the colony",
+        "target_volume_m3": 200,
+        "by_week": 70,
+        "reward_scrip": 1000
+      }
+    ]
+  },
+  "trophies": [
+    {
+      "id": "first_harvest",
+      "name": "First Harvest",
+      "description": "Harvest your first crop",
+      "emoji": "\ud83c\udfc6",
+      "category": "farming"
+    },
+    {
+      "id": "century_farmer",
+      "name": "Century Farmer",
+      "description": "Survive 100 weeks",
+      "emoji": "\ud83d\udcc5",
+      "category": "survival"
+    },
+    {
+      "id": "solar_millionaire",
+      "name": "Solar Millionaire",
+      "description": "Accumulate 10,000 Star-Scrip lifetime",
+      "emoji": "\ud83d\udcb0",
+      "category": "economy"
+    },
+    {
+      "id": "raid_survivor",
+      "name": "Raid Survivor",
+      "description": "Successfully defend your first raid",
+      "emoji": "\ud83d\udee1\ufe0f",
+      "category": "combat"
+    },
+    {
+      "id": "all_crops",
+      "name": "Botanist",
+      "description": "Grow all 20 crop types at least once",
+      "emoji": "\ud83c\udf31",
+      "category": "farming"
+    },
+    {
+      "id": "five_domes",
+      "name": "Dome Empire",
+      "description": "Own 5 domes simultaneously",
+      "emoji": "\ud83d\udd35",
+      "category": "expansion"
+    },
+    {
+      "id": "robot_army",
+      "name": "Robot Army",
+      "description": "Have 3 active dome robots",
+      "emoji": "\ud83e\udd16",
+      "category": "automation"
+    },
+    {
+      "id": "max_robot",
+      "name": "Peak Automation",
+      "description": "Upgrade a robot to Mk5",
+      "emoji": "\u2b50",
+      "category": "automation"
+    },
+    {
+      "id": "relay_friend",
+      "name": "Relay Friend",
+      "description": "Complete 10 contracts",
+      "emoji": "\ud83d\udce1",
+      "category": "contracts"
+    },
+    {
+      "id": "colony_hero",
+      "name": "Colony Hero",
+      "description": "Complete all milestones on Normal or Hard",
+      "emoji": "\ud83d\ude80",
+      "category": "milestones"
+    },
+    {
+      "id": "compost_king",
+      "name": "Compost King",
+      "description": "Generate 1000 units of compost",
+      "emoji": "\u267b\ufe0f",
+      "category": "farming"
+    },
+    {
+      "id": "power_hungry",
+      "name": "Power Hungry",
+      "description": "Generate 500 KWh of power capacity",
+      "emoji": "\u26a1",
+      "category": "expansion"
+    },
+    {
+      "id": "matrix_grown",
+      "name": "Matrix Grown",
+      "description": "Harvest your first Matrix Moss",
+      "emoji": "\ud83c\udf11",
+      "category": "farming"
+    },
+    {
+      "id": "no_miss_10",
+      "name": "Reliable",
+      "description": "Complete 10 weeks without a crop dying",
+      "emoji": "\u2705",
+      "category": "survival"
+    },
+    {
+      "id": "speed_harvest",
+      "name": "Speed Farmer",
+      "description": "Harvest 5 crops in a single week",
+      "emoji": "\u26a1",
+      "category": "farming"
+    }
+  ],
+  "relay_technician": {
+    "name": "Specialist Kovacs",
+    "rank": "Communications Technician Class IV",
+    "dream": "Deep-space starship captain",
+    "current_assignment": "Orbital Relay Station MF-7",
+    "mood_system": {
+      "starting_mood": 50,
+      "max_mood": 100,
+      "min_mood": 0,
+      "mood_decay_per_week": 3,
+      "actions": {
+        "ask_about_wellbeing": {
+          "mood_change": 8,
+          "label": "Ask how he's doing"
+        },
+        "compliment_grooming": {
+          "mood_change": 12,
+          "label": "Compliment his appearance"
+        },
+        "ask_about_captain_dream": {
+          "mood_change": 15,
+          "label": "Ask about his captain dreams"
+        },
+        "listen_to_rant": {
+          "mood_change": 6,
+          "label": "Let him vent"
+        },
+        "rush_order": {
+          "mood_change": -15,
+          "label": "Demand rush processing"
+        },
+        "be_dismissive": {
+          "mood_change": -20,
+          "label": "Be dismissive"
+        },
+        "share_farm_news": {
+          "mood_change": 5,
+          "label": "Share farm gossip"
+        }
+      },
+      "mood_tiers": {
+        "elated": {
+          "min": 85,
+          "discount": 0.2,
+          "shipping_bonus": 2,
+          "label": "Elated \ud83d\ude04"
+        },
+        "happy": {
+          "min": 65,
+          "discount": 0.1,
+          "shipping_bonus": 1,
+          "label": "Happy \ud83d\ude42"
+        },
+        "neutral": {
+          "min": 40,
+          "discount": 0.0,
+          "shipping_bonus": 0,
+          "label": "Neutral \ud83d\ude10"
+        },
+        "sour": {
+          "min": 20,
+          "discount": -0.1,
+          "shipping_bonus": 0,
+          "label": "Sour \ud83d\ude12"
+        },
+        "hostile": {
+          "min": 0,
+          "discount": -0.25,
+          "shipping_bonus": -1,
+          "label": "Hostile \ud83d\ude24"
+        }
+      }
+    },
+    "rant_topics": [
+      "the orbital cafeteria food situation",
+      "his captain exam scores (near perfect)",
+      "the injustice of the posting system",
+      "deep space navigation theory",
+      "the last supply ship crew who ignored him",
+      "his meticulously maintained uniform",
+      "the view from the relay window",
+      "management bureaucracy",
+      "the silence of space (he finds it peaceful)",
+      "his detailed ship captain fantasy scenarios"
+    ],
+    "radio_transmissions": [
+      "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming.",
+      "STATIC... did anyone else pick up that signal from sector 7?",
+      "Corporate memo: All lunar operations are reminded that compost storage quotas apply.",
+      "Kovacs here. Just so everyone knows, I passed my captain's exam. Again. For the third time.",
+      "Weather advisory: Increased micrometeorite activity. Check dome seals.",
+      "Colony update: Food stores at {colony_food_percent}%. Your deliveries are appreciated.",
+      "Relay broadcasting: The stars are particularly clear tonight. Not that anyone asked.",
+      "Corporate: Reminder that raid insurance does NOT cover structural negligence.",
+      "Kovacs personal log - open channel apparently: If anyone needs a highly qualified captain...",
+      "Colony celebrates: A new generation born this week. They'll need those calories.",
+      "Security advisory: Lunar fauna activity increasing in your sector. Brace for raid.",
+      "Kovacs: Management denied my transfer request. Again. Logging formal protest. Again."
+    ]
+  },
+  "fauna": {
+    "raid_warning_weeks_before": 2,
+    "wave_count_by_difficulty": {
+      "easy": 2,
+      "normal": 3,
+      "hard": 5
+    },
+    "enemy_types": [
+      {
+        "id": "moon_vole",
+        "name": "Moon Vole",
+        "emoji": "\ud83d\udc2d",
+        "health": 20,
+        "speed": 2,
+        "damage_on_reach": 15,
+        "solar_reward": 2
+      },
+      {
+        "id": "crater_crawler",
+        "name": "Crater Crawler",
+        "emoji": "\ud83e\udd80",
+        "health": 40,
+        "speed": 1,
+        "damage_on_reach": 30,
+        "solar_reward": 5
+      },
+      {
+        "id": "dust_stalker",
+        "name": "Dust Stalker",
+        "emoji": "\ud83e\udd8e",
+        "health": 60,
+        "speed": 3,
+        "damage_on_reach": 20,
+        "solar_reward": 8
+      },
+      {
+        "id": "void_beetle",
+        "name": "Void Beetle",
+        "emoji": "\ud83e\udeb2",
+        "health": 100,
+        "speed": 1,
+        "damage_on_reach": 60,
+        "solar_reward": 15
+      }
+    ]
+  },
+  "market_prices": {
+    "buy": {
+      "seeds_tier1": 10,
+      "seeds_tier2": 25,
+      "seeds_tier3": 60,
+      "seeds_tier4": 150,
+      "water": 3,
+      "chemicals": 8,
+      "components": 50,
+      "ore": 15
+    },
+    "sell_modifier": 0.6
+  }
+}
