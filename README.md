@@ -95,3 +95,6 @@ Hot reload does not pick up asset changes — you need to hot restart (`R` in te
 - AdMob is a grey box
 - No pixel art yet — all emoji and text
 - Crop actions (water, fertilize, harvest) not interactive yet
+
+
+beep boop, git test
