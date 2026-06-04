@@ -26,6 +26,7 @@ class GameFactory {
       water: (startingRes['water'] as num).toDouble(),
       moonDirt: (startingRes['moon_dirt'] as num).toDouble(),
       chemicals: (startingRes['chemicals'] as num).toDouble(),
+      zSoil: (startingRes['z_soil'] as num?)?.toDouble() ?? 10,
       seeds: startingRes['seeds'] as int,
       starScrip: startingScrip,
     );

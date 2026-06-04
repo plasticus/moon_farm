@@ -845,7 +845,7 @@ class RadioTransmission {
 
 class WeekSummary {
   final int week;
-  final int scripReceived;   // from pending sales processing
+  final int scripReceived;
   final int scripSpent;
   final int cropsHarvested;
   final int cropsDied;
@@ -855,7 +855,8 @@ class WeekSummary {
   final List<String> contractUpdates;
   final bool raidOccurred;
   final Map<String, double> resourceChanges;
-  final List<String> robotActions; // what the bots did
+  final List<String> robotActions;
+  final List<String> events; // full event log for the week
   final int newWeek;
 
   const WeekSummary({
@@ -871,6 +872,7 @@ class WeekSummary {
     required this.raidOccurred,
     required this.resourceChanges,
     required this.robotActions,
+    required this.events,
     required this.newWeek,
   });
 }
@@ -917,6 +919,9 @@ class CropConfig {
     this.yieldsResource,
     required this.resourceYieldAmount,
   });
+
+  // Convenience accessor — baseSolarValue was renamed baseScrip in the JSON
+  int get baseScrip => baseSolarValue;
 
   factory CropConfig.fromJson(Map<String, dynamic> json) {
     return CropConfig(

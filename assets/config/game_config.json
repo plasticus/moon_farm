@@ -12,7 +12,8 @@
         "water": 100,
         "moon_dirt": 50,
         "chemicals": 20,
-        "seeds": 10
+        "seeds": 10,
+        "z_soil": 10
       }
     },
     "normal": {
@@ -25,7 +26,8 @@
         "water": 60,
         "moon_dirt": 30,
         "chemicals": 10,
-        "seeds": 6
+        "seeds": 10,
+        "z_soil": 10
       }
     },
     "hard": {
@@ -38,7 +40,8 @@
         "water": 30,
         "moon_dirt": 15,
         "chemicals": 5,
-        "seeds": 3
+        "seeds": 10,
+        "z_soil": 10
       }
     }
   },
@@ -63,7 +66,7 @@
     {
       "id": "lunar_carrots",
       "name": "Lunar Carrots",
-      "emoji": "\ud83d\udfe3",
+      "emoji": "\ud83e\udd55",
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 2,
@@ -1089,5 +1092,27 @@
       "ore": 15
     },
     "sell_modifier": 0.6
-  }
+  },
+  "farm_name_suggestions": [
+    "The Ceres-II Breadbasket",
+    "Apex Orbit Feed & Seed",
+    "Horizon Hydro-Outpost",
+    "The Zenith Silo",
+    "Waypoint Harvest Station",
+    "Zenith Crop Station",
+    "Orbital Crest Greens",
+    "Vector Hydroponics",
+    "The Apex Acreage",
+    "Meridian Biosphere",
+    "Vanguard Ag-Outpost",
+    "Sector 9 Granary",
+    "Horizon Flora-Pod",
+    "Vertex Harvest Pod",
+    "The Orbit Feedlot",
+    "Genesis Hydro-Silo",
+    "Continuum Cultivation",
+    "Pinnacle Agro-Dome",
+    "Nexus Botany Lab",
+    "The Station Supply Depot"
+  ]
 }

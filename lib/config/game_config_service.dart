@@ -245,4 +245,10 @@ class GameConfigService {
 
   String get gameVersion => _c['game_version'] as String;
   String get websiteUrl => _c['website_url'] as String;
+
+  List<String> getFarmNameSuggestions() {
+    final raw = _c['farm_name_suggestions'];
+    if (raw == null) return [];
+    return List<String>.from(raw as List);
+  }
 }

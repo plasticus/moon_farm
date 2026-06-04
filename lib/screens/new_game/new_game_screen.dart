@@ -4,9 +4,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../config/game_config_service.dart';
 import '../../utils/game_factory.dart';
 import '../save_slots/save_slot_detail_screen.dart';
 
@@ -26,6 +28,22 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
   String? _nameError;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-populate with a random name suggestion
+    _suggestRandomName();
+  }
+
+  void _suggestRandomName() {
+    final suggestions = GameConfigService.instance
+        .getFarmNameSuggestions();
+    if (suggestions.isNotEmpty) {
+      final name = suggestions[Random().nextInt(suggestions.length)];
+      _nameController.text = name;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
@@ -41,8 +59,8 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
       setState(() => _nameError = 'Please name your farm.');
       return;
     }
-    if (name.length > 24) {
-      setState(() => _nameError = 'Max 24 characters.');
+    if (name.length > 32) {
+      setState(() => _nameError = 'Max 32 characters.');
       return;
     }
 
@@ -99,20 +117,46 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
             const SizedBox(height: 32),
 
             // ── Farm name ──────────────────────────────────────────────────
-            Text(
-              'FARM NAME',
-              style: MFTextStyles.bodySmall.copyWith(
-                color: MFColors.textMuted,
-                letterSpacing: 2,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'FARM NAME',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.textMuted,
+                    letterSpacing: 2,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _nameError = null);
+                    _suggestRandomName();
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.shuffle, color: MFColors.neonCyan, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        'SUGGEST',
+                        style: MFTextStyles.bodySmall.copyWith(
+                          color: MFColors.neonCyan,
+                          fontSize: 10,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
-              maxLength: 24,
+              maxLength: 32,
               style: MFTextStyles.bodyLarge,
               decoration: InputDecoration(
-                hintText: 'e.g. Crater Station Alpha',
+                hintText: 'Name your operation...',
                 errorText: _nameError,
                 counterStyle: MFTextStyles.bodySmall,
               ),
@@ -131,7 +175,7 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
             ),
             const SizedBox(height: 12),
             ...Difficulty.values.map(
-              (d) => Padding(
+                  (d) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _DifficultyOption(
                   difficulty: d,
@@ -149,13 +193,13 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
                 onPressed: _canCreate ? _createGame : null,
                 child: _isCreating
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: MFColors.background,
-                        ),
-                      )
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: MFColors.background,
+                  ),
+                )
                     : const Text('BEGIN OPERATION'),
               ),
             ),
