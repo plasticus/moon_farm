@@ -1,0 +1,265 @@
+{
+  "_notes": [
+    "Edit this file to customize Kovacs' dialogue.",
+    "mood_change: positive = improves mood, negative = sours mood, 0 = no change.",
+    "response_pool: Kovacs picks one randomly. Use {name} for farm name placeholder.",
+    "unlocks: list of topic IDs this response makes available. Leave empty [] if none.",
+    "tier: 1 = always available, 2 = unlocked by a tier 1 topic, 3 = unlocked by tier 2.",
+    "visible_label: what the player sees as the button text.",
+    "mood_hint: optional subtle hint shown AFTER the player has used this option 3+ times."
+  ],
+
+  "topics": [
+    {
+      "id": "ask_wellbeing",
+      "tier": 1,
+      "visible_label": "Ask how he's doing.",
+      "mood_change": 0,
+      "mood_hint": "He seems to appreciate being asked.",
+      "response_pool": [
+        "Fine. Cafeteria ran out of the good coffee again. But fine.",
+        "Surviving. The posting review board denied my transfer. Again. But fine.",
+        "You know what — that's actually a reasonable question. I'm managing.",
+        "Could be worse. Could be posted on MF-6. I've heard stories."
+      ],
+      "unlocks": ["ask_about_transfer", "ask_about_coffee"]
+    },
+    {
+      "id": "compliment_grooming",
+      "tier": 1,
+      "visible_label": "Tell him he looks sharp today.",
+      "mood_change": 8,
+      "mood_hint": "He brightens slightly.",
+      "response_pool": [
+        "...Thank you. I do maintain standards out here. Someone has to.",
+        "I appreciate that. It's not easy keeping a pressed uniform on a relay station.",
+        "Finally. Someone notices. The last three operators never once acknowledged the effort.",
+        "Standards don't drop just because nobody's watching. That's called character."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_captaincy",
+      "tier": 1,
+      "visible_label": "Ask about his captain ambitions.",
+      "mood_change": 12,
+      "mood_hint": "He seems to perk up a little.",
+      "response_pool": [
+        "You want to know about that? Most people don't ask. I scored 97th percentile on Navigation Exam Form 7-C. 97th. And they posted me here.",
+        "Deep-space posting. That was the plan. I had a ship lined up — the Aurelius-IV class, long-range survey vessel. Politics happened.",
+        "I've filed twelve formal appeals. Twelve. One will land eventually. The system isn't broken, it's just slow.",
+        "Cadet ranking was top five. Exam scores speak for themselves. The assignment committee, apparently, does not read exam scores."
+      ],
+      "unlocks": ["ask_about_aurelius", "ask_about_appeals", "ask_about_committee"]
+    },
+    {
+      "id": "listen_to_rant",
+      "tier": 1,
+      "visible_label": "Let him vent for a bit.",
+      "mood_change": 5,
+      "mood_hint": "He seems to let something go.",
+      "response_pool": [
+        "...anyway. That's enough of that. What do you actually need.",
+        "I appreciate you letting me finish. Most operators just hang up.",
+        "Right. Sorry. It builds up out here.",
+        "The silence out here is actually peaceful. That part I don't mind. It's the cafeteria."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "share_farm_news",
+      "tier": 1,
+      "visible_label": "Tell him what's growing.",
+      "mood_change": 3,
+      "mood_hint": "He pretends not to care.",
+      "response_pool": [
+        "Hm. That's actually mildly interesting. Carry on.",
+        "I see. The moon farming life. Riveting.",
+        "Sure. Yes. Thanks for the update on your vegetables.",
+        "First dome full? That's... actually not bad for the timeline. Don't tell anyone I said that."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "be_dismissive",
+      "tier": 1,
+      "visible_label": "Keep it strictly business.",
+      "mood_change": -10,
+      "mood_hint": "Something in his expression hardens.",
+      "response_pool": [
+        "Charming. I'll remember that next time you need a favor.",
+        "Noted. Enjoy the markup.",
+        "Right. Well. I'll just add that to the list.",
+        "Professional. Fine."
+      ],
+      "unlocks": []
+    },
+
+    {
+      "id": "ask_about_transfer",
+      "tier": 2,
+      "visible_label": "Ask about the transfer denial.",
+      "mood_change": -5,
+      "mood_hint": "His jaw tightens.",
+      "response_pool": [
+        "Third denial this year. The board cites 'operational necessity.' I am not operationally necessary to a lunar farm relay.",
+        "Form 14-B, appeal rejected. Form 14-C, appeal rejected. I'm now on Form 14-F. There is a 14-G.",
+        "They keep saying my scores are 'noted.' Noted doesn't mean anything. Noted means a filing cabinet."
+      ],
+      "unlocks": ["ask_about_form14g"]
+    },
+    {
+      "id": "ask_about_coffee",
+      "tier": 2,
+      "visible_label": "Ask about the cafeteria situation.",
+      "mood_change": -3,
+      "mood_hint": "He sighs audibly.",
+      "response_pool": [
+        "It's the synthetic blend. Every third Thursday. I've submitted a formal complaint. Three times.",
+        "The supply manifest lists it as 'standard issue beverage.' Standard issue. For a man of my qualifications.",
+        "You know what, forget it. It's fine. Everything's fine."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_aurelius",
+      "tier": 2,
+      "visible_label": "Ask about the Aurelius-IV.",
+      "mood_change": 10,
+      "mood_hint": "Something shifts in his voice.",
+      "response_pool": [
+        "Long-range survey vessel. Twelve-person crew, deep-space nav array, eighteen-month postings. That's the job. That was supposed to be the job.",
+        "Aurelius-class ships have the best navigation suites in the fleet. You'd actually need someone with a 97th percentile exam score to run one properly.",
+        "She's out there right now. The Aurelius-IV. I've tracked her logs. She's on a survey run past the outer belt. Should be me on that bridge."
+      ],
+      "unlocks": ["ask_about_outer_belt"]
+    },
+    {
+      "id": "ask_about_appeals",
+      "tier": 2,
+      "visible_label": "Ask about the twelve appeals.",
+      "mood_change": -2,
+      "mood_hint": "He counts on his fingers.",
+      "response_pool": [
+        "Forms 14-A through 14-L. A is standard. B is expedited. C through F cover different grounds — competency, procedural error, new evidence. I've used them all.",
+        "The appeals system is thorough. I'll give it that. Whether anyone reads them is another matter.",
+        "Twelve appeals, forty-seven supporting documents, three character references. One of them was from Admiral Cho. Admiral Cho. Still here."
+      ],
+      "unlocks": ["ask_about_admiral_cho"]
+    },
+    {
+      "id": "ask_about_committee",
+      "tier": 2,
+      "visible_label": "Ask about the assignment committee.",
+      "mood_change": -8,
+      "mood_hint": "His tone gets very flat.",
+      "response_pool": [
+        "I'll say this once. Commander Harlan sits on that committee. Commander Harlan and I have a history. That's all I'll say.",
+        "The committee meets quarterly. I've attended two hearings in person. Via relay, obviously. It was deeply unsatisfying.",
+        "They have a point system. I've seen the rubric. I score well on everything except 'team integration.' Whatever that means."
+      ],
+      "unlocks": ["ask_about_harlan"]
+    },
+
+    {
+      "id": "ask_about_form14g",
+      "tier": 3,
+      "visible_label": "Ask what Form 14-G covers.",
+      "mood_change": 5,
+      "mood_hint": "He actually seems pleased you asked.",
+      "response_pool": [
+        "Exceptional circumstance appeal. Reserved for cases where standard grounds have been exhausted. I've documented seventeen exceptional circumstances. I may need a Form 14-H.",
+        "14-G is the last standard form. After that it goes to arbitration. I'm... considering arbitration.",
+        "You know, you're the first operator who's ever asked me that. The first one. In four years."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_outer_belt",
+      "tier": 3,
+      "visible_label": "Ask what's in the outer belt.",
+      "mood_change": 15,
+      "mood_hint": "He's quiet for a moment.",
+      "response_pool": [
+        "Survey data suggests three candidate systems for deep-field navigation. I've run the projections. I have a binder.",
+        "Nobody knows, really. That's the point. Deep-field survey work is the last real exploration left. Everything else is logistics.",
+        "I've been charting it. In my off hours. I have forty-seven candidate waypoints marked. It passes the time."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_admiral_cho",
+      "tier": 3,
+      "visible_label": "Ask about Admiral Cho's reference.",
+      "mood_change": 12,
+      "mood_hint": "He straightens slightly.",
+      "response_pool": [
+        "She supervised my final navigation practicum. Said I had 'exceptional spatial reasoning and an unusual calm under pressure.' Her words. Filed with the committee.",
+        "Admiral Cho doesn't write reference letters often. I'm told mine was her third in ten years. The committee noted it. They noted it.",
+        "She retired last year. I sent a formal thank-you. She replied. Two lines, but she replied."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_harlan",
+      "tier": 3,
+      "visible_label": "Ask about Commander Harlan.",
+      "mood_change": -15,
+      "mood_hint": "Long pause.",
+      "response_pool": [
+        "I won't get into it on an open channel.",
+        "Let's say there was an incident during the Sector 9 joint exercise. Let's say I was correct and he was not. Let's leave it there.",
+        "Some things aren't worth discussing over a relay connection. Ask me in person someday. If I ever get off this station."
+      ],
+      "unlocks": []
+    }
+  ],
+
+  "greetings": {
+    "hostile": [
+      "What. WHAT. I'm busy.",
+      "MF-7. This better be important.",
+      "Kovacs. Don't test me today.",
+      "Yes. Still here. Unfortunately."
+    ],
+    "sour": [
+      "Kovacs. What do you need.",
+      "MF-7 relay. Make it quick.",
+      "Yes. What.",
+      "Kovacs. I was in the middle of something."
+    ],
+    "neutral": [
+      "MF-7 relay. Go ahead.",
+      "Kovacs here.",
+      "Relay MF-7. What is it.",
+      "You've reached Specialist Kovacs. Relay station MF-7."
+    ],
+    "happy": [
+      "Kovacs here. Good timing actually.",
+      "MF-7. I'll admit, things could be worse today.",
+      "Relay MF-7. You caught me in a reasonable mood.",
+      "Kovacs. Yes. What can I do for you."
+    ],
+    "elated": [
+      "MF-7. I was just — yes. Hi. Good to hear from you.",
+      "Kovacs. I'm in an unusually functional mood today. Don't make me regret it.",
+      "Relay MF-7. Surprisingly decent day. What do you need."
+    ]
+  },
+
+  "idle_transmissions": [
+    "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming.",
+    "Kovacs personal log — open channel apparently: If anyone needs a highly qualified captain for the outer belt survey...",
+    "STATIC... did anyone else pick up that signal from sector 7? Probably nothing.",
+    "Corporate memo: All lunar operations are reminded that compost storage quotas apply.",
+    "Kovacs here. Just so everyone knows, I passed Form 7-C Navigation Exam. 97th percentile. Again. For the record.",
+    "Weather advisory: Increased micrometeorite activity reported. Check dome seals.",
+    "Colony update: Your deliveries are appreciated. The children especially.",
+    "Relay broadcasting: The outer belt is particularly clear tonight. Not that anyone asked.",
+    "Corporate: Reminder that raid insurance does NOT cover structural negligence.",
+    "Security advisory: Lunar fauna activity increasing in your sector. I'd say good luck but it loses meaning after a while.",
+    "Kovacs: Management denied my transfer request. Logging formal protest number fourteen.",
+    "Colony celebrates: A new generation born this week. They'll need those crops.",
+    "MF-7 technical note: Relay antenna calibrated. Took forty minutes. No acknowledgement required, but noted."
+  ]
+}

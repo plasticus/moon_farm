@@ -193,45 +193,50 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
     final crop = GameConfigService.instance.getCrop(cell.cropId ?? '');
     if (crop == null) return;
 
-    // Add to pending sales automatically
-    final saleValue = GameConfigService.instance.getSellPrice(
-      cell.cropId!,
-      moodDiscount: game.relay.priceDiscount,
-    );
-    final sale = PendingSale(
-      resourceId: cell.cropId!,
-      amount: crop.volumeM3,
-      scripValue: saleValue,
-      weekQueued: game.currentWeek,
-    );
+    // Deposit into silo inventory (sell via Relay, not auto-shipped)
+    final updatedInventory = Map<String, double>.from(game.siloInventory);
+    updatedInventory[cell.cropId!] =
+        (updatedInventory[cell.cropId!] ?? 0) + 1.0;
 
-    // Return a seed
-    final newResources = game.resources.copyWith(
+    // Return a seed + resource yields for cyber-organic crops
+    var newResources = game.resources.copyWith(
       seeds: game.resources.seeds + 1,
     );
+    if (crop.yieldsResource != null) {
+      switch (crop.yieldsResource!) {
+        case 'metals':
+          newResources = newResources.copyWith(
+              metals: newResources.metals + crop.resourceYieldAmount);
+        case 'sand':
+          newResources = newResources.copyWith(
+              sand: newResources.sand + crop.resourceYieldAmount);
+        case 'components':
+          newResources = newResources.copyWith(
+              components: newResources.components + crop.resourceYieldAmount);
+      }
+    }
 
-    final updatedGame = game.copyWith(
+    final newHarvestCount = game.totalCropsHarvested + 1;
+    var updatedGame = game.copyWith(
       resources: newResources,
-      pendingSales: [...game.pendingSales, sale],
-      totalCropsHarvested: game.totalCropsHarvested + 1,
+      siloInventory: updatedInventory,
+      totalCropsHarvested: newHarvestCount,
     );
 
-    _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
-
     // Check first harvest trophy
-    if (updatedGame.totalCropsHarvested == 1) {
+    if (newHarvestCount == 1) {
       final updatedTrophies = updatedGame.trophies.map((t) {
         if (t.id == 'first_harvest') return t.unlock(game.currentWeek);
         return t;
       }).toList();
-      ref.read(activeGameProvider.notifier).updateGameLocal(
-        updatedGame.copyWith(trophies: updatedTrophies),
-      );
-      _snack(ref.context, '🏆 Trophy unlocked: First Harvest!');
+      updatedGame = updatedGame.copyWith(trophies: updatedTrophies);
+      _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
+      _snack(ref.context, '🏆 First Harvest! ${crop.name} stored in silo.');
       return;
     }
 
-    _snack(ref.context, '✅ Harvested ${crop.name}! +${saleValue} 🎫 queued.');
+    _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
+    _snack(ref.context, '✅ ${crop.name} stored in silo. Sell via Relay.');
   }
 
   void _doPlant(
@@ -368,35 +373,6 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
     );
   }
 
-  void _showCropPicker(
-      BuildContext context,
-      WidgetRef ref,
-      GameState game,
-      Dome dome,
-      CropCell cell,
-      int domeIndex,
-      ) {
-    final availableCrops = GameConfigService.instance
-        .getCropsForDomeTier(dome.tier);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: MFColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-        side: BorderSide(color: MFColors.borderDefault),
-      ),
-      builder: (ctx) => _CropPickerSheet(
-        crops: availableCrops,
-        game: game,
-        onCropSelected: (cropId) {
-          Navigator.of(ctx).pop();
-          setState(() => _selectedCropId = cropId);
-          _doPlant(ref, game, dome, cell, domeIndex, cropId);
-        },
-      ),
-    );
-  }
 
   // ─── Cell info dialog ─────────────────────────────────────────────────────
 

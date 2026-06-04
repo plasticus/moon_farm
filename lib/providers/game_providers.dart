@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_models.dart';
 import '../database/database_helper.dart';
 import '../config/game_config_service.dart';
+import '../engine/kovacs_engine.dart';
 
 // ─── Save Slots Provider ──────────────────────────────────────────────────────
 
@@ -215,3 +216,7 @@ final selectedDomeActionProvider = StateProvider<String?>((ref) => null);
 
 /// UI state: loading state for end-week calculation
 final endWeekLoadingProvider = StateProvider<bool>((ref) => false);
+
+/// Kovacs conversation state — persists across navigation within the same week.
+/// Reset to null by end_week_engine each week.
+final kovacsConversationProvider = StateProvider<KovacsConversation?>((ref) => null);

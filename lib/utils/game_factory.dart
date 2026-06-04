@@ -37,6 +37,18 @@ class GameFactory {
     // One basic silo
     final startingSilo = _createNewSilo(tier: 1);
 
+    // Starting refinery with free Mk1 composter and smelter
+    final startingRefinery = Refinery(
+      id: 'refinery_start',
+      tier: 1,
+      powerDraw: 8,
+      unlockedRecipes: ['compost_to_zsoil'],
+      machines: const [
+        RefineryMachine(type: MachineType.composter, level: 1, powerDraw: 1),
+        RefineryMachine(type: MachineType.smelter, level: 1, powerDraw: 2),
+      ],
+    );
+
     // One basic solar array
     final startingPower = PowerSource(
       id: _uuid.v4(),
@@ -48,13 +60,15 @@ class GameFactory {
     final milestones = _config.getMilestones(difficulty);
     final trophies = _config.getAllTrophies();
 
-    // Generate first radio transmission
+    // Opening transmission from Kovacs
+    final openingMsg = GameConfigService.instance
+        .getRelayConfig()['opening_transmission'] as String? ??
+        "New operator confirmed. First pickup is Week 4. Don't be late. — Kovacs";
+
     final radioFeed = [
       RadioTransmission(
         week: 1,
-        message:
-        "Welcome to your new posting, farmer. Colony is counting on you. "
-            "Get those crops in the ground. — Specialist Kovacs, Relay MF-7",
+        message: openingMsg,
         isRead: false,
       ),
     ];
@@ -70,7 +84,7 @@ class GameFactory {
       resources: resources,
       domes: [startingDome],
       silos: [startingSilo],
-      refineries: [],
+      refineries: [startingRefinery],
       powerSources: [startingPower],
       laserSentries: [],
       activeContracts: [],
@@ -80,7 +94,7 @@ class GameFactory {
       log: [],
       radioFeed: radioFeed,
       relay: RelayTechnicianState(
-        mood: 50,
+        mood: 30,  // starts sour — he's not happy about this posting
         seenRantTopics: [],
         availableContracts: [],
         contractsRefreshedThisWeek: false,
@@ -90,8 +104,13 @@ class GameFactory {
       totalCropsHarvested: 0,
       totalCompostGenerated: 0,
       nextRaidWeek: raidFreq,
+      miningDrones: [],
       raidDefendedThisWeek: false,
       pendingSales: [],
+      siloInventory: {},
+      shipmentsThisWindow: 0,
+      nextShipWindowWeek: 4,
+      waterPurifierLevel: 1,
       lastSaved: DateTime.now(),
     );
   }

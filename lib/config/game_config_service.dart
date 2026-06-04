@@ -175,6 +175,49 @@ class GameConfigService {
     return _c['relay_technician'] as Map<String, dynamic>;
   }
 
+  Map<String, dynamic> getRelayConfig() => relayConfig;
+
+  List<String> getDialogueLines(String key) {
+    final dialogue = relayConfig['dialogue'] as Map<String, dynamic>?;
+    if (dialogue == null) return [];
+    final lines = dialogue[key];
+    if (lines == null) return [];
+    return List<String>.from(lines as List);
+  }
+
+  Map<String, dynamic> get shipSchedule {
+    return _c['ship_schedule'] as Map<String, dynamic>? ?? {
+      'first_window_week': 4,
+      'interval_weeks': 4,
+      'reminder_weeks_before': 1,
+      'rush_shipment_mood_penalty': -20,
+      'rush_shipment_price_cut': 0.15,
+    };
+  }
+
+  int get shipWindowInterval => shipSchedule['interval_weeks'] as int;
+  int get shipReminderWeeksBefore => shipSchedule['reminder_weeks_before'] as int;
+  int get rushMoodPenalty => shipSchedule['rush_shipment_mood_penalty'] as int;
+  double get rushPriceCut => (shipSchedule['rush_shipment_price_cut'] as num).toDouble();
+
+  List<Map<String, dynamic>> getWaterPurifierLevels() {
+    final wp = _c['water_purifier'] as Map<String, dynamic>?;
+    if (wp == null) return [];
+    return List<Map<String, dynamic>>.from(wp['levels'] as List);
+  }
+
+  int get basePassiveWaterOutput {
+    final wp = _c['water_purifier'] as Map<String, dynamic>?;
+    return wp?['base_passive_output'] as int? ?? 5;
+  }
+
+  int getWaterOutputForLevel(int level) {
+    if (level == 0) return basePassiveWaterOutput;
+    final levels = getWaterPurifierLevels();
+    final match = levels.where((l) => l['level'] == level).firstOrNull;
+    return match?['output_water_per_week'] as int? ?? basePassiveWaterOutput;
+  }
+
   List<String> get rantTopics {
     return List<String>.from(
       relayConfig['rant_topics'] as List,
@@ -241,6 +284,19 @@ class GameConfigService {
 
   List<Map<String, dynamic>> get enemyTypes {
     return (faunaConfig['enemy_types'] as List).cast<Map<String, dynamic>>();
+  }
+
+  Map<String, dynamic> getMachineConfigs() {
+    return _c['refinery_machines'] as Map<String, dynamic>? ?? {};
+  }
+
+  Map<String, dynamic>? getMachineConfig(String key) {
+    final machines = getMachineConfigs();
+    return machines[key] as Map<String, dynamic>?;
+  }
+
+  Map<String, dynamic> getOperationsBuildings() {
+    return _c['operations_buildings'] as Map<String, dynamic>? ?? {};
   }
 
   String get gameVersion => _c['game_version'] as String;

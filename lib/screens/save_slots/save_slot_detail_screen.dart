@@ -6,13 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
+import '../../engine/kovacs_engine.dart';
 import '../../theme/app_theme.dart';
+import '../../config/game_config_service.dart';
 import '../../engine/end_week_engine.dart';
 import '../../database/database_helper.dart';
 import '../dome/dome_screen.dart';
 import '../week_summary/week_summary_screen.dart';
 import '../dev/dev_tools_screen.dart';
 import '../main_menu/main_menu_screen.dart';
+import '../relay/relay_screen.dart';
+import '../operations/operations_screen.dart';
+import '../refinery/refinery_screen.dart';
 
 class SaveSlotDetailScreen extends ConsumerStatefulWidget {
   const SaveSlotDetailScreen({super.key});
@@ -30,6 +35,7 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     _TabItem(icon: Icons.circle, label: 'Domes'),
     _TabItem(icon: Icons.science, label: 'Refinery'),
     _TabItem(icon: Icons.satellite_alt, label: 'Relay'),
+    _TabItem(icon: Icons.terrain, label: 'Operations'),
     _TabItem(icon: Icons.home, label: 'Habitat'),
   ];
 
@@ -165,9 +171,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     switch (_currentTab) {
       case 0: return _DashboardTab(game: game, onEndWeek: () => _doEndWeek(game));
       case 1: return const DomeScreen();
-      case 2: return _RefineryStub(game: game);
-      case 3: return _RelayStub(game: game);
-      case 4: return _HabitatStub(game: game);
+      case 2: return const RefineryScreen();
+      case 3: return const RelayScreen();
+      case 4: return const OperationsScreen();
+      case 5: return _HabitatStub(game: game);
       default: return const SizedBox();
     }
   }
@@ -201,6 +208,9 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
 
       // Persist
       await ref.read(activeGameProvider.notifier).updateGame(newState);
+
+      // Reset Kovacs conversation for next week
+      ref.read(kovacsConversationProvider.notifier).state = null;
 
       // Log to DB
       await DatabaseHelper.instance.insertLogEntry(
@@ -311,6 +321,12 @@ class _DashboardTab extends ConsumerWidget {
           _PendingSalesCard(sales: game.pendingSales),
           const SizedBox(height: 16),
         ],
+        if (game.siloInventory.isNotEmpty) ...[
+          const _SectionHeader('CROPS IN SILO'),
+          const SizedBox(height: 8),
+          _SiloInventoryCard(inventory: game.siloInventory),
+          const SizedBox(height: 16),
+        ],
         const _SectionHeader('MILESTONES'),
         const SizedBox(height: 8),
         ...game.milestones
@@ -375,7 +391,7 @@ class _ResourceGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       ('🎫', 'Star-Scrip', '${resources.starScrip}',   MFColors.starScrip),
-      ('💧', 'Water',      '${resources.water.toInt()}', MFColors.neonCyan),
+      ('💧', 'Water',      '${resources.water.toStringAsFixed(1)}m³', MFColors.neonCyan),
       ('🌑', 'Moon Dirt',  '${resources.moonDirt.toInt()}', MFColors.textSecondary),
       ('⚗️', 'Chemicals',  '${resources.chemicals.toInt()}', MFColors.neonPurple),
       ('🌱', 'Z Soil',     '${resources.zSoil.toInt()}', MFColors.neonGreen),
@@ -628,71 +644,47 @@ class _EndWeekButton extends StatelessWidget {
   }
 }
 
-// ─── Stub Screens ─────────────────────────────────────────────────────────────
+// ─── Silo Inventory Card ──────────────────────────────────────────────────────
 
-class _RefineryStub extends StatelessWidget {
-  final GameState game;
-  const _RefineryStub({required this.game});
+class _SiloInventoryCard extends StatelessWidget {
+  final Map<String, double> inventory;
+  const _SiloInventoryCard({required this.inventory});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('⚗️', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 16),
-            Text('REFINERY',
-                style: MFTextStyles.headlineMedium.copyWith(color: MFColors.neonCyan)),
-            const SizedBox(height: 8),
-            Text('Material processing arrives in Phase 3.',
-                style: MFTextStyles.bodyMedium, textAlign: TextAlign.center),
-          ],
-        ),
+    final config = GameConfigService.instance;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MFColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.borderSubtle),
       ),
-    );
-  }
-}
-
-class _RelayStub extends StatelessWidget {
-  final GameState game;
-  const _RelayStub({required this.game});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('📡', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 16),
-            Text('RELAY — SPECIALIST KOVACS',
-                style: MFTextStyles.headlineMedium.copyWith(color: MFColors.neonCyan)),
-            const SizedBox(height: 8),
-            Text('Contracts and selling arrive in Phase 3.',
-                style: MFTextStyles.bodyMedium, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: MFColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: MFColors.borderDefault),
-              ),
-              child: Text(
-                '"I passed my captain\'s exam. Again. '
-                    'For what it\'s worth out here in the middle of nowhere."'
-                    '\n\n— Specialist Kovacs',
-                style: MFTextStyles.bodyMedium.copyWith(fontStyle: FontStyle.italic),
-                textAlign: TextAlign.center,
-              ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: inventory.entries.map((entry) {
+          final crop = config.getCrop(entry.key);
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: MFColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: MFColors.borderDefault),
             ),
-          ],
-        ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(crop?.emoji ?? '?', style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+                Text(
+                  '${entry.value.toInt()}',
+                  style: MFTextStyles.labelLarge.copyWith(fontSize: 13),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

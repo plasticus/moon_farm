@@ -9,7 +9,7 @@
       "market_price_modifier": 1.0,
       "starting_scrip": 500,
       "starting_resources": {
-        "water": 100,
+        "water": 30,
         "moon_dirt": 50,
         "chemicals": 20,
         "seeds": 10,
@@ -23,7 +23,7 @@
       "market_price_modifier": 1.0,
       "starting_scrip": 250,
       "starting_resources": {
-        "water": 60,
+        "water": 20,
         "moon_dirt": 30,
         "chemicals": 10,
         "seeds": 10,
@@ -37,7 +37,7 @@
       "market_price_modifier": 0.8,
       "starting_scrip": 100,
       "starting_resources": {
-        "water": 30,
+        "water": 10,
         "moon_dirt": 15,
         "chemicals": 5,
         "seeds": 10,
@@ -586,20 +586,20 @@
           "cost_metals": 25,
           "power_draw_kwh": 8,
           "unlocked_recipes": [
-            "moon_dirt_to_zsoil"
+            "compost_to_zsoil"
           ],
           "emoji": "\u2697\ufe0f"
         },
         {
           "tier": 2,
-          "name": "Advanced Refinery",
+          "name": "Standard Refinery",
           "cost_scrip": 600,
           "cost_metals": 60,
           "power_draw_kwh": 15,
           "unlocked_recipes": [
+            "compost_to_zsoil",
             "moon_dirt_to_zsoil",
-            "ore_to_metals",
-            "sand_to_glass"
+            "ore_to_metals"
           ],
           "emoji": "\u2697\ufe0f"
         },
@@ -610,10 +610,10 @@
           "cost_metals": 120,
           "power_draw_kwh": 25,
           "unlocked_recipes": [
+            "compost_to_zsoil",
             "moon_dirt_to_zsoil",
             "ore_to_metals",
             "sand_to_glass",
-            "compost_to_zsoil",
             "advanced_processing"
           ],
           "emoji": "\u2697\ufe0f"
@@ -1032,7 +1032,87 @@
       "Colony celebrates: A new generation born this week. They'll need those calories.",
       "Security advisory: Lunar fauna activity increasing in your sector. Brace for raid.",
       "Kovacs: Management denied my transfer request. Again. Logging formal protest. Again."
-    ]
+    ],
+    "opening_transmission": "New operator confirmed. I'm Specialist Kovacs, your relay contact on MF-7. The previous farmer left in a hurry \u2014 something about the fauna. Didn't elaborate. Your starting supplies were dropped this morning. First scheduled pickup is Week 4. Don't be late. I have other things to do. \u2014 Kovacs",
+    "dialogue": {
+      "greeting_neutral": [
+        "Kovacs. What do you need.",
+        "MF-7 relay. Make it quick.",
+        "Yes. Still here. What.",
+        "Kovacs. I was in the middle of something."
+      ],
+      "greeting_happy": [
+        "Kovacs here. Good timing actually.",
+        "MF-7. I'll admit, things could be worse today.",
+        "Relay MF-7. You caught me in a reasonable mood."
+      ],
+      "greeting_hostile": [
+        "What. WHAT. I'm busy.",
+        "MF-7. This better be important.",
+        "Kovacs. Don't test me today."
+      ],
+      "after_ask_wellbeing": [
+        "Fine. Cafeteria ran out of the decent coffee again. But fine.",
+        "Surviving. The posting review board denied my transfer. Again. But fine.",
+        "You know what, that's... actually a reasonable question. I'm managing."
+      ],
+      "after_compliment_grooming": [
+        "...thank you. I do maintain standards out here. Someone has to.",
+        "I appreciate that. It's not easy keeping a pressed uniform on a relay station.",
+        "Finally. Someone notices. The last three operators never once acknowledged the effort."
+      ],
+      "after_captain_dream": [
+        "Since you asked \u2014 I scored 97th percentile on the navigation exam. 97th. And they put me here. Answering calls from moon farmers.",
+        "You want to know about that? Most people don't ask. I had a full deep-space posting lined up. Politics. That's all I'll say.",
+        "It's fine. I've filed the appeals. All twelve of them. One will land eventually."
+      ],
+      "after_listen_rant": [
+        "...anyway. That's enough of that. What do you actually need.",
+        "I appreciate you letting me finish. Most operators just hang up.",
+        "Right. Sorry. It builds up out here."
+      ],
+      "after_rush_order": [
+        "A RUSH order. Do you have any idea what that does to my scheduling.",
+        "Fine. FINE. But this goes in my log. And your pricing reflects my inconvenience.",
+        "Rush processed. You're welcome. My mood does not thank you."
+      ],
+      "after_dismissive": [
+        "Charming. I'll remember that next time you need a favor.",
+        "Noted. Enjoy the markup.",
+        "Right. Well. I'll just add that to the list."
+      ],
+      "after_share_news": [
+        "Hm. That's actually mildly interesting. Carry on.",
+        "I see. The moon farming life. Riveting.",
+        "Sure. Yes. Thanks for the update on your vegetables."
+      ],
+      "ship_window_reminder": [
+        "Pickup is Week {week}. Have your cargo ready or I'm leaving without it. I have a schedule.",
+        "Reminder: ship window opens Week {week}. Don't come crying to me if your silos are empty. \u2014 Kovacs",
+        "Week {week} pickup approaching. I'll be overhead at the scheduled time. Whether you're ready is your problem."
+      ],
+      "ship_confirmed": [
+        "Cargo received. {volume}m\u00b3 logged. Star-Scrip transfer processing. Next window: Week {next_week}.",
+        "Shipment away. {volume}m\u00b3. You'll see the scrip next cycle. Try to have more next time.",
+        "Received. {volume}m\u00b3. Logged. Transferred. I've filed the manifest. You're welcome."
+      ],
+      "rush_ship_confirmed": [
+        "Rush shipment processed. {volume}m\u00b3. The surcharge reflects my feelings about this. \u2014 Kovacs",
+        "Done. Rush fee applied. I hope whatever was so urgent was worth it."
+      ],
+      "no_cargo": [
+        "You called me up here with an empty manifest. I have noted this in my personal log.",
+        "Nothing to ship. Wasted trip. I'm adjusting my opinion of you accordingly."
+      ],
+      "contract_turnin": [
+        "Contract fulfilled. {crop} delivery confirmed \u2014 {amount} units. Bonus scrip transferred. The colony is mildly pleased.",
+        "Logged. {crop} contract closed. Bonus paid. Don't spend it all on seeds."
+      ],
+      "buy_confirmed": [
+        "Order placed. Delivery on next drop \u2014 Week {week}. Don't complain about the prices. I don't set them.",
+        "Purchased. Arrives Week {week}. You're welcome."
+      ]
+    }
   },
   "fauna": {
     "raid_warning_weeks_before": 2,
@@ -1114,5 +1194,600 @@
     "Pinnacle Agro-Dome",
     "Nexus Botany Lab",
     "The Station Supply Depot"
-  ]
+  ],
+  "ship_schedule": {
+    "first_window_week": 4,
+    "interval_weeks": 4,
+    "reminder_weeks_before": 1,
+    "rush_shipment_mood_penalty": -20,
+    "rush_shipment_price_cut": 0.15
+  },
+  "water_purifier": {
+    "levels": [
+      {
+        "level": 1,
+        "name": "Water Purifier Mk1",
+        "cost_scrip": 300,
+        "cost_metals": 15,
+        "power_draw_kwh": 3,
+        "output_water_per_week": 10
+      },
+      {
+        "level": 2,
+        "name": "Water Purifier Mk2",
+        "cost_scrip": 700,
+        "cost_metals": 30,
+        "power_draw_kwh": 5,
+        "output_water_per_week": 25
+      },
+      {
+        "level": 3,
+        "name": "Water Purifier Mk3",
+        "cost_scrip": 1500,
+        "cost_metals": 60,
+        "power_draw_kwh": 8,
+        "output_water_per_week": 50
+      },
+      {
+        "level": 4,
+        "name": "Water Purifier Mk4",
+        "cost_scrip": 3000,
+        "cost_metals": 120,
+        "power_draw_kwh": 12,
+        "output_water_per_week": 100
+      },
+      {
+        "level": 5,
+        "name": "Water Purifier Mk5",
+        "cost_scrip": 6000,
+        "cost_metals": 240,
+        "power_draw_kwh": 18,
+        "output_water_per_week": 200
+      }
+    ],
+    "base_passive_output": 0,
+    "starting_level": 1
+  },
+  "starting_buildings": {
+    "refinery_tier": 1,
+    "note": "All players start with a basic refinery pre-built"
+  },
+  "refinery_machines": {
+    "composter": {
+      "name": "Composter",
+      "emoji": "\u267b\ufe0f",
+      "starting_level": 1,
+      "is_free_start": true,
+      "unlock_condition": "always",
+      "levels": [
+        {
+          "level": 1,
+          "upgrade_cost_scrip": 0,
+          "upgrade_cost_metals": 0,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 1,
+          "batch_size": 1
+        },
+        {
+          "level": 2,
+          "upgrade_cost_scrip": 131,
+          "upgrade_cost_metals": 11,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 2,
+          "batch_size": 2
+        },
+        {
+          "level": 3,
+          "upgrade_cost_scrip": 232,
+          "upgrade_cost_metals": 18,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 3,
+          "batch_size": 3
+        },
+        {
+          "level": 4,
+          "upgrade_cost_scrip": 348,
+          "upgrade_cost_metals": 26,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 4,
+          "batch_size": 4
+        },
+        {
+          "level": 5,
+          "upgrade_cost_scrip": 475,
+          "upgrade_cost_metals": 34,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 5,
+          "batch_size": 5
+        },
+        {
+          "level": 6,
+          "upgrade_cost_scrip": 614,
+          "upgrade_cost_metals": 42,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 6,
+          "batch_size": 6
+        },
+        {
+          "level": 7,
+          "upgrade_cost_scrip": 762,
+          "upgrade_cost_metals": 51,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 7,
+          "batch_size": 7
+        },
+        {
+          "level": 8,
+          "upgrade_cost_scrip": 918,
+          "upgrade_cost_metals": 60,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 8,
+          "batch_size": 8
+        },
+        {
+          "level": 9,
+          "upgrade_cost_scrip": 1083,
+          "upgrade_cost_metals": 69,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 9,
+          "batch_size": 9
+        },
+        {
+          "level": 10,
+          "upgrade_cost_scrip": 1255,
+          "upgrade_cost_metals": 79,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 10,
+          "batch_size": 10
+        }
+      ]
+    },
+    "smelter": {
+      "name": "Smelter",
+      "emoji": "\ud83d\udd25",
+      "starting_level": 1,
+      "is_free_start": true,
+      "unlock_condition": "always",
+      "levels": [
+        {
+          "level": 1,
+          "upgrade_cost_scrip": 0,
+          "upgrade_cost_metals": 0,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 2,
+          "batch_size": 1
+        },
+        {
+          "level": 2,
+          "upgrade_cost_scrip": 211,
+          "upgrade_cost_metals": 18,
+          "upgrade_cost_components": 4,
+          "power_draw_kwh": 3,
+          "batch_size": 2
+        },
+        {
+          "level": 3,
+          "upgrade_cost_scrip": 372,
+          "upgrade_cost_metals": 29,
+          "upgrade_cost_components": 6,
+          "power_draw_kwh": 4,
+          "batch_size": 3
+        },
+        {
+          "level": 4,
+          "upgrade_cost_scrip": 557,
+          "upgrade_cost_metals": 42,
+          "upgrade_cost_components": 8,
+          "power_draw_kwh": 5,
+          "batch_size": 4
+        },
+        {
+          "level": 5,
+          "upgrade_cost_scrip": 761,
+          "upgrade_cost_metals": 55,
+          "upgrade_cost_components": 10,
+          "power_draw_kwh": 6,
+          "batch_size": 5
+        },
+        {
+          "level": 6,
+          "upgrade_cost_scrip": 982,
+          "upgrade_cost_metals": 68,
+          "upgrade_cost_components": 12,
+          "power_draw_kwh": 7,
+          "batch_size": 6
+        },
+        {
+          "level": 7,
+          "upgrade_cost_scrip": 1219,
+          "upgrade_cost_metals": 82,
+          "upgrade_cost_components": 14,
+          "power_draw_kwh": 8,
+          "batch_size": 7
+        },
+        {
+          "level": 8,
+          "upgrade_cost_scrip": 1470,
+          "upgrade_cost_metals": 97,
+          "upgrade_cost_components": 16,
+          "power_draw_kwh": 9,
+          "batch_size": 8
+        },
+        {
+          "level": 9,
+          "upgrade_cost_scrip": 1733,
+          "upgrade_cost_metals": 111,
+          "upgrade_cost_components": 18,
+          "power_draw_kwh": 10,
+          "batch_size": 9
+        },
+        {
+          "level": 10,
+          "upgrade_cost_scrip": 2009,
+          "upgrade_cost_metals": 126,
+          "upgrade_cost_components": 20,
+          "power_draw_kwh": 11,
+          "batch_size": 10
+        }
+      ]
+    },
+    "z_soil_processor": {
+      "name": "Z-Soil Processor",
+      "emoji": "\ud83c\udf31",
+      "starting_level": 0,
+      "is_free_start": false,
+      "unlock_condition": "always",
+      "build_cost_scrip": 300,
+      "build_cost_metals": 20,
+      "build_cost_components": 5,
+      "levels": [
+        {
+          "level": 1,
+          "upgrade_cost_scrip": 0,
+          "upgrade_cost_metals": 0,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 3,
+          "batch_size": 1
+        },
+        {
+          "level": 2,
+          "upgrade_cost_scrip": 263,
+          "upgrade_cost_metals": 22,
+          "upgrade_cost_components": 6,
+          "power_draw_kwh": 4,
+          "batch_size": 2
+        },
+        {
+          "level": 3,
+          "upgrade_cost_scrip": 465,
+          "upgrade_cost_metals": 37,
+          "upgrade_cost_components": 9,
+          "power_draw_kwh": 5,
+          "batch_size": 3
+        },
+        {
+          "level": 4,
+          "upgrade_cost_scrip": 696,
+          "upgrade_cost_metals": 52,
+          "upgrade_cost_components": 12,
+          "power_draw_kwh": 6,
+          "batch_size": 4
+        },
+        {
+          "level": 5,
+          "upgrade_cost_scrip": 951,
+          "upgrade_cost_metals": 68,
+          "upgrade_cost_components": 15,
+          "power_draw_kwh": 7,
+          "batch_size": 5
+        },
+        {
+          "level": 6,
+          "upgrade_cost_scrip": 1228,
+          "upgrade_cost_metals": 85,
+          "upgrade_cost_components": 18,
+          "power_draw_kwh": 8,
+          "batch_size": 6
+        },
+        {
+          "level": 7,
+          "upgrade_cost_scrip": 1524,
+          "upgrade_cost_metals": 103,
+          "upgrade_cost_components": 21,
+          "power_draw_kwh": 9,
+          "batch_size": 7
+        },
+        {
+          "level": 8,
+          "upgrade_cost_scrip": 1837,
+          "upgrade_cost_metals": 121,
+          "upgrade_cost_components": 24,
+          "power_draw_kwh": 10,
+          "batch_size": 8
+        },
+        {
+          "level": 9,
+          "upgrade_cost_scrip": 2167,
+          "upgrade_cost_metals": 139,
+          "upgrade_cost_components": 27,
+          "power_draw_kwh": 11,
+          "batch_size": 9
+        },
+        {
+          "level": 10,
+          "upgrade_cost_scrip": 2511,
+          "upgrade_cost_metals": 158,
+          "upgrade_cost_components": 30,
+          "power_draw_kwh": 12,
+          "batch_size": 10
+        }
+      ]
+    },
+    "glass_furnace": {
+      "name": "Glass Furnace",
+      "emoji": "\ud83e\ude9f",
+      "starting_level": 0,
+      "is_free_start": false,
+      "unlock_condition": "always",
+      "build_cost_scrip": 400,
+      "build_cost_metals": 25,
+      "build_cost_components": 8,
+      "levels": [
+        {
+          "level": 1,
+          "upgrade_cost_scrip": 0,
+          "upgrade_cost_metals": 0,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 2,
+          "batch_size": 1
+        },
+        {
+          "level": 2,
+          "upgrade_cost_scrip": 316,
+          "upgrade_cost_metals": 27,
+          "upgrade_cost_components": 8,
+          "power_draw_kwh": 3,
+          "batch_size": 2
+        },
+        {
+          "level": 3,
+          "upgrade_cost_scrip": 558,
+          "upgrade_cost_metals": 44,
+          "upgrade_cost_components": 12,
+          "power_draw_kwh": 4,
+          "batch_size": 3
+        },
+        {
+          "level": 4,
+          "upgrade_cost_scrip": 835,
+          "upgrade_cost_metals": 63,
+          "upgrade_cost_components": 16,
+          "power_draw_kwh": 5,
+          "batch_size": 4
+        },
+        {
+          "level": 5,
+          "upgrade_cost_scrip": 1142,
+          "upgrade_cost_metals": 82,
+          "upgrade_cost_components": 20,
+          "power_draw_kwh": 6,
+          "batch_size": 5
+        },
+        {
+          "level": 6,
+          "upgrade_cost_scrip": 1474,
+          "upgrade_cost_metals": 103,
+          "upgrade_cost_components": 24,
+          "power_draw_kwh": 7,
+          "batch_size": 6
+        },
+        {
+          "level": 7,
+          "upgrade_cost_scrip": 1829,
+          "upgrade_cost_metals": 123,
+          "upgrade_cost_components": 28,
+          "power_draw_kwh": 8,
+          "batch_size": 7
+        },
+        {
+          "level": 8,
+          "upgrade_cost_scrip": 2205,
+          "upgrade_cost_metals": 145,
+          "upgrade_cost_components": 32,
+          "power_draw_kwh": 9,
+          "batch_size": 8
+        },
+        {
+          "level": 9,
+          "upgrade_cost_scrip": 2600,
+          "upgrade_cost_metals": 167,
+          "upgrade_cost_components": 36,
+          "power_draw_kwh": 10,
+          "batch_size": 9
+        },
+        {
+          "level": 10,
+          "upgrade_cost_scrip": 3014,
+          "upgrade_cost_metals": 190,
+          "upgrade_cost_components": 40,
+          "power_draw_kwh": 11,
+          "batch_size": 10
+        }
+      ]
+    },
+    "component_fabricator": {
+      "name": "Component Fabricator",
+      "emoji": "\u2699\ufe0f",
+      "starting_level": 0,
+      "is_free_start": false,
+      "unlock_condition": "always",
+      "build_cost_scrip": 600,
+      "build_cost_metals": 40,
+      "build_cost_components": 10,
+      "levels": [
+        {
+          "level": 1,
+          "upgrade_cost_scrip": 0,
+          "upgrade_cost_metals": 0,
+          "upgrade_cost_components": 0,
+          "power_draw_kwh": 4,
+          "batch_size": 1
+        },
+        {
+          "level": 2,
+          "upgrade_cost_scrip": 527,
+          "upgrade_cost_metals": 45,
+          "upgrade_cost_components": 16,
+          "power_draw_kwh": 5,
+          "batch_size": 2
+        },
+        {
+          "level": 3,
+          "upgrade_cost_scrip": 931,
+          "upgrade_cost_metals": 74,
+          "upgrade_cost_components": 24,
+          "power_draw_kwh": 6,
+          "batch_size": 3
+        },
+        {
+          "level": 4,
+          "upgrade_cost_scrip": 1392,
+          "upgrade_cost_metals": 105,
+          "upgrade_cost_components": 32,
+          "power_draw_kwh": 7,
+          "batch_size": 4
+        },
+        {
+          "level": 5,
+          "upgrade_cost_scrip": 1903,
+          "upgrade_cost_metals": 137,
+          "upgrade_cost_components": 40,
+          "power_draw_kwh": 8,
+          "batch_size": 5
+        },
+        {
+          "level": 6,
+          "upgrade_cost_scrip": 2457,
+          "upgrade_cost_metals": 171,
+          "upgrade_cost_components": 48,
+          "power_draw_kwh": 9,
+          "batch_size": 6
+        },
+        {
+          "level": 7,
+          "upgrade_cost_scrip": 3049,
+          "upgrade_cost_metals": 206,
+          "upgrade_cost_components": 56,
+          "power_draw_kwh": 10,
+          "batch_size": 7
+        },
+        {
+          "level": 8,
+          "upgrade_cost_scrip": 3675,
+          "upgrade_cost_metals": 242,
+          "upgrade_cost_components": 64,
+          "power_draw_kwh": 11,
+          "batch_size": 8
+        },
+        {
+          "level": 9,
+          "upgrade_cost_scrip": 4334,
+          "upgrade_cost_metals": 279,
+          "upgrade_cost_components": 72,
+          "power_draw_kwh": 12,
+          "batch_size": 9
+        },
+        {
+          "level": 10,
+          "upgrade_cost_scrip": 5023,
+          "upgrade_cost_metals": 316,
+          "upgrade_cost_components": 80,
+          "power_draw_kwh": 13,
+          "batch_size": 10
+        }
+      ]
+    }
+  },
+  "operations_buildings": {
+    "power": {
+      "solar_array": {
+        "name": "Solar Array",
+        "emoji": "\u2600\ufe0f",
+        "description": "Cheap, reliable daytime power. Good starting option.",
+        "cost_scrip": 100,
+        "cost_metals": 5,
+        "cost_glass": 3,
+        "power_output_kwh": 20
+      },
+      "wind_turbine": {
+        "name": "Wind Turbine",
+        "emoji": "\ud83c\udf2c\ufe0f",
+        "description": "Steady output from lunar surface winds.",
+        "cost_scrip": 350,
+        "cost_metals": 20,
+        "cost_components": 3,
+        "power_output_kwh": 45
+      },
+      "geothermal_tap": {
+        "name": "Geothermal Core Tap",
+        "emoji": "\ud83c\udf0b",
+        "description": "Massive output. Expensive to build.",
+        "cost_scrip": 2000,
+        "cost_metals": 100,
+        "cost_components": 20,
+        "power_output_kwh": 200
+      }
+    },
+    "mining_drone": {
+      "name": "Harvesting Drone",
+      "emoji": "\ud83e\udd16",
+      "description": "Assign to Moon Dirt, Ore, or Sand. Returns resources each week.",
+      "cost_scrip": 250,
+      "cost_metals": 15,
+      "cost_components": 5,
+      "output_per_week": 8.0,
+      "valid_targets": [
+        "moon_dirt",
+        "ore",
+        "sand"
+      ]
+    },
+    "laser_sentry": {
+      "levels": [
+        {
+          "level": 1,
+          "name": "Sentry Mk1",
+          "cost_scrip": 200,
+          "cost_metals": 15,
+          "cost_components": 5,
+          "power_draw_kwh": 2,
+          "damage": 10,
+          "fire_rate": 1,
+          "range": 2
+        },
+        {
+          "level": 2,
+          "name": "Sentry Mk2",
+          "cost_scrip": 500,
+          "cost_metals": 35,
+          "cost_components": 15,
+          "power_draw_kwh": 3,
+          "damage": 25,
+          "fire_rate": 2,
+          "range": 3
+        },
+        {
+          "level": 3,
+          "name": "Sentry Mk3",
+          "cost_scrip": 1200,
+          "cost_metals": 80,
+          "cost_components": 35,
+          "power_draw_kwh": 5,
+          "damage": 50,
+          "fire_rate": 3,
+          "range": 4
+        }
+      ]
+    }
+  }
 }

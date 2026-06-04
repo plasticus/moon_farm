@@ -20,7 +20,6 @@
 
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
-import '../utils/game_factory.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -39,6 +38,47 @@ class EndWeekEngine {
     final resourceChanges = <String, double>{};
 
     var s = state;
+
+    // ── Step 0: Water purifier passive output ────────────────────────────────
+    final waterOutput = _config.getWaterOutputForLevel(s.waterPurifierLevel);
+    if (waterOutput > 0) {
+      s = s.copyWith(
+        resources: s.resources.copyWith(
+          water: s.resources.water + waterOutput,
+        ),
+      );
+      events.add('💧 Water purifier output: +${waterOutput}L');
+    }
+
+    // ── Step 0b: Mining drone output ─────────────────────────────────────────
+    if (s.miningDrones.isNotEmpty) {
+      var moonDirt = 0.0;
+      var ore = 0.0;
+      var sand = 0.0;
+      for (final drone in s.miningDrones) {
+        if (drone.assignedResource == null) continue;
+        switch (drone.assignedResource!) {
+          case 'moon_dirt': moonDirt += drone.outputPerWeek;
+          case 'ore': ore += drone.outputPerWeek;
+          case 'sand': sand += drone.outputPerWeek;
+        }
+      }
+      if (moonDirt > 0 || ore > 0 || sand > 0) {
+        s = s.copyWith(
+          resources: s.resources.copyWith(
+            moonDirt: s.resources.moonDirt + moonDirt,
+            ore: s.resources.ore + ore,
+            sand: s.resources.sand + sand,
+          ),
+        );
+        final droneSummary = [
+          if (moonDirt > 0) '+${moonDirt.toInt()} Moon Dirt',
+          if (ore > 0) '+${ore.toInt()} Ore',
+          if (sand > 0) '+${sand.toInt()} Sand',
+        ].join(', ');
+        events.add('⛏️ Mining drones: $droneSummary');
+      }
+    }
 
     // ── Step 1: Process pending sales ─────────────────────────────────────
     if (s.pendingSales.isNotEmpty) {
@@ -63,6 +103,7 @@ class EndWeekEngine {
     // ── Step 2: Robot actions ──────────────────────────────────────────────
     final updatedDomesAfterRobots = <Dome>[];
     var resourcesAfterRobots = s.resources;
+    final siloUpdates = <String, double>{};  // robot harvests → silo
 
     for (final dome in s.domes) {
       if (dome.robot == null || dome.robot!.state == RobotState.offline) {
@@ -98,13 +139,19 @@ class EndWeekEngine {
           }
         }
 
-        // Harvest ready crops
+        // Harvest ready crops → deposit to silo
         if (robot.canHarvest && cell.state == CropState.ready) {
-          final result = _harvestCell(cell, resourcesAfterRobots, s);
-          resourcesAfterRobots = result.$1;
-          updatedCells[i] = result.$2;
-          cropsHarvested++;
-          actions.add('harvested');
+          final cropId = cell.cropId!;
+          final crop = _config.getCrop(cropId);
+          if (crop != null) {
+            siloUpdates[cropId] = (siloUpdates[cropId] ?? 0) + 1.0;
+            resourcesAfterRobots = resourcesAfterRobots.copyWith(
+              seeds: resourcesAfterRobots.seeds + 1,
+            );
+            cropsHarvested++;
+            actions.add('harvested ${crop.name}');
+          }
+          updatedCells[i] = cell.cleared();
         }
       }
 
@@ -162,9 +209,16 @@ class EndWeekEngine {
       ));
     }
 
+    // Merge robot harvest into silo inventory
+    final siloAfterRobots = Map<String, double>.from(s.siloInventory);
+    for (final entry in siloUpdates.entries) {
+      siloAfterRobots[entry.key] = (siloAfterRobots[entry.key] ?? 0) + entry.value;
+    }
+
     s = s.copyWith(
       domes: updatedDomesAfterRobots,
       resources: resourcesAfterRobots,
+      siloInventory: siloAfterRobots,
     );
 
     // ── Step 3 & 4: Crop growth + decay ───────────────────────────────────
@@ -315,6 +369,7 @@ class EndWeekEngine {
       relay: s.relay.copyWith(
         mood: (s.relay.mood - moodDecay).clamp(0, 100),
         contractsRefreshedThisWeek: false,
+        conversationDoneThisWeek: false,  // reset so player must talk again
       ),
     );
 
@@ -351,47 +406,6 @@ class EndWeekEngine {
     return (s, summary);
   }
 
-  // ─── Harvest a single cell ────────────────────────────────────────────────
-
-  (Resources, CropCell) _harvestCell(CropCell cell, Resources resources, GameState state) {
-    final crop = _config.getCrop(cell.cropId ?? '');
-    if (crop == null) {
-      return (resources, cell.cleared());
-    }
-
-    var updatedResources = resources;
-
-    // Award resource yields (cyber-organic crops)
-    if (crop.yieldsResource != null) {
-      switch (crop.yieldsResource!) {
-        case 'metals':
-          updatedResources = updatedResources.copyWith(
-            metals: updatedResources.metals + crop.resourceYieldAmount,
-          );
-        case 'sand':
-          updatedResources = updatedResources.copyWith(
-            sand: updatedResources.sand + crop.resourceYieldAmount,
-          );
-        case 'components':
-          updatedResources = updatedResources.copyWith(
-            components: updatedResources.components + crop.resourceYieldAmount,
-          );
-        case 'power_kwh':
-        // Battery bulbs give instant power boost — handled as scrip bonus
-          updatedResources = updatedResources.copyWith(
-            starScrip: updatedResources.starScrip + crop.resourceYieldAmount,
-          );
-      }
-    }
-
-    // Add to seeds (10% chance of seed return per harvest)
-    // Simple: every harvest returns 1 seed
-    updatedResources = updatedResources.copyWith(
-      seeds: updatedResources.seeds + 1,
-    );
-
-    return (updatedResources, cell.cleared());
-  }
 
   // ─── Trophy checker ───────────────────────────────────────────────────────
 

@@ -78,6 +78,7 @@ class GameState {
   final List<Refinery> refineries;
   final List<PowerSource> powerSources;
   final List<LaserSentry> laserSentries;
+  final List<MiningDrone> miningDrones;
   final List<Contract> activeContracts;
   final List<Contract> completedContracts;
   final List<Milestone> milestones;
@@ -92,6 +93,10 @@ class GameState {
   final int nextRaidWeek;
   final bool raidDefendedThisWeek;
   final List<PendingSale> pendingSales;
+  final Map<String, double> siloInventory; // cropId -> units in silo
+  final int shipmentsThisWindow;           // resets each ship window
+  final int nextShipWindowWeek;            // next week player can ship
+  final int waterPurifierLevel;            // 0 = no purifier
   final DateTime lastSaved;
 
   const GameState({
@@ -108,6 +113,7 @@ class GameState {
     required this.refineries,
     required this.powerSources,
     required this.laserSentries,
+    required this.miningDrones,
     required this.activeContracts,
     required this.completedContracts,
     required this.milestones,
@@ -122,6 +128,10 @@ class GameState {
     required this.nextRaidWeek,
     required this.raidDefendedThisWeek,
     required this.pendingSales,
+    required this.siloInventory,
+    required this.shipmentsThisWindow,
+    required this.nextShipWindowWeek,
+    required this.waterPurifierLevel,
     required this.lastSaved,
   });
 
@@ -139,6 +149,7 @@ class GameState {
     List<Refinery>? refineries,
     List<PowerSource>? powerSources,
     List<LaserSentry>? laserSentries,
+    List<MiningDrone>? miningDrones,
     List<Contract>? activeContracts,
     List<Contract>? completedContracts,
     List<Milestone>? milestones,
@@ -153,6 +164,10 @@ class GameState {
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
     List<PendingSale>? pendingSales,
+    Map<String, double>? siloInventory,
+    int? shipmentsThisWindow,
+    int? nextShipWindowWeek,
+    int? waterPurifierLevel,
     DateTime? lastSaved,
   }) {
     return GameState(
@@ -169,6 +184,7 @@ class GameState {
       refineries: refineries ?? this.refineries,
       powerSources: powerSources ?? this.powerSources,
       laserSentries: laserSentries ?? this.laserSentries,
+      miningDrones: miningDrones ?? this.miningDrones,
       activeContracts: activeContracts ?? this.activeContracts,
       completedContracts: completedContracts ?? this.completedContracts,
       milestones: milestones ?? this.milestones,
@@ -184,6 +200,10 @@ class GameState {
       nextRaidWeek: nextRaidWeek ?? this.nextRaidWeek,
       raidDefendedThisWeek: raidDefendedThisWeek ?? this.raidDefendedThisWeek,
       pendingSales: pendingSales ?? this.pendingSales,
+      siloInventory: siloInventory ?? this.siloInventory,
+      shipmentsThisWindow: shipmentsThisWindow ?? this.shipmentsThisWindow,
+      nextShipWindowWeek: nextShipWindowWeek ?? this.nextShipWindowWeek,
+      waterPurifierLevel: waterPurifierLevel ?? this.waterPurifierLevel,
       lastSaved: lastSaved ?? this.lastSaved,
     );
   }
@@ -222,6 +242,17 @@ class GameState {
       silos.fold(0, (sum, s) => sum + s.usedCubicMeters);
   double get availableSiloCapacity => totalSiloCapacity - usedSiloCapacity;
   bool get silosNearFull => availableSiloCapacity < totalSiloCapacity * 0.1;
+
+  // Total units across all silo inventory
+  double get totalSiloUnits =>
+      siloInventory.values.fold(0, (sum, v) => sum + v);
+
+  // Is a ship window currently open?
+  bool get isShipWindowOpen => currentWeek >= nextShipWindowWeek;
+
+  // Weeks until next ship window
+  int get weeksToNextShipWindow =>
+      isShipWindowOpen ? 0 : nextShipWindowWeek - currentWeek;
 }
 
 // ─── Resources ────────────────────────────────────────────────────────────────
@@ -515,12 +546,14 @@ class Refinery {
   final int tier;
   final int powerDraw;
   final List<String> unlockedRecipes;
+  final List<RefineryMachine> machines;
 
   const Refinery({
     required this.id,
     required this.tier,
     required this.powerDraw,
     required this.unlockedRecipes,
+    this.machines = const [],
   });
 
   Refinery copyWith({
@@ -528,14 +561,110 @@ class Refinery {
     int? tier,
     int? powerDraw,
     List<String>? unlockedRecipes,
+    List<RefineryMachine>? machines,
   }) {
     return Refinery(
       id: id ?? this.id,
       tier: tier ?? this.tier,
       powerDraw: powerDraw ?? this.powerDraw,
       unlockedRecipes: unlockedRecipes ?? this.unlockedRecipes,
+      machines: machines ?? this.machines,
     );
   }
+}
+
+// ─── Refinery Machine ─────────────────────────────────────────────────────────
+
+enum MachineType { composter, smelter, zSoilProcessor, glassFurnace, componentFabricator }
+
+class RefineryMachine {
+  final MachineType type;
+  final int level; // 1-10
+  final int powerDraw;
+
+  const RefineryMachine({
+    required this.type,
+    required this.level,
+    required this.powerDraw,
+  });
+
+  // Batch size scales with level: Mk1=1, Mk3=3, Mk5=5, Mk10=10
+  int get batchSize => level;
+
+  String get name => switch (type) {
+    MachineType.composter => 'Composter',
+    MachineType.smelter => 'Smelter',
+    MachineType.zSoilProcessor => 'Z-Soil Processor',
+    MachineType.glassFurnace => 'Glass Furnace',
+    MachineType.componentFabricator => 'Component Fabricator',
+  };
+
+  String get emoji => switch (type) {
+    MachineType.composter => '♻️',
+    MachineType.smelter => '🔥',
+    MachineType.zSoilProcessor => '🌱',
+    MachineType.glassFurnace => '🪟',
+    MachineType.componentFabricator => '⚙️',
+  };
+
+  // Input per single batch at Mk1 (multiply by batchSize for actual craft)
+  Map<String, double> get inputsPerBatch => switch (type) {
+    MachineType.composter => {'compost': 8},
+    MachineType.smelter => {'ore': 3},
+    MachineType.zSoilProcessor => {'moon_dirt': 5, 'chemicals': 2, 'water': 3},
+    MachineType.glassFurnace => {'sand': 4},
+    MachineType.componentFabricator => {'metals': 3, 'chemicals': 1},
+  };
+
+  // Output per single batch at Mk1 (multiply by batchSize)
+  Map<String, double> get outputsPerBatch => switch (type) {
+    MachineType.composter => {'z_soil': 5},
+    MachineType.smelter => {'metals': 2},
+    MachineType.zSoilProcessor => {'z_soil': 4},
+    MachineType.glassFurnace => {'glass': 3},
+    MachineType.componentFabricator => {'components': 2},
+  };
+
+  RefineryMachine copyWith({int? level, int? powerDraw}) {
+    return RefineryMachine(
+      type: type,
+      level: level ?? this.level,
+      powerDraw: powerDraw ?? this.powerDraw,
+    );
+  }
+}
+
+// ─── Mining Drone ────────────────────────────────────────────────────────────
+
+class MiningDrone {
+  final String id;
+  final String? assignedResource; // 'moon_dirt', 'ore', 'sand', or null (idle)
+  final double outputPerWeek;
+
+  const MiningDrone({
+    required this.id,
+    this.assignedResource,
+    required this.outputPerWeek,
+  });
+
+  bool get isIdle => assignedResource == null;
+
+  String get assignedLabel => switch (assignedResource) {
+    'moon_dirt' => 'Moon Dirt',
+    'ore' => 'Ore',
+    'sand' => 'Sand',
+    _ => 'Idle',
+  };
+
+  MiningDrone copyWith({String? id, String? assignedResource, double? outputPerWeek}) {
+    return MiningDrone(
+      id: id ?? this.id,
+      assignedResource: assignedResource,
+      outputPerWeek: outputPerWeek ?? this.outputPerWeek,
+    );
+  }
+
+  MiningDrone unassign() => MiningDrone(id: id, assignedResource: null, outputPerWeek: outputPerWeek);
 }
 
 // ─── Power Source ─────────────────────────────────────────────────────────────
@@ -666,6 +795,22 @@ class Contract {
   }
 }
 
+// ─── Contract Submission ─────────────────────────────────────────────────────
+
+class ContractSubmission {
+  final String contractId;
+  final String cropId;
+  final double amount;
+  final int weekSubmitted;
+
+  const ContractSubmission({
+    required this.contractId,
+    required this.cropId,
+    required this.amount,
+    required this.weekSubmitted,
+  });
+}
+
 // ─── Milestone ────────────────────────────────────────────────────────────────
 
 class Milestone {
@@ -741,12 +886,16 @@ class RelayTechnicianState {
   final List<String> seenRantTopics;
   final List<String> availableContracts; // 3 contract options
   final bool contractsRefreshedThisWeek;
+  final Set<String> unlockedTopicIds;
+  final bool conversationDoneThisWeek;
 
   const RelayTechnicianState({
     required this.mood,
     required this.seenRantTopics,
     required this.availableContracts,
     required this.contractsRefreshedThisWeek,
+    this.unlockedTopicIds = const {},
+    this.conversationDoneThisWeek = false,
   });
 
   String get moodLabel {
@@ -770,6 +919,8 @@ class RelayTechnicianState {
     List<String>? seenRantTopics,
     List<String>? availableContracts,
     bool? contractsRefreshedThisWeek,
+    Set<String>? unlockedTopicIds,
+    bool? conversationDoneThisWeek,
   }) {
     return RelayTechnicianState(
       mood: (mood ?? this.mood).clamp(0, 100),
@@ -777,6 +928,9 @@ class RelayTechnicianState {
       availableContracts: availableContracts ?? this.availableContracts,
       contractsRefreshedThisWeek:
       contractsRefreshedThisWeek ?? this.contractsRefreshedThisWeek,
+      unlockedTopicIds: unlockedTopicIds ?? this.unlockedTopicIds,
+      conversationDoneThisWeek:
+      conversationDoneThisWeek ?? this.conversationDoneThisWeek,
     );
   }
 }
