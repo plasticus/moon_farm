@@ -1,6 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 //  lib/screens/operations/operations_screen.dart
 // ═══════════════════════════════════════════════════════════════
+// Power grid and mining drones.
+// Sentries moved to Habitat. Dome bots handled here.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
+import '../../utils/game_factory.dart';
 
 class OperationsScreen extends ConsumerWidget {
   const OperationsScreen({super.key});
@@ -20,16 +23,13 @@ class OperationsScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ── Power Grid ───────────────────────────────────────────────────
         _PowerSection(game: game, ref: ref),
         const SizedBox(height: 16),
-
-        // ── Mining Drones ────────────────────────────────────────────────
         _DroneSection(game: game, ref: ref),
         const SizedBox(height: 16),
-
-        // ── Sentry Defense ───────────────────────────────────────────────
-        _SentrySection(game: game, ref: ref),
+        _DomeBuildSection(game: game, ref: ref),
+        const SizedBox(height: 16),
+        _DomeBotSection(game: game, ref: ref),
       ],
     );
   }
@@ -40,7 +40,6 @@ class OperationsScreen extends ConsumerWidget {
 class _PowerSection extends StatelessWidget {
   final GameState game;
   final WidgetRef ref;
-
   const _PowerSection({required this.game, required this.ref});
 
   @override
@@ -48,40 +47,84 @@ class _PowerSection extends StatelessWidget {
     final config = GameConfigService.instance;
     final opsBuildings = config.getOperationsBuildings();
     final powerBuildings = opsBuildings['power'] as Map<String, dynamic>? ?? {};
-
     final surplus = game.powerSurplus;
-    final surplusColor =
-    surplus >= 0 ? MFColors.neonGreen : MFColors.neonPink;
+    final surplusColor = surplus >= 0 ? MFColors.neonGreen : MFColors.neonPink;
+
+    // Group power sources by type
+    final grouped = <PowerSourceType, int>{};
+    final outputByType = <PowerSourceType, int>{};
+    for (final p in game.powerSources) {
+      grouped[p.type] = (grouped[p.type] ?? 0) + 1;
+      outputByType[p.type] = (outputByType[p.type] ?? 0) + p.outputKwh;
+    }
 
     return _OpsCard(
       icon: '⚡',
       title: 'POWER GRID',
-      subtitle:
-      '${game.totalPowerProduction} KWh  −  ${game.totalPowerDraw} KWh  =  '
+      subtitle: '${game.totalPowerProduction} KWh produced  ·  '
+          '${game.totalPowerDraw} KWh drawn  ·  '
           '${surplus >= 0 ? '+' : ''}$surplus KWh',
       subtitleColor: surplusColor,
       children: [
-        // Current sources
-        if (game.powerSources.isNotEmpty) ...[
-          ...game.powerSources.map((p) => _PowerSourceRow(source: p)),
+        // Grouped existing sources
+        if (grouped.isNotEmpty) ...[
+          ...grouped.entries.map((entry) {
+            final count = entry.value;
+            final output = outputByType[entry.key] ?? 0;
+            final source = game.powerSources
+                .firstWhere((p) => p.type == entry.key);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Text(source.emoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      count > 1
+                          ? '${source.name} (×$count)'
+                          : source.name,
+                      style: MFTextStyles.bodyLarge,
+                    ),
+                  ),
+                  Text('+$output KWh',
+                      style: MFTextStyles.labelLarge
+                          .copyWith(color: MFColors.neonGreen)),
+                ],
+              ),
+            );
+          }),
           const Divider(height: 14),
         ],
 
         // Build options
         Text('BUILD POWER SOURCE',
-            style: MFTextStyles.bodySmall
-                .copyWith(color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
+            style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
         const SizedBox(height: 8),
         ...powerBuildings.entries.map((entry) {
           final b = entry.value as Map<String, dynamic>;
-          final costScrip = b['cost_scrip'] as int;
+          final costScrip = b['cost_scrip'] as int? ?? 0;
           final costMetals = b['cost_metals'] as int? ?? 0;
           final costGlass = b['cost_glass'] as int? ?? 0;
           final costComponents = b['cost_components'] as int? ?? 0;
+          final costMoonDirt = b['cost_moon_dirt'] as int? ?? 0;
+          final costCompost = b['cost_compost'] as int? ?? 0;
+
           final canAfford = game.resources.starScrip >= costScrip &&
               game.resources.metals >= costMetals &&
               game.resources.glass >= costGlass &&
-              game.resources.components >= costComponents;
+              game.resources.components >= costComponents &&
+              game.resources.moonDirt >= costMoonDirt &&
+              game.resources.compost >= costCompost;
+
+          final costParts = <String>[];
+          if (costScrip > 0) costParts.add('$costScrip 🎫');
+          if (costMetals > 0) costParts.add('$costMetals metals');
+          if (costGlass > 0) costParts.add('$costGlass glass');
+          if (costComponents > 0) costParts.add('$costComponents comp');
+          if (costMoonDirt > 0) costParts.add('$costMoonDirt dirt');
+          if (costCompost > 0) costParts.add('$costCompost compost');
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -89,10 +132,11 @@ class _PowerSection extends StatelessWidget {
               emoji: b['emoji'] as String,
               name: b['name'] as String,
               description: b['description'] as String,
-              costLine: _costLine(costScrip, costMetals, costGlass, costComponents),
+              costLine: costParts.join('  ·  '),
               outputLine: '+${b['power_output_kwh']} KWh',
               outputColor: MFColors.neonGreen,
               canAfford: canAfford,
+              missingText: _missingText(game, b),
               onBuild: () => _buildPower(context, entry.key, b, game),
             ),
           );
@@ -101,29 +145,33 @@ class _PowerSection extends StatelessWidget {
     );
   }
 
-  String _costLine(int scrip, int metals, int glass, int components) {
-    final parts = <String>['$scrip 🎫'];
-    if (metals > 0) parts.add('$metals metals');
-    if (glass > 0) parts.add('$glass glass');
-    if (components > 0) parts.add('$components components');
-    return parts.join('  ·  ');
-  }
-
-  void _buildPower(
-      BuildContext context,
-      String key,
-      Map<String, dynamic> b,
-      GameState game,
-      ) {
-    final costScrip = b['cost_scrip'] as int;
+  String _missingText(GameState game, Map<String, dynamic> b) {
+    final parts = <String>[];
+    final costScrip = b['cost_scrip'] as int? ?? 0;
     final costMetals = b['cost_metals'] as int? ?? 0;
     final costGlass = b['cost_glass'] as int? ?? 0;
-    final costComponents = b['cost_components'] as int? ?? 0;
+    final costMoonDirt = b['cost_moon_dirt'] as int? ?? 0;
+    final costCompost = b['cost_compost'] as int? ?? 0;
 
+    if (game.resources.starScrip < costScrip)
+      parts.add('${costScrip - game.resources.starScrip} more 🎫');
+    if (game.resources.metals < costMetals)
+      parts.add('${costMetals - game.resources.metals.toInt()} more metals');
+    if (game.resources.glass < costGlass)
+      parts.add('${costGlass - game.resources.glass.toInt()} more glass');
+    if (game.resources.moonDirt < costMoonDirt)
+      parts.add('${costMoonDirt - game.resources.moonDirt.toInt()} more dirt');
+    if (game.resources.compost < costCompost)
+      parts.add('${costCompost - game.resources.compost.toInt()} more compost');
+    return parts.isEmpty ? '' : 'Need: ${parts.join(', ')}';
+  }
+
+  void _buildPower(BuildContext context, String key, Map<String, dynamic> b, GameState game) {
     final type = switch (key) {
       'solar_array' => PowerSourceType.solarArray,
       'wind_turbine' => PowerSourceType.windTurbine,
       'geothermal_tap' => PowerSourceType.geothermalTap,
+      'biofuel_generator' => PowerSourceType.solarArray, // reuse slot
       _ => PowerSourceType.solarArray,
     };
 
@@ -137,37 +185,17 @@ class _PowerSection extends StatelessWidget {
       game.copyWith(
         powerSources: [...game.powerSources, newSource],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - costScrip,
-          metals: game.resources.metals - costMetals,
-          glass: game.resources.glass - costGlass,
-          components: game.resources.components - costComponents,
+          starScrip: game.resources.starScrip - (b['cost_scrip'] as int? ?? 0),
+          metals: game.resources.metals - (b['cost_metals'] as int? ?? 0),
+          glass: game.resources.glass - (b['cost_glass'] as int? ?? 0),
+          components: game.resources.components - (b['cost_components'] as int? ?? 0),
+          moonDirt: game.resources.moonDirt - (b['cost_moon_dirt'] as int? ?? 0),
+          compost: game.resources.compost - (b['cost_compost'] as int? ?? 0),
         ),
       ),
     );
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${b['emoji']} ${b['name']} built! +${b['power_output_kwh']} KWh')),
-    );
-  }
-}
-
-class _PowerSourceRow extends StatelessWidget {
-  final PowerSource source;
-  const _PowerSourceRow({required this.source});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Text(source.emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(source.name, style: MFTextStyles.bodyLarge)),
-          Text('+${source.outputKwh} KWh',
-              style: MFTextStyles.labelLarge.copyWith(color: MFColors.neonGreen)),
-        ],
-      ),
     );
   }
 }
@@ -177,86 +205,148 @@ class _PowerSourceRow extends StatelessWidget {
 class _DroneSection extends StatelessWidget {
   final GameState game;
   final WidgetRef ref;
-
   const _DroneSection({required this.game, required this.ref});
 
   @override
   Widget build(BuildContext context) {
     final config = GameConfigService.instance;
     final opsBuildings = config.getOperationsBuildings();
-    final droneConfig = opsBuildings['mining_drone'] as Map<String, dynamic>? ?? {};
-    final costScrip = droneConfig['cost_scrip'] as int? ?? 250;
-    final costMetals = droneConfig['cost_metals'] as int? ?? 15;
-    final costComponents = droneConfig['cost_components'] as int? ?? 5;
-    final outputPerWeek = (droneConfig['output_per_week'] as num?)?.toDouble() ?? 8.0;
-    final canAfford = game.resources.starScrip >= costScrip &&
-        game.resources.metals >= costMetals &&
-        game.resources.components >= costComponents;
+    final droneTiers = (opsBuildings['mining_drone']?['tiers'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
 
-    // Tally drone assignments
     final drones = game.miningDrones;
+    final balanced = drones.where((d) => d.isBalanced).length;
     final dirtCount = drones.where((d) => d.assignedResource == 'moon_dirt').length;
     final oreCount = drones.where((d) => d.assignedResource == 'ore').length;
     final sandCount = drones.where((d) => d.assignedResource == 'sand').length;
-    final idleCount = drones.where((d) => d.isIdle).length;
+    final chemCount = drones.where((d) => d.assignedResource == 'chemicals').length;
+
+    // Output per week summary
+    double totalOutput = drones.fold(0.0, (sum, d) => sum + d.outputPerWeek);
 
     return _OpsCard(
       icon: '⛏️',
       title: 'MINING DRONES',
       subtitle: '${drones.length} drones  ·  '
-          '${(dirtCount * outputPerWeek).toInt()} dirt  '
-          '${(oreCount * outputPerWeek).toInt()} ore  '
-          '${(sandCount * outputPerWeek).toInt()} sand / week',
+          '${totalOutput.toStringAsFixed(1)} units/wk total',
       subtitleColor: MFColors.textSecondary,
       children: [
-        // Assignment summary
+        // Current assignment summary
         if (drones.isNotEmpty) ...[
-          _AssignmentBar(
-            dirtCount: dirtCount,
-            oreCount: oreCount,
-            sandCount: sandCount,
-            idleCount: idleCount,
-            outputPerWeek: outputPerWeek,
-            onReassign: () => _showAssignmentDialog(context, game),
+          GestureDetector(
+            onTap: () => _showAssignmentDialog(context, game),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: MFColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: MFColors.borderDefault),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('ASSIGNMENTS',
+                          style: MFTextStyles.bodySmall.copyWith(
+                              color: MFColors.textMuted, letterSpacing: 1, fontSize: 9)),
+                      Text('TAP TO REASSIGN',
+                          style: MFTextStyles.bodySmall.copyWith(
+                              color: MFColors.neonCyan, fontSize: 9)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _AssignChip('⚖️', '$balanced', 'Balanced', MFColors.neonCyan),
+                      const SizedBox(width: 8),
+                      _AssignChip('🌑', '$dirtCount', 'Dirt', MFColors.textSecondary),
+                      const SizedBox(width: 8),
+                      _AssignChip('🪨', '$oreCount', 'Ore', MFColors.neonOrange),
+                      const SizedBox(width: 8),
+                      _AssignChip('🏖️', '$sandCount', 'Sand', MFColors.neonYellow),
+                      const SizedBox(width: 8),
+                      _AssignChip('⚗️', '$chemCount', 'Chem', MFColors.neonPurple),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
+
+          // Upgrade button if any Mk1/Mk2 drones exist
+          if (drones.any((d) => d.tier < 3)) ...[
+            const SizedBox(height: 8),
+            _UpgradeDroneButton(game: game, ref: ref, droneTiers: droneTiers),
+          ],
           const Divider(height: 14),
         ],
 
-        // Build drone
-        _BuildRow(
-          emoji: '🤖',
-          name: 'Harvesting Drone',
-          description: 'Assign to Moon Dirt, Ore, or Sand. '
-              '+${outputPerWeek.toInt()} units/wk when active.',
-          costLine: '$costScrip 🎫  ·  $costMetals metals  ·  $costComponents components',
-          outputLine: '+${outputPerWeek.toInt()}/wk',
-          outputColor: MFColors.neonOrange,
-          canAfford: canAfford,
-          onBuild: () => _buildDrone(context, costScrip, costMetals, costComponents, outputPerWeek, game),
-        ),
+        // Build new drone tiers
+        Text('BUILD DRONES',
+            style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
+        const SizedBox(height: 8),
+        ...droneTiers.map((tier) {
+          final costScrip = tier['cost_scrip'] as int;
+          final costMetals = tier['cost_metals'] as int;
+          final costComponents = tier['cost_components'] as int? ?? 0;
+          final canAfford = game.resources.starScrip >= costScrip &&
+              game.resources.metals >= costMetals &&
+              game.resources.components >= costComponents;
+
+          final costParts = ['$costScrip 🎫', '$costMetals metals'];
+          if (costComponents > 0) costParts.add('$costComponents comp');
+
+          final missing = <String>[];
+          if (game.resources.starScrip < costScrip)
+            missing.add('${costScrip - game.resources.starScrip} more 🎫');
+          if (game.resources.metals < costMetals)
+            missing.add('${costMetals - game.resources.metals.toInt()} more metals');
+          if (game.resources.components < costComponents)
+            missing.add('${costComponents - game.resources.components.toInt()} more comp');
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _BuildRow(
+              emoji: tier['emoji'] as String,
+              name: tier['name'] as String,
+              description: '${tier['output_per_week']}/wk  ·  ${tier['power_draw_kwh']} KWh',
+              costLine: costParts.join('  ·  '),
+              outputLine: 'Mk${tier['tier']}',
+              outputColor: MFColors.neonOrange,
+              canAfford: canAfford,
+              missingText: missing.isEmpty ? '' : 'Need: ${missing.join(', ')}',
+              onBuild: () => _buildDrone(context, tier, game),
+            ),
+          );
+        }),
       ],
     );
   }
 
-  void _buildDrone(BuildContext context, int costScrip, int costMetals,
-      int costComponents, double output, GameState game) {
+  void _buildDrone(BuildContext context, Map<String, dynamic> tier, GameState game) {
     final newDrone = MiningDrone(
       id: 'drone_${DateTime.now().millisecondsSinceEpoch}',
-      assignedResource: null,
-      outputPerWeek: output,
+      tier: tier['tier'] as int,
+      assignedResource: null, // balanced by default
+      outputPerWeek: (tier['output_per_week'] as num).toDouble(),
+      powerDraw: tier['power_draw_kwh'] as int,
     );
+
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         miningDrones: [...game.miningDrones, newDrone],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - costScrip,
-          metals: game.resources.metals - costMetals,
-          components: game.resources.components - costComponents,
+          starScrip: game.resources.starScrip - (tier['cost_scrip'] as int),
+          metals: game.resources.metals - (tier['cost_metals'] as int),
+          components: game.resources.components - (tier['cost_components'] as int? ?? 0),
         ),
       ),
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('🤖 Mining drone built! Assign it a resource.')),
+      SnackBar(content: Text('🤖 ${tier['name']} built!')),
     );
   }
 
@@ -273,100 +363,119 @@ class _DroneSection extends StatelessWidget {
   }
 }
 
-class _AssignmentBar extends StatelessWidget {
-  final int dirtCount, oreCount, sandCount, idleCount;
-  final double outputPerWeek;
-  final VoidCallback onReassign;
+class _UpgradeDroneButton extends StatelessWidget {
+  final GameState game;
+  final WidgetRef ref;
+  final List<Map<String, dynamic>> droneTiers;
 
-  const _AssignmentBar({
-    required this.dirtCount,
-    required this.oreCount,
-    required this.sandCount,
-    required this.idleCount,
-    required this.outputPerWeek,
-    required this.onReassign,
+  const _UpgradeDroneButton({
+    required this.game, required this.ref, required this.droneTiers,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Find lowest tier drone to upgrade
+    final toUpgrade = game.miningDrones
+        .where((d) => d.tier < 3)
+        .toList()
+      ..sort((a, b) => a.tier.compareTo(b.tier));
+
+    if (toUpgrade.isEmpty) return const SizedBox();
+
+    final drone = toUpgrade.first;
+    final nextTier = drone.tier + 1;
+    final nextConfig = droneTiers.where((t) => t['tier'] == nextTier).firstOrNull;
+    if (nextConfig == null) return const SizedBox();
+
+    final costScrip = nextConfig['cost_scrip'] as int;
+    final costMetals = nextConfig['cost_metals'] as int;
+    final costComponents = nextConfig['cost_components'] as int? ?? 0;
+    final canAfford = game.resources.starScrip >= costScrip &&
+        game.resources.metals >= costMetals &&
+        game.resources.components >= costComponents;
+
     return GestureDetector(
-      onTap: onReassign,
+      onTap: canAfford ? () => _doUpgrade(context, drone, nextConfig) : null,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: MFColors.surfaceElevated,
+          color: canAfford
+              ? MFColors.neonCyan.withValues(alpha: 0.1)
+              : MFColors.surfaceElevated,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: MFColors.borderDefault),
+          border: Border.all(
+            color: canAfford
+                ? MFColors.neonCyan.withValues(alpha: 0.5)
+                : MFColors.borderSubtle,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('ASSIGNMENTS', style: MFTextStyles.bodySmall.copyWith(
-                    color: MFColors.textMuted, letterSpacing: 1, fontSize: 9)),
-                Text('TAP TO REASSIGN', style: MFTextStyles.bodySmall.copyWith(
-                    color: MFColors.neonCyan, fontSize: 9)),
-              ],
+            Expanded(
+              child: Text(
+                'Upgrade 1 Mk${drone.tier} → Mk$nextTier  ·  $costScrip 🎫  ·  $costMetals metals'
+                    '${costComponents > 0 ? '  ·  $costComponents comp' : ''}',
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: canAfford ? MFColors.neonCyan : MFColors.textMuted,
+                ),
+              ),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                _AssignChip('🌑', '$dirtCount', 'Moon Dirt', MFColors.textSecondary),
-                const SizedBox(width: 8),
-                _AssignChip('🪨', '$oreCount', 'Ore', MFColors.neonOrange),
-                const SizedBox(width: 8),
-                _AssignChip('🏖️', '$sandCount', 'Sand', MFColors.neonYellow),
-                const SizedBox(width: 8),
-                _AssignChip('💤', '$idleCount', 'Idle', MFColors.textMuted),
-              ],
-            ),
+            Text('MK$nextTier↑',
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: canAfford ? MFColors.neonCyan : MFColors.textMuted,
+                  fontWeight: FontWeight.bold,
+                )),
           ],
         ),
       ),
     );
   }
-}
 
-class _AssignChip extends StatelessWidget {
-  final String emoji, count, label;
-  final Color color;
+  void _doUpgrade(BuildContext context, MiningDrone drone,
+      Map<String, dynamic> nextConfig) {
+    final idx = game.miningDrones.indexWhere((d) => d.id == drone.id);
+    if (idx < 0) return;
 
-  const _AssignChip(this.emoji, this.count, this.label, this.color);
+    final upgraded = drone.copyWith(
+      tier: nextConfig['tier'] as int,
+      outputPerWeek: (nextConfig['output_per_week'] as num).toDouble(),
+      powerDraw: nextConfig['power_draw_kwh'] as int,
+    );
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 14)),
-        Text(count, style: MFTextStyles.labelLarge.copyWith(color: color, fontSize: 12)),
-        Text(label, style: MFTextStyles.bodySmall.copyWith(fontSize: 8)),
-      ],
+    final updatedDrones = List<MiningDrone>.from(game.miningDrones);
+    updatedDrones[idx] = upgraded;
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        miningDrones: updatedDrones,
+        resources: game.resources.copyWith(
+          starScrip: game.resources.starScrip - (nextConfig['cost_scrip'] as int),
+          metals: game.resources.metals - (nextConfig['cost_metals'] as int),
+          components: game.resources.components - (nextConfig['cost_components'] as int? ?? 0),
+        ),
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('🤖 Drone upgraded to Mk${nextConfig['tier']}!')),
     );
   }
 }
 
-class _DroneAssignmentSheet extends StatefulWidget {
-  final GameState game;
-  final WidgetRef ref;
-
-  const _DroneAssignmentSheet({required this.game, required this.ref});
-
-  @override
-  State<_DroneAssignmentSheet> createState() => _DroneAssignmentSheetState();
-}
+// ─── Drone Assignment Sheet ───────────────────────────────────────────────────
 
 class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
   late Map<String, int> _assignments;
+
   @override
   void initState() {
     super.initState();
     _assignments = {
+      'balanced': widget.game.miningDrones.where((d) => d.isBalanced).length,
       'moon_dirt': widget.game.miningDrones.where((d) => d.assignedResource == 'moon_dirt').length,
       'ore': widget.game.miningDrones.where((d) => d.assignedResource == 'ore').length,
       'sand': widget.game.miningDrones.where((d) => d.assignedResource == 'sand').length,
-      'idle': widget.game.miningDrones.where((d) => d.isIdle).length,
+      'chemicals': widget.game.miningDrones.where((d) => d.assignedResource == 'chemicals').length,
     };
   }
 
@@ -376,16 +485,11 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
   void _apply() {
     final drones = <MiningDrone>[];
     int idx = 0;
-    for (final entry in {
-      'moon_dirt': _assignments['moon_dirt']!,
-      'ore': _assignments['ore']!,
-      'sand': _assignments['sand']!,
-      'idle': _assignments['idle']!,
-    }.entries) {
+    for (final entry in _assignments.entries) {
       for (int i = 0; i < entry.value; i++) {
         final original = widget.game.miningDrones[idx++];
         drones.add(original.copyWith(
-          assignedResource: entry.key == 'idle' ? null : entry.key,
+          assignedResource: entry.key == 'balanced' ? null : entry.key,
         ));
       }
     }
@@ -397,6 +501,14 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final options = [
+      ('balanced', '⚖️', 'Balanced'),
+      ('moon_dirt', '🌑', 'Moon Dirt'),
+      ('ore', '🪨', 'Ore'),
+      ('sand', '🏖️', 'Sand'),
+      ('chemicals', '⚗️', 'Chemicals'),
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -404,18 +516,18 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
         children: [
           Text('ASSIGN $total DRONES',
               style: MFTextStyles.labelLarge.copyWith(letterSpacing: 2)),
+          const SizedBox(height: 4),
+          Text('Balanced splits output evenly across all 4 resources.',
+              style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
           const SizedBox(height: 16),
-          ...['moon_dirt', 'ore', 'sand', 'idle'].map((key) {
-            final label = switch (key) {
-              'moon_dirt' => '🌑 Moon Dirt',
-              'ore' => '🪨 Ore',
-              'sand' => '🏖️ Sand',
-              _ => '💤 Idle',
-            };
+          ...options.map((opt) {
+            final (key, emoji, label) = opt;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
+                  Text(emoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
                   Expanded(child: Text(label, style: MFTextStyles.bodyLarge)),
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline,
@@ -455,167 +567,13 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
   }
 }
 
-// ─── Sentry Section ───────────────────────────────────────────────────────────
-
-class _SentrySection extends StatelessWidget {
+class _DroneAssignmentSheet extends StatefulWidget {
   final GameState game;
   final WidgetRef ref;
-
-  const _SentrySection({required this.game, required this.ref});
-
-  @override
-  Widget build(BuildContext context) {
-    final config = GameConfigService.instance;
-    final opsBuildings = config.getOperationsBuildings();
-    final sentryLevels = (opsBuildings['laser_sentry']?['levels'] as List? ?? [])
-        .cast<Map<String, dynamic>>();
-
-    final weeksToRaid = game.nextRaidWeek - game.currentWeek;
-    final isRaidWeek = weeksToRaid <= 0 && !game.raidDefendedThisWeek;
-    final raidWarning = weeksToRaid <= 2 && weeksToRaid > 0;
-
-    return _OpsCard(
-      icon: '🔫',
-      title: 'SENTRY DEFENSE',
-      subtitle: game.laserSentries.isEmpty
-          ? 'No sentries — base is undefended!'
-          : '${game.laserSentries.length} sentry${game.laserSentries.length == 1 ? '' : 'ies'} active',
-      subtitleColor: game.laserSentries.isEmpty
-          ? MFColors.neonOrange
-          : MFColors.neonGreen,
-      children: [
-        // Raid status
-        _RaidStatus(game: game, isRaidWeek: isRaidWeek, raidWarning: raidWarning,
-            weeksToRaid: weeksToRaid),
-        const SizedBox(height: 10),
-
-        // Existing sentries
-        if (game.laserSentries.isNotEmpty) ...[
-          ...game.laserSentries.map((s) => _SentryRow(sentry: s)),
-          const Divider(height: 14),
-        ],
-
-        // Build options
-        Text('BUILD SENTRIES',
-            style: MFTextStyles.bodySmall
-                .copyWith(color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
-        const SizedBox(height: 8),
-        ...sentryLevels.map((s) {
-          final costScrip = s['cost_scrip'] as int;
-          final costMetals = s['cost_metals'] as int;
-          final costComponents = s['cost_components'] as int;
-          final canAfford = game.resources.starScrip >= costScrip &&
-              game.resources.metals >= costMetals &&
-              game.resources.components >= costComponents;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _BuildRow(
-              emoji: '🔫',
-              name: s['name'] as String,
-              description:
-              '${s['damage']} dmg  ·  fire rate ${s['fire_rate']}  ·  range ${s['range']}',
-              costLine:
-              '$costScrip 🎫  ·  $costMetals metals  ·  $costComponents components',
-              outputLine: '${s['power_draw_kwh']} KWh draw',
-              outputColor: MFColors.neonOrange,
-              canAfford: canAfford,
-              onBuild: () => _buildSentry(context, s, game),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  void _buildSentry(
-      BuildContext context, Map<String, dynamic> cfg, GameState game) {
-    final newSentry = LaserSentry(
-      id: 'sentry_${DateTime.now().millisecondsSinceEpoch}',
-      level: cfg['level'] as int,
-      health: 100,
-      powerDraw: cfg['power_draw_kwh'] as int,
-      damage: cfg['damage'] as int,
-      fireRate: cfg['fire_rate'] as int,
-      range: cfg['range'] as int,
-    );
-    ref.read(activeGameProvider.notifier).updateGameLocal(
-      game.copyWith(
-        laserSentries: [...game.laserSentries, newSentry],
-        resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (cfg['cost_scrip'] as int),
-          metals: game.resources.metals - (cfg['cost_metals'] as int),
-          components: game.resources.components - (cfg['cost_components'] as int),
-        ),
-      ),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🔫 ${cfg['name']} deployed!')),
-    );
-  }
-}
-
-class _SentryRow extends StatelessWidget {
-  final LaserSentry sentry;
-  const _SentryRow({required this.sentry});
+  const _DroneAssignmentSheet({required this.game, required this.ref});
 
   @override
-  Widget build(BuildContext context) {
-    final healthColor = MFStatusColor.forPercent(sentry.healthPercent);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          const Text('🔫', style: TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Sentry Mk${sentry.level}  ·  ${sentry.damage} dmg  ·  range ${sentry.range}',
-              style: MFTextStyles.bodyLarge,
-            ),
-          ),
-          Text('${sentry.health}%',
-              style: MFTextStyles.bodySmall.copyWith(color: healthColor)),
-        ],
-      ),
-    );
-  }
-}
-
-class _RaidStatus extends StatelessWidget {
-  final GameState game;
-  final bool isRaidWeek, raidWarning;
-  final int weeksToRaid;
-
-  const _RaidStatus({
-    required this.game,
-    required this.isRaidWeek,
-    required this.raidWarning,
-    required this.weeksToRaid,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Color color = MFColors.textMuted;
-    String msg = 'Next raid: Week ${game.nextRaidWeek} ($weeksToRaid weeks away)';
-    if (isRaidWeek) {
-      color = MFColors.neonPink;
-      msg = '🚨 RAID IN PROGRESS — defend from Dashboard';
-    } else if (raidWarning) {
-      color = MFColors.neonOrange;
-      msg = '⚠️ Raid incoming in $weeksToRaid week${weeksToRaid == 1 ? '' : 's'}! Prepare defenses.';
-    }
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: isRaidWeek
-            ? MFColors.neonPink.withValues(alpha: 0.08)
-            : MFColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(msg, style: MFTextStyles.bodySmall.copyWith(color: color)),
-    );
-  }
+  State<_DroneAssignmentSheet> createState() => _DroneAssignmentSheetState();
 }
 
 // ─── Shared Widgets ───────────────────────────────────────────────────────────
@@ -626,11 +584,8 @@ class _OpsCard extends StatelessWidget {
   final List<Widget> children;
 
   const _OpsCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.subtitleColor,
-    required this.children,
+    required this.icon, required this.title, required this.subtitle,
+    required this.subtitleColor, required this.children,
   });
 
   @override
@@ -655,8 +610,7 @@ class _OpsCard extends StatelessWidget {
                   children: [
                     Text(title, style: MFTextStyles.labelLarge),
                     Text(subtitle,
-                        style: MFTextStyles.bodySmall
-                            .copyWith(color: subtitleColor)),
+                        style: MFTextStyles.bodySmall.copyWith(color: subtitleColor)),
                   ],
                 ),
               ),
@@ -670,21 +624,34 @@ class _OpsCard extends StatelessWidget {
   }
 }
 
+class _AssignChip extends StatelessWidget {
+  final String emoji, count, label;
+  final Color color;
+  const _AssignChip(this.emoji, this.count, this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 14)),
+        Text(count,
+            style: MFTextStyles.labelLarge.copyWith(color: color, fontSize: 12)),
+        Text(label, style: MFTextStyles.bodySmall.copyWith(fontSize: 8)),
+      ],
+    );
+  }
+}
+
 class _BuildRow extends StatelessWidget {
-  final String emoji, name, description, costLine, outputLine;
+  final String emoji, name, description, costLine, outputLine, missingText;
   final Color outputColor;
   final bool canAfford;
   final VoidCallback onBuild;
 
   const _BuildRow({
-    required this.emoji,
-    required this.name,
-    required this.description,
-    required this.costLine,
-    required this.outputLine,
-    required this.outputColor,
-    required this.canAfford,
-    required this.onBuild,
+    required this.emoji, required this.name, required this.description,
+    required this.costLine, required this.outputLine, required this.outputColor,
+    required this.canAfford, required this.missingText, required this.onBuild,
   });
 
   @override
@@ -699,25 +666,33 @@ class _BuildRow extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(name, style: MFTextStyles.bodyLarge),
-                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(name, style: MFTextStyles.bodyLarge,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: 6),
                   Text(outputLine,
-                      style: MFTextStyles.bodySmall
-                          .copyWith(color: outputColor, fontWeight: FontWeight.bold)),
+                      style: MFTextStyles.bodySmall.copyWith(
+                          color: outputColor, fontWeight: FontWeight.bold)),
                 ],
               ),
               Text(description,
-                  style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
-              Text(costLine,
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
-                  )),
+                  style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+                  overflow: TextOverflow.ellipsis, maxLines: 2),
+              Text(
+                canAfford ? costLine : missingText.isNotEmpty ? missingText : costLine,
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
             ],
           ),
         ),
         const SizedBox(width: 8),
         GestureDetector(
-          onTap: canAfford ? onBuild : null,
+          onTap: canAfford ? onBuild : () => _showMissing(context),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
@@ -739,6 +714,509 @@ class _BuildRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showMissing(BuildContext context) {
+    if (missingText.isEmpty) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(missingText),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// ─── Dome Bot Section ─────────────────────────────────────────────────────────
+
+class _DomeBotSection extends StatelessWidget {
+  final GameState game;
+  final WidgetRef ref;
+  const _DomeBotSection({required this.game, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final config = GameConfigService.instance;
+    final botLevels = config.getDomeBotLevels();
+
+    return _OpsCard(
+      icon: '🤖',
+      title: 'DOME BOTS',
+      subtitle: '${game.domes.where((d) => d.domeBot != null).length} / ${game.domes.length} domes automated',
+      subtitleColor: MFColors.textSecondary,
+      children: [
+        ...game.domes.asMap().entries.map((entry) {
+          final dome = entry.value;
+          final bot = dome.domeBot;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: MFColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: bot != null
+                    ? MFColors.neonCyan.withValues(alpha: 0.3)
+                    : MFColors.borderSubtle,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(bot != null ? '🤖' : '○',
+                        style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(dome.name, style: MFTextStyles.labelLarge),
+                          Text(
+                            bot != null
+                                ? 'Dome Bot Mk${bot.level}  ·  ${_botActions(bot)}'
+                                : 'No bot installed',
+                            style: MFTextStyles.bodySmall.copyWith(
+                              color: bot != null
+                                  ? MFColors.neonCyan
+                                  : MFColors.textMuted,
+                            ),
+                          ),
+                          if (bot?.canPlant == true)
+                            Text(
+                              'Planting: ${bot!.plantCropId?.replaceAll('_', ' ') ?? 'not set — tap to configure'}',
+                              style: MFTextStyles.bodySmall.copyWith(
+                                color: bot.plantCropId != null
+                                    ? MFColors.neonGreen
+                                    : MFColors.neonOrange,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (bot != null)
+                      GestureDetector(
+                        onTap: () => _showBotOptions(context, dome, bot, botLevels),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: MFColors.neonCyan.withValues(alpha: 0.4)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('MANAGE',
+                              style: MFTextStyles.bodySmall.copyWith(
+                                  color: MFColors.neonCyan, fontSize: 10)),
+                        ),
+                      ),
+                  ],
+                ),
+
+                // Install / Upgrade button
+                if (bot == null) ...[
+                  const SizedBox(height: 8),
+                  _buildInstallButton(context, dome, botLevels),
+                ] else if (bot.level < 4) ...[
+                  const SizedBox(height: 8),
+                  _buildUpgradeButton(context, dome, bot, botLevels),
+                ],
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _botActions(DomeBot bot) {
+    final parts = <String>[];
+    if (bot.canWater) parts.add('waters');
+    if (bot.canHarvest) parts.add('harvests');
+    if (bot.canFertilize) parts.add('fertilizes');
+    if (bot.canPlant) parts.add('plants');
+    return parts.join(' · ');
+  }
+
+  Widget _buildInstallButton(
+      BuildContext context, Dome dome, List<Map<String, dynamic>> botLevels) {
+    if (botLevels.isEmpty) return const SizedBox();
+    final mk1 = botLevels.first;
+    final costScrip = mk1['cost_scrip'] as int;
+    final costMetals = mk1['cost_metals'] as int;
+    final canAfford = game.resources.starScrip >= costScrip &&
+        game.resources.metals >= costMetals;
+
+    return GestureDetector(
+      onTap: canAfford ? () => _installBot(context, dome, mk1) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: canAfford
+              ? MFColors.neonCyan.withValues(alpha: 0.1)
+              : MFColors.borderSubtle,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: canAfford
+                ? MFColors.neonCyan.withValues(alpha: 0.4)
+                : MFColors.borderSubtle,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            canAfford
+                ? 'INSTALL Mk1  ·  $costScrip 🎫  ·  $costMetals metals'
+                : 'Need $costScrip 🎫 + $costMetals metals',
+            style: MFTextStyles.bodySmall.copyWith(
+              color: canAfford ? MFColors.neonCyan : MFColors.textMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpgradeButton(BuildContext context, Dome dome, DomeBot bot,
+      List<Map<String, dynamic>> botLevels) {
+    final nextLevel = bot.level + 1;
+    final nextConfig =
+        botLevels.where((l) => l['level'] == nextLevel).firstOrNull;
+    if (nextConfig == null) return const SizedBox();
+
+    final costScrip = nextConfig['cost_scrip'] as int;
+    final costMetals = nextConfig['cost_metals'] as int;
+    final costComponents = nextConfig['cost_components'] as int? ?? 0;
+    final costChemicals = nextConfig['cost_chemicals'] as int? ?? 0;
+    final canAfford = game.resources.starScrip >= costScrip &&
+        game.resources.metals >= costMetals &&
+        game.resources.components >= costComponents &&
+        game.resources.chemicals >= costChemicals;
+
+    final costParts = ['$costScrip 🎫', '$costMetals metals'];
+    if (costComponents > 0) costParts.add('$costComponents comp');
+    if (costChemicals > 0) costParts.add('$costChemicals chem');
+
+    return GestureDetector(
+      onTap: canAfford ? () => _upgradeBot(context, dome, bot, nextConfig) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: canAfford
+              ? MFColors.neonOrange.withValues(alpha: 0.1)
+              : MFColors.borderSubtle,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: canAfford
+                ? MFColors.neonOrange.withValues(alpha: 0.4)
+                : MFColors.borderSubtle,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            canAfford
+                ? 'UPGRADE TO Mk$nextLevel  ·  ${costParts.join('  ·  ')}'
+                : 'Not enough resources for Mk$nextLevel',
+            style: MFTextStyles.bodySmall.copyWith(
+              color: canAfford ? MFColors.neonOrange : MFColors.textMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _installBot(BuildContext context, Dome dome,
+      Map<String, dynamic> cfg) {
+    final newBot = DomeBot(
+      level: 1,
+      powerDraw: cfg['power_draw_kwh'] as int,
+    );
+    _applyBotChange(dome, newBot, cfg['cost_scrip'] as int,
+        cfg['cost_metals'] as int, 0, 0, 0);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!')),
+    );
+  }
+
+  void _upgradeBot(BuildContext context, Dome dome, DomeBot bot,
+      Map<String, dynamic> cfg) {
+    final upgraded = bot.copyWith(
+      level: cfg['level'] as int,
+      powerDraw: cfg['power_draw_kwh'] as int,
+    );
+    _applyBotChange(
+      dome,
+      upgraded,
+      cfg['cost_scrip'] as int,
+      cfg['cost_metals'] as int,
+      cfg['cost_components'] as int? ?? 0,
+      cfg['cost_chemicals'] as int? ?? 0,
+      cfg['cost_chitin'] as int? ?? 0,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              '🤖 ${dome.name} bot upgraded to Mk${cfg['level']}!')),
+    );
+  }
+
+  void _applyBotChange(Dome dome, DomeBot newBot, int costScrip,
+      int costMetals, int costComponents, int costChemicals, int costChitin) {
+    final updatedDomes = game.domes
+        .map((d) => d.id == dome.id ? d.copyWith(domeBot: newBot) : d)
+        .toList();
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        domes: updatedDomes,
+        resources: game.resources.copyWith(
+          starScrip: game.resources.starScrip - costScrip,
+          metals: game.resources.metals - costMetals,
+          components: game.resources.components - costComponents,
+          chemicals: game.resources.chemicals - costChemicals,
+          ore: game.resources.ore - costChitin, // chitin in ore slot
+        ),
+      ),
+    );
+  }
+
+  void _showBotOptions(BuildContext context, Dome dome, DomeBot bot,
+      List<Map<String, dynamic>> botLevels) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: MFColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        side: BorderSide(color: MFColors.borderDefault),
+      ),
+      builder: (_) => _BotConfigSheet(
+        dome: dome,
+        bot: bot,
+        game: game,
+        ref: ref,
+      ),
+    );
+  }
+}
+
+// ─── Bot Config Sheet ─────────────────────────────────────────────────────────
+
+class _BotConfigSheet extends StatelessWidget {
+  final Dome dome;
+  final DomeBot bot;
+  final GameState game;
+  final WidgetRef ref;
+
+  const _BotConfigSheet({
+    required this.dome, required this.bot,
+    required this.game, required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final config = GameConfigService.instance;
+    final crops = config.getAllCrops();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${dome.name} — Bot Mk${bot.level}',
+              style: MFTextStyles.labelLarge.copyWith(letterSpacing: 1)),
+          const SizedBox(height: 4),
+          Text(
+            bot.canPlant
+                ? 'Choose which crop the bot will auto-plant.'
+                : 'Upgrade to Mk4 to enable auto-planting.',
+            style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+          ),
+          const SizedBox(height: 16),
+          if (bot.canPlant) ...[
+            ...crops.map((crop) {
+              final isSelected = bot.plantCropId == crop.id;
+              return GestureDetector(
+                onTap: () {
+                  final updatedBot = bot.withCrop(crop.id);
+                  final updatedDomes = game.domes
+                      .map((d) => d.id == dome.id
+                      ? d.copyWith(domeBot: updatedBot)
+                      : d)
+                      .toList();
+                  ref.read(activeGameProvider.notifier).updateGameLocal(
+                    game.copyWith(domes: updatedDomes),
+                  );
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? MFColors.neonGreen.withValues(alpha: 0.1)
+                        : MFColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? MFColors.neonGreen
+                          : MFColors.borderSubtle,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(crop.emoji, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Text(crop.name, style: MFTextStyles.bodyLarge)),
+                      if (isSelected)
+                        const Text('✓',
+                            style: TextStyle(
+                                color: MFColors.neonGreen, fontSize: 16)),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Dome Build Section ───────────────────────────────────────────────────────
+
+class _DomeBuildSection extends StatelessWidget {
+  final GameState game;
+  final WidgetRef ref;
+  const _DomeBuildSection({required this.game, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final config = GameConfigService.instance;
+    final domeCfg = config.getDomeBuildingConfig();
+    final matCost = domeCfg['material_cost'] as Map<String, dynamic>? ?? {};
+    final glassCost = matCost['glass'] as int? ?? 20;
+    final metalsCost = matCost['metals'] as int? ?? 5;
+    final componentsCost = matCost['components'] as int? ?? 1;
+    final scripCost = config.getNextDomeScripCost(game.difficulty, game.domes.length);
+
+    final canAfford = game.resources.starScrip >= scripCost &&
+        game.resources.glass >= glassCost &&
+        game.resources.metals >= metalsCost &&
+        game.resources.components >= componentsCost;
+
+    final missing = <String>[];
+    if (game.resources.starScrip < scripCost)
+      missing.add('${scripCost - game.resources.starScrip} more 🎫');
+    if (game.resources.glass < glassCost)
+      missing.add('${glassCost - game.resources.glass.toInt()} more glass');
+    if (game.resources.metals < metalsCost)
+      missing.add('${metalsCost - game.resources.metals.toInt()} more metals');
+    if (game.resources.components < componentsCost)
+      missing.add('${componentsCost - game.resources.components.toInt()} more comp');
+
+    return _OpsCard(
+      icon: '🏠',
+      title: 'DOMES',
+      subtitle: '${game.domes.length} domes built',
+      subtitleColor: MFColors.textSecondary,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: MFColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: MFColors.borderSubtle),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Build Dome ${game.domes.length + 1}',
+                  style: MFTextStyles.bodyLarge),
+              const SizedBox(height: 4),
+              Text(
+                '$scripCost 🎫  ·  $glassCost glass  ·  $metalsCost metals  ·  $componentsCost comp',
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
+                ),
+              ),
+              Text(
+                'Land-rights cost rises with each dome.',
+                style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.textMuted, fontSize: 10),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: GestureDetector(
+                  onTap: canAfford
+                      ? () => _buildDome(context, scripCost, glassCost, metalsCost, componentsCost)
+                      : () {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Need: ${missing.join(', ')}'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: canAfford
+                          ? MFColors.neonGreen.withValues(alpha: 0.12)
+                          : MFColors.borderSubtle,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: canAfford
+                            ? MFColors.neonGreen.withValues(alpha: 0.5)
+                            : MFColors.borderSubtle,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        canAfford ? '🏠 BUILD NEW DOME' : 'INSUFFICIENT RESOURCES',
+                        style: MFTextStyles.labelLarge.copyWith(
+                          color: canAfford ? MFColors.neonGreen : MFColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _buildDome(BuildContext context, int scripCost, int glassCost,
+      int metalsCost, int componentsCost) {
+    final newDome = GameFactory.createNewDome(
+      name: 'Dome ${game.domes.length + 1}',
+      tier: 1,
+    );
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        domes: [...game.domes, newDome],
+        resources: game.resources.copyWith(
+          starScrip: game.resources.starScrip - scripCost,
+          glass: game.resources.glass - glassCost,
+          metals: game.resources.metals - metalsCost,
+          components: game.resources.components - componentsCost,
+        ),
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('🏠 Dome ${game.domes.length} built!')),
     );
   }
 }

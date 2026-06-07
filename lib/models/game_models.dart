@@ -79,6 +79,11 @@ class GameState {
   final List<PowerSource> powerSources;
   final List<LaserSentry> laserSentries;
   final List<MiningDrone> miningDrones;
+  final DefenseWall defenseWall;
+  final GrenadeInventory grenades;
+  final int totalRaidsDefended;
+  final int totalFaunaKilled;
+  final int totalChitinCollected;
   final List<Contract> activeContracts;
   final List<Contract> completedContracts;
   final List<Milestone> milestones;
@@ -114,6 +119,11 @@ class GameState {
     required this.powerSources,
     required this.laserSentries,
     required this.miningDrones,
+    required this.defenseWall,
+    required this.grenades,
+    required this.totalRaidsDefended,
+    required this.totalFaunaKilled,
+    required this.totalChitinCollected,
     required this.activeContracts,
     required this.completedContracts,
     required this.milestones,
@@ -150,6 +160,11 @@ class GameState {
     List<PowerSource>? powerSources,
     List<LaserSentry>? laserSentries,
     List<MiningDrone>? miningDrones,
+    DefenseWall? defenseWall,
+    GrenadeInventory? grenades,
+    int? totalRaidsDefended,
+    int? totalFaunaKilled,
+    int? totalChitinCollected,
     List<Contract>? activeContracts,
     List<Contract>? completedContracts,
     List<Milestone>? milestones,
@@ -185,6 +200,11 @@ class GameState {
       powerSources: powerSources ?? this.powerSources,
       laserSentries: laserSentries ?? this.laserSentries,
       miningDrones: miningDrones ?? this.miningDrones,
+      defenseWall: defenseWall ?? this.defenseWall,
+      grenades: grenades ?? this.grenades,
+      totalRaidsDefended: totalRaidsDefended ?? this.totalRaidsDefended,
+      totalFaunaKilled: totalFaunaKilled ?? this.totalFaunaKilled,
+      totalChitinCollected: totalChitinCollected ?? this.totalChitinCollected,
       activeContracts: activeContracts ?? this.activeContracts,
       completedContracts: completedContracts ?? this.completedContracts,
       milestones: milestones ?? this.milestones,
@@ -342,6 +362,7 @@ class Dome {
   final int tier; // 1-4
   final List<CropCell> cells; // always 8 cells (positions 0-7, center reserved)
   final DomeRobot? robot;
+  final DomeBot? domeBot;
   final int structuralHealth; // 0-100
   final int powerDraw;
 
@@ -351,6 +372,7 @@ class Dome {
     required this.tier,
     required this.cells,
     this.robot,
+    this.domeBot,
     required this.structuralHealth,
     required this.powerDraw,
   });
@@ -376,6 +398,7 @@ class Dome {
     int? tier,
     List<CropCell>? cells,
     DomeRobot? robot,
+    DomeBot? domeBot,
     int? structuralHealth,
     int? powerDraw,
   }) {
@@ -385,6 +408,7 @@ class Dome {
       tier: tier ?? this.tier,
       cells: cells ?? this.cells,
       robot: robot,
+      domeBot: domeBot ?? this.domeBot,
       structuralHealth: structuralHealth ?? this.structuralHealth,
       powerDraw: powerDraw ?? this.powerDraw,
     );
@@ -588,9 +612,6 @@ class RefineryMachine {
     required this.powerDraw,
   });
 
-  // Batch size scales with level: Mk1=1, Mk3=3, Mk5=5, Mk10=10
-  int get batchSize => level;
-
   String get name => switch (type) {
     MachineType.composter => 'Composter',
     MachineType.smelter => 'Smelter',
@@ -607,22 +628,22 @@ class RefineryMachine {
     MachineType.componentFabricator => '⚙️',
   };
 
-  // Input per single batch at Mk1 (multiply by batchSize for actual craft)
-  Map<String, double> get inputsPerBatch => switch (type) {
-    MachineType.composter => {'compost': 8},
-    MachineType.smelter => {'ore': 3},
-    MachineType.zSoilProcessor => {'moon_dirt': 5, 'chemicals': 2, 'water': 3},
-    MachineType.glassFurnace => {'sand': 4},
-    MachineType.componentFabricator => {'metals': 3, 'chemicals': 1},
+  // Key used to look up this machine in upgrades_refinery.yaml
+  String get yamlKey => switch (type) {
+    MachineType.composter => 'composter',
+    MachineType.smelter => 'smelter',
+    MachineType.zSoilProcessor => 'z_soil_processor',
+    MachineType.glassFurnace => 'glass_furnace',
+    MachineType.componentFabricator => 'component_fabricator',
   };
 
-  // Output per single batch at Mk1 (multiply by batchSize)
-  Map<String, double> get outputsPerBatch => switch (type) {
-    MachineType.composter => {'z_soil': 5},
-    MachineType.smelter => {'metals': 2},
-    MachineType.zSoilProcessor => {'z_soil': 4},
-    MachineType.glassFurnace => {'glass': 3},
-    MachineType.componentFabricator => {'components': 2},
+  static MachineType typeFromYamlKey(String key) => switch (key) {
+    'composter' => MachineType.composter,
+    'smelter' => MachineType.smelter,
+    'z_soil_processor' => MachineType.zSoilProcessor,
+    'glass_furnace' => MachineType.glassFurnace,
+    'component_fabricator' => MachineType.componentFabricator,
+    _ => MachineType.composter,
   };
 
   RefineryMachine copyWith({int? level, int? powerDraw}) {
@@ -638,33 +659,45 @@ class RefineryMachine {
 
 class MiningDrone {
   final String id;
-  final String? assignedResource; // 'moon_dirt', 'ore', 'sand', or null (idle)
+  final int tier; // 1, 2, or 3
+  final String? assignedResource; // 'moon_dirt', 'ore', 'sand', 'chemicals', or null (balanced)
   final double outputPerWeek;
+  final int powerDraw;
 
   const MiningDrone({
     required this.id,
+    required this.tier,
     this.assignedResource,
     required this.outputPerWeek,
+    required this.powerDraw,
   });
 
-  bool get isIdle => assignedResource == null;
+  // null assignedResource means balanced (equal split across all 4 resources)
+  bool get isBalanced => assignedResource == null;
 
   String get assignedLabel => switch (assignedResource) {
     'moon_dirt' => 'Moon Dirt',
     'ore' => 'Ore',
     'sand' => 'Sand',
-    _ => 'Idle',
+    'chemicals' => 'Chemicals',
+    _ => 'Balanced',
   };
 
-  MiningDrone copyWith({String? id, String? assignedResource, double? outputPerWeek}) {
+  MiningDrone copyWith({
+    String? id, int? tier, String? assignedResource,
+    double? outputPerWeek, int? powerDraw,
+  }) {
     return MiningDrone(
       id: id ?? this.id,
+      tier: tier ?? this.tier,
       assignedResource: assignedResource,
       outputPerWeek: outputPerWeek ?? this.outputPerWeek,
+      powerDraw: powerDraw ?? this.powerDraw,
     );
   }
 
-  MiningDrone unassign() => MiningDrone(id: id, assignedResource: null, outputPerWeek: outputPerWeek);
+  // Assign to balanced mode
+  MiningDrone setBalanced() => copyWith(assignedResource: null);
 }
 
 // ─── Power Source ─────────────────────────────────────────────────────────────
@@ -1098,6 +1131,256 @@ class CropConfig {
       volumeM3: (json['volume_m3'] as num?)?.toDouble() ?? 0.5,
       yieldsResource: json['yields_resource'] as String?,
       resourceYieldAmount: json['resource_yield_amount'] as int? ?? 0,
+    );
+  }
+}
+
+// ─── Dome Bot ─────────────────────────────────────────────────────────────────
+
+class DomeBot {
+  final int level;          // 1-4
+  final String? plantCropId; // Mk4 only — which crop to auto-plant
+  final int powerDraw;
+
+  const DomeBot({
+    required this.level,
+    this.plantCropId,
+    required this.powerDraw,
+  });
+
+  bool get canWater     => level >= 1;
+  bool get canHarvest   => level >= 2;
+  bool get canFertilize => level >= 3;
+  bool get canPlant     => level >= 4;
+
+  DomeBot copyWith({int? level, String? plantCropId, int? powerDraw}) {
+    return DomeBot(
+      level: level ?? this.level,
+      plantCropId: plantCropId ?? this.plantCropId,
+      powerDraw: powerDraw ?? this.powerDraw,
+    );
+  }
+
+  DomeBot withCrop(String cropId) => copyWith(plantCropId: cropId);
+}
+
+// ─── Defense Wall ─────────────────────────────────────────────────────────────
+
+class DefenseWall {
+  final int level;
+  final int currentHp;
+  final int maxHp;
+
+  const DefenseWall({
+    required this.level,
+    required this.currentHp,
+    required this.maxHp,
+  });
+
+  double get healthPercent => maxHp > 0 ? (currentHp / maxHp).clamp(0.0, 1.0) : 0.0;
+  bool get isDestroyed => currentHp <= 0;
+  bool get needsRepair => currentHp < maxHp;
+
+  DefenseWall copyWith({int? level, int? currentHp, int? maxHp}) {
+    return DefenseWall(
+      level: level ?? this.level,
+      currentHp: currentHp ?? this.currentHp,
+      maxHp: maxHp ?? this.maxHp,
+    );
+  }
+
+  DefenseWall fullyRepaired() => copyWith(currentHp: maxHp);
+  DefenseWall takeDamage(int damage) => copyWith(currentHp: (currentHp - damage).clamp(0, maxHp));
+}
+
+// ─── Grenade Inventory ────────────────────────────────────────────────────────
+
+class GrenadeInventory {
+  final Map<String, int> counts; // grenadeId -> count
+  final int benchLevel;
+
+  const GrenadeInventory({
+    required this.counts,
+    required this.benchLevel,
+  });
+
+  int countOf(String grenadeId) => counts[grenadeId] ?? 0;
+  bool has(String grenadeId) => countOf(grenadeId) > 0;
+
+  GrenadeInventory use(String grenadeId) {
+    final current = countOf(grenadeId);
+    if (current <= 0) return this;
+    final updated = Map<String, int>.from(counts);
+    updated[grenadeId] = current - 1;
+    if (updated[grenadeId] == 0) updated.remove(grenadeId);
+    return GrenadeInventory(counts: updated, benchLevel: benchLevel);
+  }
+
+  GrenadeInventory add(String grenadeId, int amount) {
+    final updated = Map<String, int>.from(counts);
+    updated[grenadeId] = (updated[grenadeId] ?? 0) + amount;
+    return GrenadeInventory(counts: updated, benchLevel: benchLevel);
+  }
+
+  GrenadeInventory copyWith({Map<String, int>? counts, int? benchLevel}) {
+    return GrenadeInventory(
+      counts: counts ?? this.counts,
+      benchLevel: benchLevel ?? this.benchLevel,
+    );
+  }
+}
+
+// ─── Raid Result ──────────────────────────────────────────────────────────────
+
+class RaidResult {
+  final int week;
+  final int faunaKilled;
+  final int faunaEscaped;
+  final int wallDamageTaken;
+  final bool wallBroken;
+  final int cropsLost;
+  final int meatDropped;
+  final int chitinDropped;
+  final bool wasDefended;
+
+  const RaidResult({
+    required this.week,
+    required this.faunaKilled,
+    required this.faunaEscaped,
+    required this.wallDamageTaken,
+    required this.wallBroken,
+    required this.cropsLost,
+    required this.meatDropped,
+    required this.chitinDropped,
+    required this.wasDefended,
+  });
+}
+
+// ─── Active Fauna Unit (used during raid mini-game only) ─────────────────────
+
+class FaunaUnit {
+  final String id;
+  final String typeId;
+  final String emoji;
+  final double hp;
+  final double maxHp;
+  final double speed;
+  final int damage;
+  final double hitInterval;
+  final bool isBrute;
+  // Position on screen (0.0-1.0 normalized)
+  final double x;
+  final double y;
+  // State
+  final bool isStunned;
+  final bool isScattered;
+  final bool isBaited;
+  final double stunTimeRemaining;
+  final double timeSinceLastHit;
+
+  const FaunaUnit({
+    required this.id,
+    required this.typeId,
+    required this.emoji,
+    required this.hp,
+    required this.maxHp,
+    required this.speed,
+    required this.damage,
+    required this.hitInterval,
+    required this.isBrute,
+    required this.x,
+    required this.y,
+    this.isStunned = false,
+    this.isScattered = false,
+    this.isBaited = false,
+    this.stunTimeRemaining = 0,
+    this.timeSinceLastHit = 0,
+  });
+
+  bool get isDead => hp <= 0;
+  bool get isAtWall => y >= 0.85;
+
+  FaunaUnit copyWith({
+    double? hp,
+    double? x,
+    double? y,
+    bool? isStunned,
+    bool? isScattered,
+    bool? isBaited,
+    double? stunTimeRemaining,
+    double? timeSinceLastHit,
+  }) {
+    return FaunaUnit(
+      id: id, typeId: typeId, emoji: emoji,
+      maxHp: maxHp, speed: speed, damage: damage,
+      hitInterval: hitInterval, isBrute: isBrute,
+      hp: hp ?? this.hp,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      isStunned: isStunned ?? this.isStunned,
+      isScattered: isScattered ?? this.isScattered,
+      isBaited: isBaited ?? this.isBaited,
+      stunTimeRemaining: stunTimeRemaining ?? this.stunTimeRemaining,
+      timeSinceLastHit: timeSinceLastHit ?? this.timeSinceLastHit,
+    );
+  }
+}
+
+// ─── Active Grenade / Effect (used during raid mini-game only) ───────────────
+
+class ActiveGrenade {
+  final String id;
+  final String grenadeId;
+  final double targetX;
+  final double targetY;
+  final double progress; // 0.0 = just thrown, 1.0 = arrived
+  final bool hasExploded;
+
+  const ActiveGrenade({
+    required this.id,
+    required this.grenadeId,
+    required this.targetX,
+    required this.targetY,
+    required this.progress,
+    required this.hasExploded,
+  });
+
+  ActiveGrenade copyWith({double? progress, bool? hasExploded}) {
+    return ActiveGrenade(
+      id: id, grenadeId: grenadeId,
+      targetX: targetX, targetY: targetY,
+      progress: progress ?? this.progress,
+      hasExploded: hasExploded ?? this.hasExploded,
+    );
+  }
+}
+
+// ─── Active Effect Zone (burn zone, bait zone) ───────────────────────────────
+
+class ActiveEffect {
+  final String id;
+  final String effectType; // 'burn_zone', 'bait', 'stun_zone'
+  final double x;
+  final double y;
+  final double radius;
+  final double timeRemaining;
+  final double damagePerSecond;
+
+  const ActiveEffect({
+    required this.id,
+    required this.effectType,
+    required this.x,
+    required this.y,
+    required this.radius,
+    required this.timeRemaining,
+    this.damagePerSecond = 0,
+  });
+
+  ActiveEffect copyWith({double? timeRemaining}) {
+    return ActiveEffect(
+      id: id, effectType: effectType, x: x, y: y,
+      radius: radius, damagePerSecond: damagePerSecond,
+      timeRemaining: timeRemaining ?? this.timeRemaining,
     );
   }
 }

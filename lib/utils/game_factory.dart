@@ -19,7 +19,6 @@ class GameFactory {
     final diffSettings = _config.getDifficultySettings(difficulty);
     final startingRes = diffSettings['starting_resources'] as Map<String, dynamic>;
     final startingScrip = diffSettings['starting_scrip'] as int;
-    final raidFreq = _config.getRaidFrequency(difficulty);
 
     // Starting resources from config
     final resources = Resources(
@@ -49,11 +48,11 @@ class GameFactory {
       ],
     );
 
-    // One basic solar array
+    // Start with wind turbine — covers dome + sentry + drone without refined materials
     final startingPower = PowerSource(
       id: _uuid.v4(),
-      type: PowerSourceType.solarArray,
-      outputKwh: 20,
+      type: PowerSourceType.windTurbine,
+      outputKwh: 45,
     );
 
     // Load milestones and trophies from config
@@ -73,6 +72,39 @@ class GameFactory {
       ),
     ];
 
+    // Starting wall and grenades from difficulty config
+    final wallLevel = diffSettings['starting_wall_level'] as int? ?? 1;
+    final wallLevels = GameConfigService.instance.getDefenseWallLevels();
+    final wallConfig = wallLevels.firstWhere(
+          (l) => l['level'] == wallLevel,
+      orElse: () => wallLevels.first,
+    );
+    final wallMaxHp = wallConfig['hp'] as int;
+
+    final grenadesConfig = diffSettings['starting_grenades'] as Map<String, dynamic>? ?? {};
+    final startingGrenades = grenadesConfig.map(
+          (k, v) => MapEntry(k, v as int),
+    );
+
+    // Starting sentries
+    final startingSentryCount = diffSettings['starting_sentries'] as int? ?? 0;
+    final sentryLevels = GameConfigService.instance
+        .getOperationsBuildings()['laser_sentry']?['levels'] as List? ?? [];
+    final sentryConfig = sentryLevels.isNotEmpty
+        ? sentryLevels.first as Map<String, dynamic>
+        : null;
+    final startingSentries = sentryConfig != null
+        ? List.generate(startingSentryCount, (i) => LaserSentry(
+      id: 'sentry_start_$i',
+      level: 1,
+      health: 100,
+      powerDraw: sentryConfig['power_draw_kwh'] as int,
+      damage: sentryConfig['damage'] as int,
+      fireRate: sentryConfig['fire_rate'] as int,
+      range: sentryConfig['range'] as int,
+    ))
+        : <LaserSentry>[];
+
     return GameState(
       gameId: DateTime.now().millisecondsSinceEpoch,
       slotNumber: slotNumber,
@@ -86,7 +118,7 @@ class GameFactory {
       silos: [startingSilo],
       refineries: [startingRefinery],
       powerSources: [startingPower],
-      laserSentries: [],
+      laserSentries: startingSentries,
       activeContracts: [],
       completedContracts: [],
       milestones: milestones,
@@ -103,9 +135,29 @@ class GameFactory {
       lifetimeScripEarned: startingScrip,
       totalCropsHarvested: 0,
       totalCompostGenerated: 0,
-      nextRaidWeek: raidFreq,
-      miningDrones: [],
+      nextRaidWeek: 8, // first raid at week 8
+      miningDrones: [
+        MiningDrone(
+          id: 'drone_start_0',
+          tier: 1,
+          assignedResource: null, // balanced
+          outputPerWeek: 6.0,
+          powerDraw: 3,
+        ),
+      ],
+      defenseWall: DefenseWall(
+        level: 1,
+        currentHp: wallMaxHp,
+        maxHp: wallMaxHp,
+      ),
+      grenades: GrenadeInventory(
+        counts: startingGrenades,
+        benchLevel: 1,
+      ),
       raidDefendedThisWeek: false,
+      totalRaidsDefended: 0,
+      totalFaunaKilled: 0,
+      totalChitinCollected: 0,
       pendingSales: [],
       siloInventory: {},
       shipmentsThisWindow: 0,

@@ -1,0 +1,154 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/upgrades_domebots.yaml
+# ═══════════════════════════════════════════════════════════════
+#
+# Dome Bot upgrade paths. One bot per dome. Upgradeable in place.
+#
+# ACTIONS (cumulative — each Mk includes all previous Mk actions):
+#   Mk1:  auto-water all cells each week
+#   Mk2:  + auto-harvest ready crops into silo
+#   Mk3:  + auto-fertilize (costs 2 compost per cell)
+#   Mk4:  + auto-plant (you set one crop type per dome, it replants empty cells)
+#   Mk5+: all Mk4 actions + increasing bonus chances (see below)
+#
+# BONUS CHANCES (Mk5+):
+#   bonus_seed_chance:     % chance per harvested crop to drop a free seed of that crop tier into inventory
+#   bonus_harvest_chance:  % chance per harvested crop to yield an extra unit to silo
+#   bonus_compost_chance:  % chance per cleared cell to generate extra compost
+#
+# COST PHILOSOPHY:
+#   Mk1-4: metals + chemicals (accessible mid-game)
+#   Mk5-7: metals + components
+#   Mk8-10: metals + components + chitin (late-game luxury)
+#   No ore, no sand, no moon_dirt — the bot is precision equipment.
+#
+# EDITING TIPS:
+#   - Chance values are 0.0 to 1.0 (e.g. 0.10 = 10% chance).
+#   - power_draw_kwh is passive draw per dome this bot is installed in.
+#   - build_cost on level 1 is what you pay to install a fresh Mk1 bot.
+#   - upgrade_cost on levels 2+ is the delta cost to go up one level.
+
+dome_bots:
+  levels:
+    - level: 1
+      name: Dome Bot Mk1
+      actions: [water]
+      build_cost:
+        metals: 20
+      power_draw_kwh: 2
+      bonus_seed_chance: 0.0
+      bonus_harvest_chance: 0.0
+      bonus_compost_chance: 0.0
+
+    - level: 2
+      name: Dome Bot Mk2
+      actions: [water, harvest]
+      upgrade_cost:
+        metals: 35
+        components: 15
+      power_draw_kwh: 3
+      bonus_seed_chance: 0.0
+      bonus_harvest_chance: 0.0
+      bonus_compost_chance: 0.0
+
+    - level: 3
+      name: Dome Bot Mk3
+      actions: [water, harvest, fertilize]
+      upgrade_cost:
+        metals: 60
+        components: 30
+        chemicals: 15
+      power_draw_kwh: 4
+      bonus_seed_chance: 0.0
+      bonus_harvest_chance: 0.0
+      bonus_compost_chance: 0.0
+
+    - level: 4
+      name: Dome Bot Mk4
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 100
+        components: 60
+        chemicals: 30
+        chitin: 20    # chitin for precision planting arm
+      power_draw_kwh: 6
+      bonus_seed_chance: 0.0
+      bonus_harvest_chance: 0.0
+      bonus_compost_chance: 0.0
+
+    # Mk5+ — fully automated. Now getting smarter.
+    # All Mk4 actions plus bonus chances start kicking in.
+
+    - level: 5
+      name: Dome Bot Mk5
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 80
+        components: 40
+      power_draw_kwh: 7
+      bonus_seed_chance: 0.05    # 5% chance per harvest to drop a free seed of that crop tier
+      bonus_harvest_chance: 0.05 # 5% chance for bonus harvest unit
+      bonus_compost_chance: 0.10 # 10% chance for extra compost on clear
+
+    - level: 6
+      name: Dome Bot Mk6
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 100
+        components: 50
+        glass: 5
+      power_draw_kwh: 8
+      bonus_seed_chance: 0.10
+      bonus_harvest_chance: 0.10
+      bonus_compost_chance: 0.15
+
+    - level: 7
+      name: Dome Bot Mk7
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 120
+        components: 60
+        glass: 10
+      power_draw_kwh: 9
+      bonus_seed_chance: 0.15
+      bonus_harvest_chance: 0.15
+      bonus_compost_chance: 0.20
+
+    - level: 8
+      name: Dome Bot Mk8
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 150
+        components: 80
+        glass: 15
+        chitin: 10
+      power_draw_kwh: 10
+      bonus_seed_chance: 0.20
+      bonus_harvest_chance: 0.20
+      bonus_compost_chance: 0.25
+
+    - level: 9
+      name: Dome Bot Mk9
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 180
+        components: 100
+        glass: 20
+        chitin: 20
+      power_draw_kwh: 12
+      bonus_seed_chance: 0.30
+      bonus_harvest_chance: 0.25
+      bonus_compost_chance: 0.30
+
+    - level: 10
+      name: Dome Bot Mk10
+      actions: [water, harvest, fertilize, plant]
+      upgrade_cost:
+        metals: 200
+        components: 120
+        glass: 25
+        chitin: 35
+      power_draw_kwh: 14
+      bonus_seed_chance: 0.40    # 40% chance per harvest to drop a free seed — rarely need to buy seeds
+      bonus_harvest_chance: 0.35 # Serious yield boost
+      bonus_compost_chance: 0.40 # Compost basically pays for itself

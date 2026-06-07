@@ -47,36 +47,141 @@ class EndWeekEngine {
           water: s.resources.water + waterOutput,
         ),
       );
-      events.add('💧 Water purifier output: +${waterOutput}L');
+      events.add('💧 Water purifier output: +${waterOutput}m³');
+    }
+
+    // ── Step 0a: Dome Bot processing ─────────────────────────────────────────
+    // Order: water → fertilize → (growth happens later) → harvest → plant
+        {
+      int botWatered = 0, botHarvested = 0, botFertilized = 0, botPlanted = 0;
+      final config = GameConfigService.instance;
+      final updatedDomes = <Dome>[];
+
+      for (final dome in s.domes) {
+        final bot = dome.domeBot;
+        if (bot == null) { updatedDomes.add(dome); continue; }
+
+        var cells = List<CropCell>.from(dome.cells);
+        var resources = s.resources;
+
+        // WATER — bot waters all growing cells (costs water)
+        if (bot.canWater) {
+          for (var i = 0; i < cells.length; i++) {
+            final cell = cells[i];
+            if (cell.cropId == null) continue;
+            final crop = config.getCrop(cell.cropId!);
+            if (crop == null) continue;
+            final waterNeeded = crop.waterPerWeek.toDouble();
+            if (resources.water >= waterNeeded) {
+              cells[i] = cell.copyWith(wateredThisWeek: true);
+              resources = resources.copyWith(water: resources.water - waterNeeded);
+              botWatered++;
+            }
+          }
+        }
+
+        // FERTILIZE — bot fertilizes unwatered growing cells using compost
+        if (bot.canFertilize) {
+          for (var i = 0; i < cells.length; i++) {
+            final cell = cells[i];
+            if (cell.cropId == null || cell.state == CropState.empty) continue;
+            if (!cell.fertilizedThisWeek && resources.compost >= 2) {
+              cells[i] = cell.copyWith(fertilizedThisWeek: true);
+              resources = resources.copyWith(compost: resources.compost - 2);
+              botFertilized++;
+            }
+          }
+        }
+
+        s = s.copyWith(resources: resources);
+
+        // HARVEST — bot harvests ready crops into silo
+        if (bot.canHarvest) {
+          final updatedInv = Map<String, double>.from(s.siloInventory);
+          for (var i = 0; i < cells.length; i++) {
+            final cell = cells[i];
+            if (cell.state != CropState.ready || cell.cropId == null) continue;
+            final crop = config.getCrop(cell.cropId!);
+            if (crop == null) continue;
+            updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + 1;
+            cells[i] = cell.cleared();
+            botHarvested++;
+          }
+          s = s.copyWith(
+            siloInventory: updatedInv,
+            totalCropsHarvested: s.totalCropsHarvested + botHarvested,
+          );
+        }
+
+        // PLANT — bot plants empty cells with configured crop
+        if (bot.canPlant && bot.plantCropId != null) {
+          final crop = config.getCrop(bot.plantCropId!);
+          if (crop != null) {
+            for (var i = 0; i < cells.length; i++) {
+              final cell = cells[i];
+              if (cell.state == CropState.empty) {
+                cells[i] = CropCell(
+                  position: cell.position,
+                  cropId: bot.plantCropId,
+                  state: CropState.planted,
+                  weeksGrown: 0,
+                  wateredThisWeek: false,
+                  fertilizedThisWeek: false,
+                );
+                botPlanted++;
+              }
+            }
+          }
+        }
+
+        updatedDomes.add(dome.copyWith(cells: cells));
+      }
+
+      s = s.copyWith(domes: updatedDomes);
+
+      if (botWatered > 0 || botHarvested > 0 || botFertilized > 0 || botPlanted > 0) {
+        final parts = <String>[];
+        if (botWatered > 0) parts.add('watered $botWatered cells');
+        if (botFertilized > 0) parts.add('fertilized $botFertilized cells');
+        if (botHarvested > 0) parts.add('harvested $botHarvested crops');
+        if (botPlanted > 0) parts.add('planted $botPlanted seeds');
+        events.add('🤖 Dome Bots: ${parts.join(', ')}');
+        robotActions.add('Dome Bots: ${parts.join(', ')}');
+      }
     }
 
     // ── Step 0b: Mining drone output ─────────────────────────────────────────
     if (s.miningDrones.isNotEmpty) {
-      var moonDirt = 0.0;
-      var ore = 0.0;
-      var sand = 0.0;
+      var moonDirt = 0.0, ore = 0.0, sand = 0.0, chemicals = 0.0;
       for (final drone in s.miningDrones) {
-        if (drone.assignedResource == null) continue;
-        switch (drone.assignedResource!) {
-          case 'moon_dirt': moonDirt += drone.outputPerWeek;
-          case 'ore': ore += drone.outputPerWeek;
-          case 'sand': sand += drone.outputPerWeek;
+        if (drone.isBalanced) {
+          final share = drone.outputPerWeek / 4;
+          moonDirt += share; ore += share; sand += share; chemicals += share;
+        } else {
+          switch (drone.assignedResource!) {
+            case 'moon_dirt': moonDirt += drone.outputPerWeek;
+            case 'ore': ore += drone.outputPerWeek;
+            case 'sand': sand += drone.outputPerWeek;
+            case 'chemicals': chemicals += drone.outputPerWeek;
+          }
         }
       }
-      if (moonDirt > 0 || ore > 0 || sand > 0) {
+      if (moonDirt > 0 || ore > 0 || sand > 0 || chemicals > 0) {
         s = s.copyWith(
           resources: s.resources.copyWith(
             moonDirt: s.resources.moonDirt + moonDirt,
             ore: s.resources.ore + ore,
             sand: s.resources.sand + sand,
+            chemicals: s.resources.chemicals + chemicals,
           ),
         );
-        final droneSummary = [
-          if (moonDirt > 0) '+${moonDirt.toInt()} Moon Dirt',
-          if (ore > 0) '+${ore.toInt()} Ore',
-          if (sand > 0) '+${sand.toInt()} Sand',
-        ].join(', ');
-        events.add('⛏️ Mining drones: $droneSummary');
+        final parts = [
+          if (moonDirt > 0) '+${moonDirt.toStringAsFixed(1)} dirt',
+          if (ore > 0) '+${ore.toStringAsFixed(1)} ore',
+          if (sand > 0) '+${sand.toStringAsFixed(1)} sand',
+          if (chemicals > 0) '+${chemicals.toStringAsFixed(1)} chem',
+        ];
+        events.add('⛏️ Mining drones: ${parts.join(', ')}');
       }
     }
 
@@ -378,6 +483,32 @@ class EndWeekEngine {
     if (newRadio != null) {
       s = s.copyWith(
         radioFeed: [...s.radioFeed, newRadio],
+      );
+    }
+
+    // ── Step 10b: Ship window reset ──────────────────────────────────────────
+    if (s.currentWeek >= s.nextShipWindowWeek) {
+      s = s.copyWith(
+        nextShipWindowWeek: s.nextShipWindowWeek + _config.shipWindowInterval,
+        shipmentsThisWindow: 0,
+      );
+    }
+
+    // ── Step 10c: Raid scheduling ─────────────────────────────────────────────
+    if (s.currentWeek >= s.nextRaidWeek && !s.raidDefendedThisWeek) {
+      final wallDamage = (s.defenseWall.maxHp * 0.25).round();
+      s = s.copyWith(defenseWall: s.defenseWall.takeDamage(wallDamage));
+      events.add('⚠️ Raid was skipped — wall took $wallDamage damage!');
+    }
+    if (s.currentWeek >= s.nextRaidWeek) {
+      final interval = switch (s.difficulty) {
+        Difficulty.easy   => 12,
+        Difficulty.normal => 10,
+        Difficulty.hard   => 6,
+      };
+      s = s.copyWith(
+        nextRaidWeek: s.nextRaidWeek + interval,
+        raidDefendedThisWeek: false,
       );
     }
 

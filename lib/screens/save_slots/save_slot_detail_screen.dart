@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
-import '../../engine/kovacs_engine.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/end_week_engine.dart';
@@ -17,6 +16,8 @@ import '../dev/dev_tools_screen.dart';
 import '../main_menu/main_menu_screen.dart';
 import '../relay/relay_screen.dart';
 import '../operations/operations_screen.dart';
+import '../habitat/habitat_screen.dart';
+import '../raid/raid_screen.dart';
 import '../refinery/refinery_screen.dart';
 
 class SaveSlotDetailScreen extends ConsumerStatefulWidget {
@@ -34,9 +35,9 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     _TabItem(icon: Icons.dashboard, label: 'Dashboard'),
     _TabItem(icon: Icons.circle, label: 'Domes'),
     _TabItem(icon: Icons.science, label: 'Refinery'),
-    _TabItem(icon: Icons.satellite_alt, label: 'Relay'),
     _TabItem(icon: Icons.terrain, label: 'Operations'),
-    _TabItem(icon: Icons.home, label: 'Habitat'),
+    _TabItem(icon: Icons.satellite_alt, label: 'Relay'),
+    _TabItem(icon: Icons.shield, label: 'Habitat'),
   ];
 
   @override
@@ -172,9 +173,9 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
       case 0: return _DashboardTab(game: game, onEndWeek: () => _doEndWeek(game));
       case 1: return const DomeScreen();
       case 2: return const RefineryScreen();
-      case 3: return const RelayScreen();
-      case 4: return const OperationsScreen();
-      case 5: return _HabitatStub(game: game);
+      case 3: return const OperationsScreen();
+      case 4: return const RelayScreen();
+      case 5: return const HabitatScreen();
       default: return const SizedBox();
     }
   }
@@ -231,7 +232,9 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
       ref.read(weekSummaryProvider.notifier).state = summary;
 
       if (context.mounted) {
-        // If game terminated, push summary then pop to main menu on close
+        // Always return to Dashboard tab first
+        setState(() => _currentTab = 0);
+
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => WeekSummaryScreen(summary: summary),
@@ -333,6 +336,32 @@ class _DashboardTab extends ConsumerWidget {
             .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
             .map((m) => _MilestoneRow(milestone: m, game: game)),
         const SizedBox(height: 16),
+        // Show defend button if raid is active
+        if (isRaidWeek)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MFColors.neonPink,
+                  foregroundColor: MFColors.background,
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RaidScreen(game: game),
+                  ),
+                ),
+                child: Text(
+                  '🚨 DEFEND RAID NOW',
+                  style: MFTextStyles.labelLarge.copyWith(
+                    color: MFColors.background, letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
         _EndWeekButton(
           game: game,
           isLoading: isLoading,
@@ -685,107 +714,6 @@ class _SiloInventoryCard extends StatelessWidget {
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-}
-
-class _HabitatStub extends StatelessWidget {
-  final GameState game;
-  const _HabitatStub({required this.game});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Center(child: Text('🏠', style: TextStyle(fontSize: 64))),
-        const SizedBox(height: 16),
-        Center(
-          child: Text(
-            game.farmName.toUpperCase(),
-            style: MFTextStyles.headlineLarge.copyWith(color: MFColors.neonCyan),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const _SectionHeader('LIFETIME STATS'),
-        const SizedBox(height: 12),
-        _StatRow('Weeks Survived',     '${game.currentWeek}'),
-        _StatRow('Crops Harvested',    '${game.totalCropsHarvested}'),
-        _StatRow('Volume Delivered',   '${game.totalVolumeDeliveredM3.toStringAsFixed(1)}m³'),
-        _StatRow('Lifetime Star-Scrip','${game.lifetimeScripEarned}'),
-        _StatRow('Compost Generated',  '${game.totalCompostGenerated}'),
-        const SizedBox(height: 24),
-        const _SectionHeader('TROPHIES'),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: MFColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: MFColors.borderSubtle),
-          ),
-          child: Center(
-            child: Text(
-              '${game.trophies.where((t) => t.status == TrophyStatus.unlocked).length}'
-                  ' / ${game.trophies.length} trophies unlocked\n\nFull trophy room in Phase 5.',
-              style: MFTextStyles.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const _SectionHeader('RADIO TRANSMISSIONS'),
-        const SizedBox(height: 12),
-        ...game.radioFeed.reversed.map(
-              (r) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: MFColors.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: r.isRead ? MFColors.borderSubtle : MFColors.neonCyan.withValues(alpha: 0.4),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('W${r.week}',
-                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan, fontSize: 10)),
-                const SizedBox(width: 8),
-                Expanded(child: Text(r.message, style: MFTextStyles.bodyMedium)),
-                if (!r.isRead)
-                  Container(
-                    width: 6, height: 6,
-                    decoration: const BoxDecoration(
-                      color: MFColors.neonCyan, shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatRow(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: MFTextStyles.bodyMedium),
-          Text(value, style: MFTextStyles.labelLarge),
-        ],
       ),
     );
   }

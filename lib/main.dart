@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/app_theme.dart';
 import 'config/game_config_service.dart';
+import 'config/upgrade_config_service.dart';
 import 'screens/main_menu/main_menu_screen.dart';
 
 void main() async {
@@ -29,6 +30,7 @@ void main() async {
 
   // Load game config from JSON asset before app launches
   await GameConfigService.instance.initialize();
+  await UpgradeConfigService.instance.load();
 
   runApp(
     const ProviderScope(

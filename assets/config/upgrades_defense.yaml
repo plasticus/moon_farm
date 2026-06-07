@@ -1,0 +1,310 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/upgrades_defense.yaml
+# ═══════════════════════════════════════════════════════════════
+#
+# All defensive structure upgrade paths.
+# Includes: defense_wall, sentries, grenade_bench, grenade recipes.
+#
+# COST PHILOSOPHY:
+#   Wall repairs/upgrades use primitive materials (ore, moon_dirt) — no components ever.
+#   Sentries scale up through metals → metals+components → +chitin at high Mk.
+#   Grenades use whatever thematically fits (chemicals, metals, meat, chitin).
+#
+# EDITING TIPS:
+#   - All HP values are absolute, not additive.
+#   - repair_cost is what you pay to restore the wall to full HP from any damage.
+#   - Sentry stats: damage is per projectile, fire_rate is shots per second,
+#     range is in screen pixels (800 = just under full width at Mk1).
+
+
+# ─── DEFENSE WALL ────────────────────────────────────────────────────────────
+# Sits at the bottom of the raid screen. Fauna chip at it when they arrive.
+# Upgrade to increase max HP. Repair to restore current HP.
+# Repair costs are always ore + moon_dirt. No metals, no components, ever.
+
+defense_wall:
+  levels:
+    - level: 1
+      max_hp: 100
+      upgrade_cost: {}           # starting level, no upgrade cost
+      repair_cost:
+        ore: 10
+        moon_dirt: 8
+
+    - level: 2
+      max_hp: 200
+      upgrade_cost:
+        ore: 20
+        moon_dirt: 15
+      repair_cost:
+        ore: 15
+        moon_dirt: 12
+
+    - level: 3
+      max_hp: 350
+      upgrade_cost:
+        ore: 40
+        moon_dirt: 30
+      repair_cost:
+        ore: 20
+        moon_dirt: 18
+
+    - level: 4
+      max_hp: 500
+      upgrade_cost:
+        ore: 60
+        moon_dirt: 40
+        chitin: 5
+      repair_cost:
+        ore: 25
+        moon_dirt: 20
+
+    - level: 5
+      max_hp: 700
+      upgrade_cost:
+        ore: 80
+        moon_dirt: 50
+        chitin: 15
+      repair_cost:
+        ore: 30
+        moon_dirt: 25
+
+    - level: 6
+      max_hp: 950
+      upgrade_cost:
+        ore: 100
+        moon_dirt: 60
+        chitin: 25
+        metals: 5
+      repair_cost:
+        ore: 35
+        moon_dirt: 30
+
+    - level: 7
+      max_hp: 1250
+      upgrade_cost:
+        ore: 120
+        moon_dirt: 80
+        chitin: 40
+        metals: 8
+      repair_cost:
+        ore: 40
+        moon_dirt: 35
+
+    - level: 8
+      max_hp: 1600
+      upgrade_cost:
+        ore: 150
+        moon_dirt: 100
+        chitin: 60
+        metals: 12
+      repair_cost:
+        ore: 50
+        moon_dirt: 40
+
+    - level: 9
+      max_hp: 2000
+      upgrade_cost:
+        ore: 200
+        moon_dirt: 120
+        chitin: 80
+        metals: 18
+      repair_cost:
+        ore: 60
+        moon_dirt: 50
+
+    - level: 10
+      max_hp: 2500
+      upgrade_cost:
+        ore: 250
+        moon_dirt: 150
+        chitin: 100
+        metals: 25
+      repair_cost:
+        ore: 75
+        moon_dirt: 60
+
+
+# ─── SENTRIES ────────────────────────────────────────────────────────────────
+# Auto-fire heat-seeking projectiles during raids.
+# Randomly placed in the lower half of the field at raid start.
+# Higher Mk = more damage, faster fire rate, longer range.
+# Mk3+ requires chitin — plan ahead.
+
+sentries:
+  levels:
+    - level: 1
+      name: Sentry Mk1
+      build_cost:
+        metals: 15
+        components: 5
+      power_draw_kwh: 2
+      damage: 10
+      fire_rate: 1         # shots per second
+      range: 800           # screen pixels
+
+    - level: 2
+      name: Sentry Mk2
+      build_cost:
+        metals: 35
+        components: 15
+      power_draw_kwh: 3
+      damage: 25
+      fire_rate: 2
+      range: 900
+
+    - level: 3
+      name: Sentry Mk3
+      build_cost:
+        metals: 80
+        components: 35
+        chitin: 10
+      power_draw_kwh: 5
+      damage: 50
+      fire_rate: 3
+      range: 1000
+
+    - level: 4
+      name: Sentry Mk4
+      build_cost:
+        metals: 150
+        components: 60
+        chitin: 25
+      power_draw_kwh: 7
+      damage: 90
+      fire_rate: 4
+      range: 1100
+
+    - level: 5
+      name: Sentry Mk5
+      build_cost:
+        metals: 250
+        components: 100
+        chitin: 50
+        glass: 10
+      power_draw_kwh: 10
+      damage: 150
+      fire_rate: 5
+      range: 1200
+
+
+# ─── GRENADE BENCH ───────────────────────────────────────────────────────────
+# Upgrading the bench unlocks higher-tier grenade types.
+# Bench level 1 is free — you start with it.
+# No power draw — it's a workbench, not a machine.
+
+grenade_bench:
+  levels:
+    - level: 1
+      name: Basic Bench
+      build_cost: {}         # free at start
+      unlocks_grenade_tier: 1
+
+    - level: 2
+      name: Standard Bench
+      build_cost:
+        metals: 15
+        components: 5
+      unlocks_grenade_tier: 2
+
+    - level: 3
+      name: Advanced Bench
+      build_cost:
+        metals: 30
+        components: 15
+      unlocks_grenade_tier: 3
+
+    - level: 4
+      name: Expert Bench
+      build_cost:
+        metals: 60
+        components: 30
+        chitin: 20
+      unlocks_grenade_tier: 4
+
+
+# ─── GRENADE RECIPES ─────────────────────────────────────────────────────────
+# Each grenade has a type, effect, and craft recipe.
+# unlock_bench_level: minimum bench level required to craft this grenade.
+# effect_radius: area of effect in screen pixels.
+# effect_duration: seconds the effect lasts (where applicable).
+# damage: instant damage dealt (where applicable).
+# damage_per_second: for burn zones.
+
+grenades:
+  - id: flashbang
+    name: Flashbang
+    emoji: 💥
+    description: Scatters and confuses fauna for 2 seconds.
+    unlock_bench_level: 1
+    effect: scatter
+    effect_duration: 2.0
+    effect_radius: 80
+    craft_yield: 3
+    craft_cost:
+      chemicals: 2
+
+  - id: stun
+    name: Stun Grenade
+    emoji: ⚡
+    description: Hard freezes fauna in place for 3 seconds.
+    unlock_bench_level: 2
+    effect: stun
+    effect_duration: 3.0
+    effect_radius: 60
+    craft_yield: 2
+    craft_cost:
+      metals: 2
+      components: 1
+
+  - id: arc
+    name: Arc Grenade
+    emoji: 🔵
+    description: Electric burst — instant area damage.
+    unlock_bench_level: 2
+    effect: damage
+    damage: 30
+    effect_radius: 70
+    craft_yield: 2
+    craft_cost:
+      components: 2
+      chemicals: 1
+
+  - id: incendiary
+    name: Incendiary
+    emoji: 🔥
+    description: Creates a burn zone for 5 seconds. Damages anything passing through.
+    unlock_bench_level: 3
+    effect: burn_zone
+    effect_duration: 5.0
+    effect_radius: 50
+    damage_per_second: 10
+    craft_yield: 2
+    craft_cost:
+      ore: 3
+      chemicals: 2
+
+  - id: bait
+    name: Bait Trap
+    emoji: 🍖
+    description: Fauna cluster around it for 3 seconds, then it detonates.
+    unlock_bench_level: 2
+    effect: bait
+    effect_duration: 3.0
+    effect_radius: 90
+    craft_yield: 2
+    craft_cost:
+      meat: 2
+
+  - id: chitin_burst
+    name: Chitin Burst
+    emoji: 💣
+    description: Massive area damage. Use wisely.
+    unlock_bench_level: 4
+    effect: damage
+    damage: 150
+    effect_radius: 100
+    craft_yield: 1
+    craft_cost:
+      chitin: 3
+      chemicals: 2

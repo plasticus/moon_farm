@@ -1,0 +1,581 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/upgrades_refinery.yaml
+# ═══════════════════════════════════════════════════════════════
+#
+# Refinery machine upgrade paths.
+# All 5 machines defined here: composter, smelter, z_soil_processor,
+# glass_furnace, component_fabricator.
+#
+# STRUCTURE PER MACHINE:
+#   name:         Display name
+#   emoji:        Emoji icon
+#   levels:       List of level definitions (level 1 = starting Mk1)
+#     level:          Mk level number
+#     build_cost:     (level 1 ONLY) Resources to install this machine from scratch
+#     upgrade_cost:   (levels 2+) Resources to upgrade from previous level
+#     power_draw_kwh: Passive power draw while installed (whether processing or not)
+#     recipe_in:      Input resources consumed per one PROCESS click
+#     recipe_out:     Output resources produced per one PROCESS click
+#
+# COST PHILOSOPHY:
+#   Mk1-2:  Primitive materials only (moon_dirt, chemicals, ore, sand, water, compost)
+#   Mk3-4:  Metals + basic materials
+#   Mk5-6:  Metals + components
+#   Mk7-8:  Metals + components + glass
+#   Mk9-10: Metals + components + glass + chitin
+#   No scrip ever. You source everything yourself.
+#
+# EDITING TIPS:
+#   - Indentation matters in YAML. Use 2 spaces, never tabs.
+#   - Costs of 0 can just be omitted entirely.
+#   - To add a new material cost, just add it under build_cost or upgrade_cost.
+#   - recipe_in and recipe_out can have any resource key from the game.
+
+# ─── COMPOSTER ───────────────────────────────────────────────────────────────
+# The slow, dumb cousin of the Z-Soil Processor.
+# Only input: compost (a free byproduct of farming).
+# Tops out at Mk3 — nature can only be nudged so much.
+# Great as a passive compost sink. Not worth heavy investment.
+
+composter:
+  name: Composter
+  emoji: ♻️
+  caps_at_level: 3
+  levels:
+    - level: 1
+      build_cost:
+        compost: 10
+        moon_dirt: 5
+      power_draw_kwh: 1
+      recipe_in:
+        compost: 8
+      recipe_out:
+        z_soil: 5
+
+    - level: 2
+      upgrade_cost:
+        compost: 20
+        moon_dirt: 10
+        ore: 2
+      power_draw_kwh: 2
+      recipe_in:
+        compost: 6
+      recipe_out:
+        z_soil: 6
+
+    - level: 3
+      upgrade_cost:
+        moon_dirt: 15
+        ore: 5
+        chemicals: 3
+      power_draw_kwh: 3
+      recipe_in:
+        compost: 5
+      recipe_out:
+        z_soil: 8
+
+
+# ─── SMELTER ─────────────────────────────────────────────────────────────────
+# Converts raw ore into metals. One of the most critical early machines.
+# Low Mk1 is inefficient but gets you started.
+# Uses water as a coolant at higher levels.
+
+smelter:
+  name: Smelter
+  emoji: 🔥
+  levels:
+    - level: 1
+      build_cost:
+        ore: 8
+        moon_dirt: 5
+        chemicals: 3
+      power_draw_kwh: 5
+      recipe_in:
+        ore: 4
+      recipe_out:
+        metals: 2
+
+    - level: 2
+      upgrade_cost:
+        ore: 12
+        moon_dirt: 8
+        chemicals: 5
+      power_draw_kwh: 10
+      recipe_in:
+        ore: 4
+      recipe_out:
+        metals: 3
+
+    - level: 3
+      upgrade_cost:
+        metals: 5
+        ore: 10
+      power_draw_kwh: 15
+      recipe_in:
+        ore: 3
+      recipe_out:
+        metals: 3
+
+    - level: 4
+      upgrade_cost:
+        metals: 10
+        ore: 8
+        water: 5
+      power_draw_kwh: 20
+      recipe_in:
+        ore: 3
+      recipe_out:
+        metals: 4
+
+    - level: 5
+      upgrade_cost:
+        metals: 15
+        components: 2
+        water: 8
+      power_draw_kwh: 25
+      recipe_in:
+        ore: 3
+      recipe_out:
+        metals: 5
+
+    - level: 6
+      upgrade_cost:
+        metals: 20
+        components: 4
+        water: 10
+      power_draw_kwh: 30
+      recipe_in:
+        ore: 2
+      recipe_out:
+        metals: 5
+
+    - level: 7
+      upgrade_cost:
+        metals: 25
+        components: 6
+        glass: 2
+      power_draw_kwh: 35
+      recipe_in:
+        ore: 2
+      recipe_out:
+        metals: 6
+
+    - level: 8
+      upgrade_cost:
+        metals: 30
+        components: 8
+        glass: 4
+      power_draw_kwh: 40
+      recipe_in:
+        ore: 2
+      recipe_out:
+        metals: 8
+
+    - level: 9
+      upgrade_cost:
+        metals: 20
+        components: 10
+        glass: 6
+        chitin: 2
+      power_draw_kwh: 45
+      recipe_in:
+        ore: 1
+      recipe_out:
+        metals: 8
+
+    - level: 10
+      upgrade_cost:
+        metals: 20
+        components: 12
+        glass: 8
+        chitin: 4
+      power_draw_kwh: 50
+      recipe_in:
+        ore: 1
+      recipe_out:
+        metals: 10
+
+
+# ─── Z-SOIL PROCESSOR ────────────────────────────────────────────────────────
+# Converts moon dirt + chemicals into Z-Soil.
+# Superior to the composter in every way — but requires chemicals.
+# The backbone of any serious farming operation.
+
+z_soil_processor:
+  name: Z-Soil Processor
+  emoji: 🌱
+  levels:
+    - level: 1
+      build_cost:
+        moon_dirt: 5
+        chemicals: 5
+        ore: 1
+      power_draw_kwh: 5
+      recipe_in:
+        moon_dirt: 5
+        chemicals: 5
+      recipe_out:
+        z_soil: 8
+
+    - level: 2
+      upgrade_cost:
+        moon_dirt: 10
+        chemicals: 5
+        ore: 3
+      power_draw_kwh: 10
+      recipe_in:
+        moon_dirt: 5
+        chemicals: 5
+      recipe_out:
+        z_soil: 10
+
+    - level: 3
+      upgrade_cost:
+        metals: 5
+        chemicals: 5
+      power_draw_kwh: 15
+      recipe_in:
+        moon_dirt: 4
+        chemicals: 4
+      recipe_out:
+        z_soil: 10
+
+    - level: 4
+      upgrade_cost:
+        metals: 10
+        chemicals: 5
+      power_draw_kwh: 20
+      recipe_in:
+        moon_dirt: 4
+        chemicals: 4
+      recipe_out:
+        z_soil: 12
+
+    - level: 5
+      upgrade_cost:
+        metals: 15
+        components: 2
+      power_draw_kwh: 25
+      recipe_in:
+        moon_dirt: 4
+        chemicals: 4
+      recipe_out:
+        z_soil: 14
+
+    - level: 6
+      upgrade_cost:
+        metals: 20
+        components: 4
+      power_draw_kwh: 30
+      recipe_in:
+        moon_dirt: 4
+        chemicals: 4
+      recipe_out:
+        z_soil: 16
+
+    - level: 7
+      upgrade_cost:
+        metals: 25
+        components: 6
+        glass: 2
+      power_draw_kwh: 35
+      recipe_in:
+        moon_dirt: 3
+        chemicals: 3
+      recipe_out:
+        z_soil: 16
+
+    - level: 8
+      upgrade_cost:
+        metals: 30
+        components: 8
+        glass: 4
+      power_draw_kwh: 40
+      recipe_in:
+        moon_dirt: 3
+        chemicals: 3
+      recipe_out:
+        z_soil: 20
+
+    - level: 9
+      upgrade_cost:
+        metals: 20
+        components: 10
+        glass: 6
+        chitin: 2
+      power_draw_kwh: 45
+      recipe_in:
+        moon_dirt: 3
+        chemicals: 3
+      recipe_out:
+        z_soil: 24
+
+    - level: 10
+      upgrade_cost:
+        metals: 20
+        components: 12
+        glass: 8
+        chitin: 4
+      power_draw_kwh: 50
+      recipe_in:
+        moon_dirt: 2
+        chemicals: 2
+      recipe_out:
+        z_soil: 24
+
+
+# ─── GLASS FURNACE ───────────────────────────────────────────────────────────
+# Converts sand into glass. Sand is plentiful; this machine is worth building early.
+# Uses water at mid-levels for tempering. Slower recipe than smelter.
+
+glass_furnace:
+  name: Glass Furnace
+  emoji: 🪟
+  levels:
+    - level: 1
+      build_cost:
+        sand: 10
+        ore: 3
+        chemicals: 2
+      power_draw_kwh: 5
+      recipe_in:
+        sand: 6
+      recipe_out:
+        glass: 3
+
+    - level: 2
+      upgrade_cost:
+        sand: 15
+        ore: 5
+        chemicals: 3
+      power_draw_kwh: 10
+      recipe_in:
+        sand: 5
+      recipe_out:
+        glass: 4
+
+    - level: 3
+      upgrade_cost:
+        metals: 5
+        sand: 10
+        water: 3
+      power_draw_kwh: 15
+      recipe_in:
+        sand: 5
+        water: 1
+      recipe_out:
+        glass: 5
+
+    - level: 4
+      upgrade_cost:
+        metals: 10
+        sand: 8
+        water: 5
+      power_draw_kwh: 20
+      recipe_in:
+        sand: 4
+        water: 1
+      recipe_out:
+        glass: 6
+
+    - level: 5
+      upgrade_cost:
+        metals: 15
+        components: 2
+        water: 8
+      power_draw_kwh: 25
+      recipe_in:
+        sand: 4
+        water: 1
+      recipe_out:
+        glass: 8
+
+    - level: 6
+      upgrade_cost:
+        metals: 20
+        components: 4
+        water: 10
+      power_draw_kwh: 30
+      recipe_in:
+        sand: 3
+        water: 1
+      recipe_out:
+        glass: 8
+
+    - level: 7
+      upgrade_cost:
+        metals: 25
+        components: 6
+        glass: 3
+      power_draw_kwh: 35
+      recipe_in:
+        sand: 3
+      recipe_out:
+        glass: 10
+
+    - level: 8
+      upgrade_cost:
+        metals: 30
+        components: 8
+        glass: 5
+      power_draw_kwh: 40
+      recipe_in:
+        sand: 2
+      recipe_out:
+        glass: 10
+
+    - level: 9
+      upgrade_cost:
+        metals: 20
+        components: 10
+        glass: 6
+        chitin: 2
+      power_draw_kwh: 45
+      recipe_in:
+        sand: 2
+      recipe_out:
+        glass: 12
+
+    - level: 10
+      upgrade_cost:
+        metals: 20
+        components: 12
+        glass: 8
+        chitin: 4
+      power_draw_kwh: 50
+      recipe_in:
+        sand: 1
+      recipe_out:
+        glass: 12
+
+
+# ─── COMPONENT FABRICATOR ────────────────────────────────────────────────────
+# Turns metals + chemicals into components.
+# Components unlock higher-tier everything. This is a late-game priority.
+# Requires chemicals at all levels — the most chemistry-intensive machine.
+
+component_fabricator:
+  name: Component Fabricator
+  emoji: ⚙️
+  levels:
+    - level: 1
+      build_cost:
+        ore: 5
+        chemicals: 8
+        moon_dirt: 3
+      power_draw_kwh: 5
+      recipe_in:
+        metals: 4
+        chemicals: 3
+      recipe_out:
+        components: 2
+
+    - level: 2
+      upgrade_cost:
+        ore: 8
+        chemicals: 10
+        moon_dirt: 5
+      power_draw_kwh: 10
+      recipe_in:
+        metals: 4
+        chemicals: 3
+      recipe_out:
+        components: 3
+
+    - level: 3
+      upgrade_cost:
+        metals: 5
+        chemicals: 8
+      power_draw_kwh: 15
+      recipe_in:
+        metals: 3
+        chemicals: 3
+      recipe_out:
+        components: 3
+
+    - level: 4
+      upgrade_cost:
+        metals: 10
+        chemicals: 10
+      power_draw_kwh: 20
+      recipe_in:
+        metals: 3
+        chemicals: 2
+      recipe_out:
+        components: 4
+
+    - level: 5
+      upgrade_cost:
+        metals: 15
+        components: 2
+        chemicals: 8
+      power_draw_kwh: 25
+      recipe_in:
+        metals: 3
+        chemicals: 2
+      recipe_out:
+        components: 5
+
+    - level: 6
+      upgrade_cost:
+        metals: 20
+        components: 4
+        chemicals: 10
+      power_draw_kwh: 30
+      recipe_in:
+        metals: 2
+        chemicals: 2
+      recipe_out:
+        components: 5
+
+    - level: 7
+      upgrade_cost:
+        metals: 25
+        components: 6
+        glass: 2
+        chemicals: 8
+      power_draw_kwh: 35
+      recipe_in:
+        metals: 2
+        chemicals: 2
+      recipe_out:
+        components: 6
+
+    - level: 8
+      upgrade_cost:
+        metals: 30
+        components: 8
+        glass: 4
+        chemicals: 10
+      power_draw_kwh: 40
+      recipe_in:
+        metals: 2
+        chemicals: 1
+      recipe_out:
+        components: 8
+
+    - level: 9
+      upgrade_cost:
+        metals: 20
+        components: 10
+        glass: 6
+        chitin: 2
+      power_draw_kwh: 45
+      recipe_in:
+        metals: 1
+        chemicals: 1
+      recipe_out:
+        components: 8
+
+    - level: 10
+      upgrade_cost:
+        metals: 20
+        components: 12
+        glass: 8
+        chitin: 4
+      power_draw_kwh: 50
+      recipe_in:
+        metals: 1
+        chemicals: 1
+      recipe_out:
+        components: 10

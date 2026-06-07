@@ -42,6 +42,8 @@ class GameConfigService {
 
   CropConfig? getCrop(String id) => _cropConfigs?[id];
 
+  List<CropConfig> getAllCrops() => _cropConfigs?.values.toList() ?? [];
+
   List<CropConfig> getCropsByTier(int tier) =>
       _cropConfigs!.values.where((c) => c.tier == tier).toList();
 
@@ -284,6 +286,80 @@ class GameConfigService {
 
   List<Map<String, dynamic>> get enemyTypes {
     return (faunaConfig['enemy_types'] as List).cast<Map<String, dynamic>>();
+  }
+
+  List<Map<String, dynamic>> getDefenseWallLevels() {
+    final dw = _c['defense_wall'] as Map<String, dynamic>?;
+    if (dw == null) return [];
+    return List<Map<String, dynamic>>.from(dw['levels'] as List);
+  }
+
+  Map<String, dynamic> getDefenseWallLevel(int level) {
+    return getDefenseWallLevels()
+        .firstWhere((l) => l['level'] == level, orElse: () => getDefenseWallLevels().first);
+  }
+
+  List<Map<String, dynamic>> getFaunaTypes() {
+    final ft = _c['fauna_types'] as List?;
+    if (ft == null) return [];
+    return List<Map<String, dynamic>>.from(ft);
+  }
+
+  Map<String, dynamic>? getFaunaType(String id) {
+    return getFaunaTypes().where((f) => f['id'] == id).firstOrNull;
+  }
+
+  List<Map<String, dynamic>> getGrenadeTypes() {
+    final g = _c['grenades'] as List?;
+    if (g == null) return [];
+    return List<Map<String, dynamic>>.from(g);
+  }
+
+  Map<String, dynamic>? getGrenadeType(String id) {
+    return getGrenadeTypes().where((g) => g['id'] == id).firstOrNull;
+  }
+
+  Map<String, dynamic> getRaidScaling() {
+    return _c['raid_scaling'] as Map<String, dynamic>? ?? {};
+  }
+
+  Map<String, dynamic> getGrenadeBenchConfig() {
+    return _c['grenade_bench'] as Map<String, dynamic>? ?? {};
+  }
+
+  Map<String, dynamic> getDomeBuildingConfig() {
+    return _c['dome_building'] as Map<String, dynamic>? ?? {};
+  }
+
+  /// Computes the scrip cost for the next dome based on how many you already have.
+  int getNextDomeScripCost(Difficulty difficulty, int currentDomeCount) {
+    final cfg = getDomeBuildingConfig();
+    final base = cfg['base_scrip_cost'] as int? ?? 500;
+    final step = switch (difficulty) {
+      Difficulty.easy => cfg['scrip_step_easy'] as int? ?? 250,
+      Difficulty.normal => cfg['scrip_step_normal'] as int? ?? 500,
+      Difficulty.hard => cfg['scrip_step_hard'] as int? ?? 750,
+    };
+    // First dome is free (you start with it). Each additional adds step.
+    // currentDomeCount domes already exist, so next costs base + step*(count-1)
+    return base + step * (currentDomeCount - 1);
+  }
+
+  List<Map<String, dynamic>> getDomeBotLevels() {
+    final bot = _c['dome_bot'] as Map<String, dynamic>?;
+    if (bot == null) return [];
+    return List<Map<String, dynamic>>.from(bot['levels'] as List);
+  }
+
+  List<Map<String, dynamic>> getRadioTips() {
+    final tips = _c['radio_tips'] as List?;
+    if (tips == null) return [];
+    return List<Map<String, dynamic>>.from(tips);
+  }
+
+  Map<String, dynamic> getDifficultyConfig(Difficulty difficulty) {
+    final settings = _c['difficulty_settings'] as Map<String, dynamic>;
+    return settings[difficulty.name] as Map<String, dynamic>;
   }
 
   Map<String, dynamic> getMachineConfigs() {

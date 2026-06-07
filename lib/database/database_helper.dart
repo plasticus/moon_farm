@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 9,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -324,6 +324,11 @@ class DatabaseHelper {
       'total_compost_generated': state.totalCompostGenerated,
       'next_raid_week': state.nextRaidWeek,
       'raid_defended_this_week': state.raidDefendedThisWeek,
+      'total_raids_defended': state.totalRaidsDefended,
+      'total_fauna_killed': state.totalFaunaKilled,
+      'total_chitin_collected': state.totalChitinCollected,
+      'defense_wall': _wallToJson(state.defenseWall),
+      'grenades': _grenadesToJson(state.grenades),
       'pending_sales': state.pendingSales.map(_pendingSaleToJson).toList(),
       'last_saved': state.lastSaved.toIso8601String(),
     };
@@ -357,6 +362,15 @@ class DatabaseHelper {
       totalCompostGenerated: (json['total_compost_generated'] as num).toInt(),
       nextRaidWeek: (json['next_raid_week'] as num).toInt(),
       raidDefendedThisWeek: json['raid_defended_this_week'] as bool,
+      totalRaidsDefended: _i(json['total_raids_defended'] ?? 0),
+      totalFaunaKilled: _i(json['total_fauna_killed'] ?? 0),
+      totalChitinCollected: _i(json['total_chitin_collected'] ?? 0),
+      defenseWall: json['defense_wall'] != null
+          ? _wallFromJson(json['defense_wall'] as Map<String, dynamic>)
+          : const DefenseWall(level: 1, currentHp: 100, maxHp: 100),
+      grenades: json['grenades'] != null
+          ? _grenadesFromJson(json['grenades'] as Map<String, dynamic>)
+          : const GrenadeInventory(counts: {}, benchLevel: 1),
       pendingSales: (json['pending_sales'] as List).map((s) => _pendingSaleFromJson(s as Map<String, dynamic>)).toList(),
       siloInventory: json['silo_inventory'] != null
           ? Map<String, double>.from((json['silo_inventory'] as Map)
@@ -401,6 +415,7 @@ class DatabaseHelper {
     'id': d.id, 'name': d.name, 'tier': d.tier,
     'cells': d.cells.map(_cellToJson).toList(),
     'robot': d.robot != null ? _robotToJson(d.robot!) : null,
+    'dome_bot': d.domeBot != null ? _domeBotToJson(d.domeBot!) : null,
     'structural_health': d.structuralHealth, 'power_draw': d.powerDraw,
   };
 
@@ -408,8 +423,19 @@ class DatabaseHelper {
     id: j['id'] as String, name: j['name'] as String, tier: (j['tier'] as num).toInt(),
     cells: (j['cells'] as List).map((c) => _cellFromJson(c as Map<String, dynamic>)).toList(),
     robot: j['robot'] != null ? _robotFromJson(j['robot'] as Map<String, dynamic>) : null,
+    domeBot: j['dome_bot'] != null ? _domeBotFromJson(j['dome_bot'] as Map<String, dynamic>) : null,
     structuralHealth: (j['structural_health'] as num).toInt(),
     powerDraw: (j['power_draw'] as num).toInt(),
+  );
+
+  Map<String, dynamic> _domeBotToJson(DomeBot b) => {
+    'level': b.level, 'plant_crop_id': b.plantCropId, 'power_draw': b.powerDraw,
+  };
+
+  DomeBot _domeBotFromJson(Map<String, dynamic> j) => DomeBot(
+    level: _i(j['level']),
+    plantCropId: j['plant_crop_id'] as String?,
+    powerDraw: _i(j['power_draw'] ?? 2),
   );
 
   Map<String, dynamic> _cellToJson(CropCell c) => {
@@ -584,13 +610,35 @@ class DatabaseHelper {
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   Map<String, dynamic> _droneToJson(MiningDrone d) => {
-    'id': d.id, 'assigned': d.assignedResource, 'output': d.outputPerWeek,
+    'id': d.id, 'tier': d.tier, 'assigned': d.assignedResource,
+    'output': d.outputPerWeek, 'power_draw': d.powerDraw,
   };
 
   MiningDrone _droneFromJson(Map<String, dynamic> j) => MiningDrone(
     id: j['id'] as String,
+    tier: _i(j['tier'] ?? 1),
     assignedResource: j['assigned'] as String?,
     outputPerWeek: _d(j['output']),
+    powerDraw: _i(j['power_draw'] ?? 3),
+  );
+
+  Map<String, dynamic> _wallToJson(DefenseWall w) => {
+    'level': w.level, 'current_hp': w.currentHp, 'max_hp': w.maxHp,
+  };
+
+  DefenseWall _wallFromJson(Map<String, dynamic> j) => DefenseWall(
+    level: _i(j['level']), currentHp: _i(j['current_hp']), maxHp: _i(j['max_hp']),
+  );
+
+  Map<String, dynamic> _grenadesToJson(GrenadeInventory g) => {
+    'counts': g.counts, 'bench_level': g.benchLevel,
+  };
+
+  GrenadeInventory _grenadesFromJson(Map<String, dynamic> j) => GrenadeInventory(
+    counts: Map<String, int>.from(
+      (j['counts'] as Map? ?? {}).map((k, v) => MapEntry(k as String, _i(v))),
+    ),
+    benchLevel: _i(j['bench_level'] ?? 1),
   );
 
   Difficulty? _difficultyFromString(String? s) {

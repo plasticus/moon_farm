@@ -14,7 +14,12 @@
         "chemicals": 20,
         "seeds": 10,
         "z_soil": 10
-      }
+      },
+      "starting_grenades": {
+        "flashbang": 10
+      },
+      "starting_wall_level": 1,
+      "starting_sentries": 1
     },
     "normal": {
       "milestone_penalty": "three_strikes",
@@ -28,7 +33,12 @@
         "chemicals": 10,
         "seeds": 10,
         "z_soil": 10
-      }
+      },
+      "starting_grenades": {
+        "flashbang": 5
+      },
+      "starting_wall_level": 1,
+      "starting_sentries": 1
     },
     "hard": {
       "milestone_penalty": "one_strike",
@@ -42,7 +52,12 @@
         "chemicals": 5,
         "seeds": 10,
         "z_soil": 10
-      }
+      },
+      "starting_grenades": {
+        "flashbang": 3
+      },
+      "starting_wall_level": 1,
+      "starting_sentries": 0
     }
   },
   "crops": [
@@ -53,7 +68,7 @@
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 3,
-      "water_per_week": 2,
+      "water_per_week": 1,
       "calories_per_unit": 80,
       "base_scrip_value": 5,
       "compost_yield": 2,
@@ -70,7 +85,7 @@
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 2,
-      "water_per_week": 3,
+      "water_per_week": 1,
       "calories_per_unit": 40,
       "base_scrip_value": 8,
       "compost_yield": 1,
@@ -87,7 +102,7 @@
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 3,
-      "water_per_week": 2,
+      "water_per_week": 1,
       "calories_per_unit": 60,
       "base_scrip_value": 6,
       "compost_yield": 3,
@@ -104,7 +119,7 @@
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 1,
-      "water_per_week": 2,
+      "water_per_week": 1,
       "calories_per_unit": 20,
       "base_scrip_value": 4,
       "compost_yield": 1,
@@ -121,7 +136,7 @@
       "tier": 1,
       "dome_tier_required": 1,
       "growth_weeks": 2,
-      "water_per_week": 5,
+      "water_per_week": 1,
       "calories_per_unit": 15,
       "base_scrip_value": 7,
       "compost_yield": 2,
@@ -1736,20 +1751,76 @@
         "cost_metals": 100,
         "cost_components": 20,
         "power_output_kwh": 200
+      },
+      "biofuel_generator": {
+        "name": "Biofuel Generator",
+        "emoji": "\ud83c\udf3f",
+        "description": "Burns compost and moon dirt for power. No refined materials needed.",
+        "cost_scrip": 50,
+        "cost_metals": 0,
+        "cost_glass": 0,
+        "cost_components": 0,
+        "cost_moon_dirt": 20,
+        "cost_compost": 10,
+        "power_output_kwh": 8
       }
     },
     "mining_drone": {
-      "name": "Harvesting Drone",
-      "emoji": "\ud83e\udd16",
-      "description": "Assign to Moon Dirt, Ore, or Sand. Returns resources each week.",
-      "cost_scrip": 250,
-      "cost_metals": 15,
-      "cost_components": 5,
-      "output_per_week": 8.0,
-      "valid_targets": [
-        "moon_dirt",
-        "ore",
-        "sand"
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Harvest Drone Mk1",
+          "emoji": "\ud83e\udd16",
+          "description": "Basic harvester. Extracts moon dirt, ore, sand, or chemicals.",
+          "cost_scrip": 150,
+          "cost_metals": 10,
+          "cost_components": 0,
+          "cost_chitin": 0,
+          "power_draw_kwh": 3,
+          "output_per_week": 6.0,
+          "valid_targets": [
+            "moon_dirt",
+            "ore",
+            "sand",
+            "chemicals"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Harvest Drone Mk2",
+          "emoji": "\ud83e\udd16",
+          "description": "Improved harvester. More output, better power efficiency.",
+          "cost_scrip": 400,
+          "cost_metals": 25,
+          "cost_components": 8,
+          "cost_chitin": 0,
+          "power_draw_kwh": 4,
+          "output_per_week": 14.0,
+          "valid_targets": [
+            "moon_dirt",
+            "ore",
+            "sand",
+            "chemicals"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Harvest Drone Mk3",
+          "emoji": "\ud83e\udd16",
+          "description": "Advanced harvester. High output, highly power efficient.",
+          "cost_scrip": 1000,
+          "cost_metals": 60,
+          "cost_components": 25,
+          "cost_chitin": 0,
+          "power_draw_kwh": 5,
+          "output_per_week": 28.0,
+          "valid_targets": [
+            "moon_dirt",
+            "ore",
+            "sand",
+            "chemicals"
+          ]
+        }
       ]
     },
     "laser_sentry": {
@@ -1760,10 +1831,11 @@
           "cost_scrip": 200,
           "cost_metals": 15,
           "cost_components": 5,
+          "cost_chitin": 0,
           "power_draw_kwh": 2,
           "damage": 10,
           "fire_rate": 1,
-          "range": 2
+          "range": 800
         },
         {
           "level": 2,
@@ -1771,10 +1843,11 @@
           "cost_scrip": 500,
           "cost_metals": 35,
           "cost_components": 15,
+          "cost_chitin": 0,
           "power_draw_kwh": 3,
           "damage": 25,
           "fire_rate": 2,
-          "range": 3
+          "range": 900
         },
         {
           "level": 3,
@@ -1782,12 +1855,463 @@
           "cost_scrip": 1200,
           "cost_metals": 80,
           "cost_components": 35,
+          "cost_chitin": 10,
           "power_draw_kwh": 5,
           "damage": 50,
           "fire_rate": 3,
-          "range": 4
+          "range": 1000
+        },
+        {
+          "level": 4,
+          "name": "Sentry Mk4",
+          "cost_scrip": 2500,
+          "cost_metals": 150,
+          "cost_components": 60,
+          "cost_chitin": 25,
+          "power_draw_kwh": 7,
+          "damage": 90,
+          "fire_rate": 4,
+          "range": 1100
+        },
+        {
+          "level": 5,
+          "name": "Sentry Mk5",
+          "cost_scrip": 5000,
+          "cost_metals": 250,
+          "cost_components": 100,
+          "cost_chitin": 50,
+          "power_draw_kwh": 10,
+          "damage": 150,
+          "fire_rate": 5,
+          "range": 1200
         }
       ]
+    }
+  },
+  "defense_wall": {
+    "levels": [
+      {
+        "level": 1,
+        "hp": 100,
+        "upgrade_cost_ore": 0,
+        "upgrade_cost_moon_dirt": 0,
+        "upgrade_cost_chitin": 0,
+        "upgrade_cost_metals": 0,
+        "repair_cost_ore": 10,
+        "repair_cost_moon_dirt": 8
+      },
+      {
+        "level": 2,
+        "hp": 200,
+        "upgrade_cost_ore": 20,
+        "upgrade_cost_moon_dirt": 15,
+        "upgrade_cost_chitin": 0,
+        "upgrade_cost_metals": 0,
+        "repair_cost_ore": 15,
+        "repair_cost_moon_dirt": 12
+      },
+      {
+        "level": 3,
+        "hp": 350,
+        "upgrade_cost_ore": 40,
+        "upgrade_cost_moon_dirt": 30,
+        "upgrade_cost_chitin": 0,
+        "upgrade_cost_metals": 0,
+        "repair_cost_ore": 20,
+        "repair_cost_moon_dirt": 18
+      },
+      {
+        "level": 4,
+        "hp": 500,
+        "upgrade_cost_ore": 60,
+        "upgrade_cost_moon_dirt": 40,
+        "upgrade_cost_chitin": 5,
+        "upgrade_cost_metals": 0,
+        "repair_cost_ore": 25,
+        "repair_cost_moon_dirt": 20
+      },
+      {
+        "level": 5,
+        "hp": 700,
+        "upgrade_cost_ore": 80,
+        "upgrade_cost_moon_dirt": 50,
+        "upgrade_cost_chitin": 15,
+        "upgrade_cost_metals": 0,
+        "repair_cost_ore": 30,
+        "repair_cost_moon_dirt": 25
+      },
+      {
+        "level": 6,
+        "hp": 950,
+        "upgrade_cost_ore": 100,
+        "upgrade_cost_moon_dirt": 60,
+        "upgrade_cost_chitin": 25,
+        "upgrade_cost_metals": 5,
+        "repair_cost_ore": 35,
+        "repair_cost_moon_dirt": 30
+      },
+      {
+        "level": 7,
+        "hp": 1250,
+        "upgrade_cost_ore": 120,
+        "upgrade_cost_moon_dirt": 80,
+        "upgrade_cost_chitin": 40,
+        "upgrade_cost_metals": 8,
+        "repair_cost_ore": 40,
+        "repair_cost_moon_dirt": 35
+      },
+      {
+        "level": 8,
+        "hp": 1600,
+        "upgrade_cost_ore": 150,
+        "upgrade_cost_moon_dirt": 100,
+        "upgrade_cost_chitin": 60,
+        "upgrade_cost_metals": 12,
+        "repair_cost_ore": 50,
+        "repair_cost_moon_dirt": 40
+      },
+      {
+        "level": 9,
+        "hp": 2000,
+        "upgrade_cost_ore": 200,
+        "upgrade_cost_moon_dirt": 120,
+        "upgrade_cost_chitin": 80,
+        "upgrade_cost_metals": 18,
+        "repair_cost_ore": 60,
+        "repair_cost_moon_dirt": 50
+      },
+      {
+        "level": 10,
+        "hp": 2500,
+        "upgrade_cost_ore": 250,
+        "upgrade_cost_moon_dirt": 150,
+        "upgrade_cost_chitin": 100,
+        "upgrade_cost_metals": 25,
+        "repair_cost_ore": 75,
+        "repair_cost_moon_dirt": 60
+      }
+    ]
+  },
+  "fauna_types": [
+    {
+      "id": "crawler",
+      "name": "Lunar Crawler",
+      "emoji": "\ud83e\udd8e",
+      "hp": 20,
+      "speed": 1.2,
+      "damage": 8,
+      "hit_interval": 1.0,
+      "is_brute": false,
+      "meat_chance": 0.4,
+      "chitin_chance": 0.05,
+      "score_value": 1
+    },
+    {
+      "id": "swarmer",
+      "name": "Dust Swarmer",
+      "emoji": "\ud83e\udeb2",
+      "hp": 8,
+      "speed": 2.0,
+      "damage": 4,
+      "hit_interval": 0.8,
+      "is_brute": false,
+      "meat_chance": 0.2,
+      "chitin_chance": 0.02,
+      "score_value": 1
+    },
+    {
+      "id": "brute",
+      "name": "Crater Brute",
+      "emoji": "\ud83e\udd8f",
+      "hp": 120,
+      "speed": 0.4,
+      "damage": 25,
+      "hit_interval": 1.5,
+      "is_brute": true,
+      "meat_chance": 0.9,
+      "chitin_chance": 0.8,
+      "score_value": 5
+    },
+    {
+      "id": "armored",
+      "name": "Shell-Back",
+      "emoji": "\ud83d\udc22",
+      "hp": 60,
+      "speed": 0.7,
+      "damage": 15,
+      "hit_interval": 1.2,
+      "is_brute": false,
+      "meat_chance": 0.6,
+      "chitin_chance": 0.5,
+      "score_value": 3
+    }
+  ],
+  "grenades": [
+    {
+      "id": "flashbang",
+      "name": "Flashbang",
+      "emoji": "\ud83d\udca5",
+      "description": "Scatters and confuses fauna for 2 seconds.",
+      "effect": "scatter",
+      "effect_duration": 2.0,
+      "effect_radius": 80.0,
+      "craft_cost": {
+        "chemicals": 2
+      },
+      "craft_yield": 3,
+      "unlock_level": 1
+    },
+    {
+      "id": "stun",
+      "name": "Stun Grenade",
+      "emoji": "\u26a1",
+      "description": "Freezes fauna in place for 3 seconds.",
+      "effect": "stun",
+      "effect_duration": 3.0,
+      "effect_radius": 60.0,
+      "craft_cost": {
+        "metals": 2,
+        "components": 1
+      },
+      "craft_yield": 2,
+      "unlock_level": 2
+    },
+    {
+      "id": "arc",
+      "name": "Arc Grenade",
+      "emoji": "\ud83d\udd35",
+      "description": "Electric burst \u2014 area damage.",
+      "effect": "damage",
+      "damage": 30,
+      "effect_radius": 70.0,
+      "craft_cost": {
+        "components": 2,
+        "chemicals": 1
+      },
+      "craft_yield": 2,
+      "unlock_level": 2
+    },
+    {
+      "id": "incendiary",
+      "name": "Incendiary",
+      "emoji": "\ud83d\udd25",
+      "description": "Creates a burn zone for 5 seconds.",
+      "effect": "burn_zone",
+      "effect_duration": 5.0,
+      "damage_per_second": 10,
+      "effect_radius": 50.0,
+      "craft_cost": {
+        "ore": 3,
+        "chemicals": 2
+      },
+      "craft_yield": 2,
+      "unlock_level": 3
+    },
+    {
+      "id": "bait",
+      "name": "Bait Trap",
+      "emoji": "\ud83c\udf56",
+      "description": "Fauna cluster around it for 3 seconds.",
+      "effect": "bait",
+      "effect_duration": 3.0,
+      "effect_radius": 90.0,
+      "craft_cost": {
+        "meat": 2
+      },
+      "craft_yield": 2,
+      "unlock_level": 2
+    },
+    {
+      "id": "chitin_burst",
+      "name": "Chitin Burst",
+      "emoji": "\ud83d\udca3",
+      "description": "Massive area damage. Use wisely.",
+      "effect": "damage",
+      "damage": 150,
+      "effect_radius": 100.0,
+      "craft_cost": {
+        "chitin": 3,
+        "chemicals": 2
+      },
+      "craft_yield": 1,
+      "unlock_level": 4
+    }
+  ],
+  "grenade_bench": {
+    "note": "unlock_level on each grenade matches bench level needed",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Basic Bench",
+        "cost_scrip": 0,
+        "cost_metals": 0,
+        "note": "free, comes with habitat"
+      },
+      {
+        "level": 2,
+        "name": "Standard Bench",
+        "cost_scrip": 200,
+        "cost_metals": 15,
+        "cost_components": 5
+      },
+      {
+        "level": 3,
+        "name": "Advanced Bench",
+        "cost_scrip": 500,
+        "cost_metals": 30,
+        "cost_components": 15
+      },
+      {
+        "level": 4,
+        "name": "Expert Bench",
+        "cost_scrip": 1200,
+        "cost_metals": 60,
+        "cost_components": 30,
+        "cost_chitin": 20
+      }
+    ]
+  },
+  "raid_scaling": {
+    "base_fauna_count": 15,
+    "fauna_per_week": 2,
+    "max_fauna_count": 150,
+    "spawn_interval_base": 1.0,
+    "spawn_interval_min": 0.6,
+    "brute_chance_base": 0.02,
+    "brute_chance_per_week": 0.001,
+    "armored_chance_base": 0.05,
+    "swarmer_chance_base": 0.2,
+    "raid_duration_max": 90,
+    "first_raid_week": 8,
+    "raid_interval_easy": 12,
+    "raid_interval_normal": 10,
+    "raid_interval_hard": 6
+  },
+  "radio_tips": [
+    {
+      "week": 1,
+      "message": "Colony Tip: Get some crops in the ground as soon as possible. Spacetatoes are slow but reliable. Terran Radishes are ready in one week if you need a fast first harvest."
+    },
+    {
+      "week": 2,
+      "message": "Colony Tip: Check your harvest drones in Operations. Assign them to moon dirt, ore, sand, or chemicals \u2014 a balanced spread works well early on."
+    },
+    {
+      "week": 3,
+      "message": "Colony Tip: If you have crops ready, head to the Relay and talk to Kovacs. Once the conversation is done, you can queue a shipment for Week 4's pickup window."
+    },
+    {
+      "week": 4,
+      "message": "Colony Tip: Ship window is open this week. Head to Relay \u2192 Sell to queue your harvest. Kovacs will confirm the pickup."
+    },
+    {
+      "week": 5,
+      "message": "Colony Tip: Compost from dead or cleared crops can be refined into Z Soil at the Refinery. Keep the composter running."
+    },
+    {
+      "week": 6,
+      "message": "Colony Tip: Metals unlock a lot. Build a second dome when you can \u2014 more crops means more scrip per ship window."
+    },
+    {
+      "week": 7,
+      "message": "Colony Tip: A raid is coming soon. Check your Defense Wall HP in the Habitat tab. Make sure you have a few grenades crafted."
+    },
+    {
+      "week": 8,
+      "message": "\u26a0\ufe0f Colony Alert: Fauna activity detected in your sector. Defend your installation from the Dashboard when prompted."
+    },
+    {
+      "week": 10,
+      "message": "Colony Tip: Drone efficiency matters more than drone count early on. One Mk2 drone outperforms two Mk1 drones on the same resource."
+    },
+    {
+      "week": 12,
+      "message": "Colony Tip: Ship window this week. If you have contract crops in your silo, submit them at the Relay before shipping for bonus scrip."
+    },
+    {
+      "week": 15,
+      "message": "Colony Tip: Consider upgrading your Water Purifier if your domes are running dry. More domes means more water demand."
+    },
+    {
+      "week": 20,
+      "message": "Colony Broadcast: You've survived 20 weeks. The colony appreciates your continued supply. Keep it up out there."
+    }
+  ],
+  "dome_bot": {
+    "levels": [
+      {
+        "level": 1,
+        "name": "Dome Bot Mk1",
+        "description": "Auto-waters all cells each week.",
+        "actions": [
+          "water"
+        ],
+        "cost_scrip": 200,
+        "cost_metals": 20,
+        "cost_components": 0,
+        "cost_chemicals": 0,
+        "cost_chitin": 0,
+        "power_draw_kwh": 2
+      },
+      {
+        "level": 2,
+        "name": "Dome Bot Mk2",
+        "description": "Auto-waters + auto-harvests ready crops.",
+        "actions": [
+          "water",
+          "harvest"
+        ],
+        "cost_scrip": 500,
+        "cost_metals": 35,
+        "cost_components": 15,
+        "cost_chemicals": 0,
+        "cost_chitin": 0,
+        "power_draw_kwh": 3
+      },
+      {
+        "level": 3,
+        "name": "Dome Bot Mk3",
+        "description": "Auto-waters + harvests + fertilizes.",
+        "actions": [
+          "water",
+          "harvest",
+          "fertilize"
+        ],
+        "cost_scrip": 1000,
+        "cost_metals": 60,
+        "cost_components": 30,
+        "cost_chemicals": 15,
+        "cost_chitin": 0,
+        "power_draw_kwh": 4
+      },
+      {
+        "level": 4,
+        "name": "Dome Bot Mk4",
+        "description": "Auto-waters + harvests + fertilizes + plants.",
+        "actions": [
+          "water",
+          "harvest",
+          "fertilize",
+          "plant"
+        ],
+        "cost_scrip": 2500,
+        "cost_metals": 100,
+        "cost_components": 60,
+        "cost_chemicals": 30,
+        "cost_chitin": 20,
+        "power_draw_kwh": 6
+      }
+    ]
+  },
+  "dome_building": {
+    "base_scrip_cost": 500,
+    "scrip_step_easy": 250,
+    "scrip_step_normal": 500,
+    "scrip_step_hard": 750,
+    "material_cost": {
+      "glass": 20,
+      "metals": 5,
+      "components": 1
     }
   }
 }

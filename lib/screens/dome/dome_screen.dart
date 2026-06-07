@@ -152,7 +152,7 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
 
     final resources = game.resources;
     if (resources.water < crop.waterPerWeek) {
-      _snack(ref.context, 'Not enough water! Need ${crop.waterPerWeek}L.');
+      _snack(ref.context, 'Not enough water. Need ${crop.waterPerWeek}m³.');
       return;
     }
 
