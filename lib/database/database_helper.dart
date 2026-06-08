@@ -383,7 +383,7 @@ class DatabaseHelper {
           : {},
       shipmentsThisWindow: _i(json['shipments_this_window'] ?? 0),
       nextShipWindowWeek: _i(json['next_ship_window_week'] ?? 4),
-      waterPurifierLevel: _i(json['water_purifier_level'] ?? 0),
+      waterPurifierLevel: _i(json['water_purifier_level'] ?? 1),
       miningDrones: json['mining_drones'] != null
           ? (json['mining_drones'] as List)
           .map((d) => _droneFromJson(d as Map<String, dynamic>))

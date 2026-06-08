@@ -16,6 +16,7 @@ import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
+import '../../config/upgrade_config_service.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
   final GameState game;
@@ -76,7 +77,10 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   void _initRaid() {
     final config = GameConfigService.instance;
-    final scaling = config.getRaidScaling();
+    final upgradeConfig = UpgradeConfigService.instance;
+    final scaling = upgradeConfig.raidScaling.isNotEmpty
+        ? upgradeConfig.raidScaling
+        : config.getRaidScaling();
     final game = widget.game;
 
     // Wall HP
@@ -92,8 +96,9 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     final week = game.currentWeek;
     final baseFauna = scaling['base_fauna_count'] as int;
     final perWeek = scaling['fauna_per_week'] as int;
+    final divisor = scaling['fauna_per_week_divisor'] as int? ?? 1;
     final maxFauna = scaling['max_fauna_count'] as int;
-    _maxFauna = (baseFauna + week * perWeek).clamp(baseFauna, maxFauna);
+    _maxFauna = (baseFauna + (week ~/ divisor) * perWeek).clamp(baseFauna, maxFauna);
 
     // Spawn interval
     final baseInterval = (scaling['spawn_interval_base'] as num).toDouble();
@@ -336,6 +341,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   double _sentryXForSentry(int index, int total) {
     if (total == 0) return 0.5;
+    if (total == 1) return 0.5; // always center the only sentry
     return 0.1 + (index / (total + 1)) * 0.8;
   }
 
@@ -573,7 +579,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }).toList();
     }
 
-    final interval = GameConfigService.instance.getRaidInterval(game.difficulty);
+    final diffName = game.difficulty.name; // 'easy', 'normal', 'hard'
+    final interval = UpgradeConfigService.instance.raidInterval(diffName);
 
     await ref.read(activeGameProvider.notifier).updateGame(
       game.copyWith(
@@ -848,9 +855,9 @@ class _GrenadeBar extends StatelessWidget {
         .toList();
 
     return Container(
-      height: 64,
+      height: 68,
       color: Colors.black87,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: allGrenades.map((g) {
@@ -1256,7 +1263,9 @@ class RaidResultScreen extends ConsumerWidget {
                     foregroundColor: MFColors.background,
                   ),
                   onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    // Pop back to the game screen (SaveSlotDetailScreen).
+                    // popUntil(isFirst) goes all the way to MainMenu — wrong.
+                    Navigator.of(context).pop();
                   },
                   child: Text(
                     result.wallBroken ? 'RETURN — REPAIR WALL' : '▶  CONTINUE',

@@ -136,7 +136,7 @@ class GameFactory {
       lifetimeScripEarned: startingScrip,
       totalCropsHarvested: 0,
       totalCompostGenerated: 0,
-      nextRaidWeek: _config.getFirstRaidWeek(),
+      nextRaidWeek: UpgradeConfigService.instance.firstRaidWeek,
       miningDrones: [
         MiningDrone(
           id: 'drone_start_0',

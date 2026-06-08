@@ -1,0 +1,86 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/raids.yaml
+# ═══════════════════════════════════════════════════════════════
+# All raid and fauna configuration in one editable file.
+# Edit this to tune raid difficulty, frequency, and fauna types.
+#
+# FAUNA COUNT:
+#   At each raid, fauna count = base_fauna_count + (raid_week ~/ fauna_per_week_divisor) * fauna_per_week
+#   Example: week 10 → 5 + (10 ~/ 3) * 1 = 5 + 3 = 8 fauna
+#   Capped at max_fauna_count.
+#
+# SPAWN INTERVAL:
+#   Time between fauna spawning, in seconds.
+#   spawn_interval_base = slowest (used at low fauna count)
+#   spawn_interval_min  = fastest (used at high fauna count)
+#   Actual interval = (raid_duration_max / fauna_count).clamp(min, base)
+#
+# FAUNA TYPES (chance values 0.0–1.0, checked in order per spawn):
+#   brute:   high HP, slow, guaranteed chitin drop
+#   armored: medium HP, medium speed, damage resistant
+#   swarmer: low HP, fast, comes in groups
+#   standard: default if no special type rolls
+
+scheduling:
+  first_raid_week: 10
+  raid_interval_easy: 12
+  raid_interval_normal: 10
+  raid_interval_hard: 6
+  raid_warning_weeks_before: 2   # how many weeks before raid to show warning
+
+scaling:
+  base_fauna_count: 5
+  fauna_per_week: 1
+  fauna_per_week_divisor: 3      # divide week by this before multiplying by per_week
+  max_fauna_count: 60
+  raid_duration_max: 90          # max seconds before raid auto-ends
+  spawn_interval_base: 3.0
+  spawn_interval_min: 1.5
+
+fauna_types:
+  brute:
+    hp: 180
+    speed: 0.06
+    size: 28.0
+    color: "0xFFE53935"          # red
+    damage_to_wall: 20
+    scrip_reward: 0
+    drops_meat: true
+    drops_chitin: true           # brutes always drop chitin
+    spawn_chance_base: 0.02      # base chance per spawn
+    spawn_chance_per_week: 0.001 # increases each week
+
+  armored:
+    hp: 120
+    speed: 0.09
+    size: 22.0
+    color: "0xFF7B1FA2"          # purple
+    damage_to_wall: 15
+    drops_meat: true
+    drops_chitin: false
+    spawn_chance_base: 0.05
+
+  swarmer:
+    hp: 40
+    speed: 0.16
+    size: 14.0
+    color: "0xFFFF8F00"          # amber
+    damage_to_wall: 5
+    drops_meat: true
+    drops_chitin: false
+    spawn_chance_base: 0.12
+
+  standard:
+    hp: 80
+    speed: 0.10
+    size: 18.0
+    color: "0xFF43A047"          # green
+    damage_to_wall: 10
+    drops_meat: true
+    drops_chitin: false
+    spawn_chance_base: 1.0       # always spawns if no other type rolled
+
+drops:
+  meat_chance: 0.7               # chance any fauna drops meat on death
+  chitin_chance_non_brute: 0.15  # chance non-brute drops chitin
+  scrip_per_fauna: 0             # scrip reward per kill (0 = disabled)

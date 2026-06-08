@@ -138,6 +138,11 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
   }
 
   void _doWater(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) {
+    // Dome bot handles watering automatically — player can't manually water.
+    if (dome.domeBot != null && dome.domeBot!.canWater) {
+      _snack(ref.context, '🤖 Dome Bot handles watering automatically.');
+      return;
+    }
     if (cell.state != CropState.growing) {
       _snack(ref.context, 'Nothing to water here.');
       return;
@@ -164,6 +169,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
   }
 
   void _doFertilize(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) {
+    if (dome.domeBot != null && dome.domeBot!.canFertilize) {
+      _snack(ref.context, '🤖 Dome Bot handles fertilizing automatically.');
+      return;
+    }
     if (cell.state != CropState.growing) {
       _snack(ref.context, 'Nothing to fertilize here.');
       return;
@@ -320,17 +329,27 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
   }
 
   void _doClearDead(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) {
-    if (cell.state != CropState.dead) {
-      _snack(ref.context, 'Nothing dead to clear here.');
+    if (cell.state == CropState.empty) {
+      _snack(ref.context, 'Nothing to clear here.');
+      return;
+    }
+    if (cell.state == CropState.ready) {
+      _snack(ref.context, 'Harvest first, then clear.');
       return;
     }
 
-    // Dead crops turn to compost
+    // Clearing dead cells gives compost; clearing live/planted cells loses seeds.
+    final compostGain = cell.state == CropState.dead ? 1 : 0;
+    final message = cell.state == CropState.dead
+        ? 'Cleared. +1 compost.'
+        : 'Cleared. Seeds lost.';
+
     _updateCell(
       ref, game, dome, domeIndex,
       cell.cleared(),
-      game.resources.copyWith(compost: game.resources.compost + 1),
+      game.resources.copyWith(compost: game.resources.compost + compostGain),
     );
+    _snack(ref.context, message);
   }
 
   // ─── Cell update helpers ──────────────────────────────────────────────────
@@ -862,6 +881,36 @@ class _RobotCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final robot = dome.robot;
+    final bot = dome.domeBot;
+
+    // Prefer showing DomeBot if installed (new system)
+    if (bot != null) {
+      return Container(
+        decoration: BoxDecoration(
+          color: MFColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: MFColors.neonCyan.withValues(alpha: 0.5), width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🤖', style: TextStyle(fontSize: 24)),
+            const SizedBox(height: 2),
+            Text(
+              'MK${bot.level}',
+              style: MFTextStyles.bodySmall.copyWith(
+                fontSize: 8, color: MFColors.neonCyan, fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              _botActions(bot),
+              style: MFTextStyles.bodySmall.copyWith(fontSize: 7, color: MFColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -901,6 +950,15 @@ class _RobotCell extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _botActions(DomeBot bot) {
+    final parts = <String>[];
+    if (bot.canWater) parts.add('💧');
+    if (bot.canHarvest) parts.add('⛏');
+    if (bot.canFertilize) parts.add('🌿');
+    if (bot.canPlant) parts.add('🌱');
+    return parts.join(' ');
   }
 }
 

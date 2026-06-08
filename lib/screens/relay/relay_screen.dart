@@ -230,14 +230,13 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     final resourceKey = switch (itemId) {
       'seeds_tier1' => 'seeds',
       'seeds_tier2' => 'seeds',
-      'water' => 'water',
+      'glass' => 'glass',
       'chemicals' => 'chemicals',
       'ore' => 'ore',
       'components' => 'components',
       _ => 'seeds',
     };
-    // Water is sold in batches of 10m³; everything else 1:1 with quantity.
-    final amount = itemId == 'water' ? quantity * 10.0 : quantity.toDouble();
+    final amount = quantity.toDouble();
 
     final delivery = PendingDelivery(
       resourceKey: resourceKey,
@@ -1052,8 +1051,8 @@ class _BuyTab extends StatelessWidget {
     // (id, emoji, name, desc, pricePerUnit, batchSize)
     final items = [
       ('seeds_tier1', '🌾', 'Tier 1 Seeds (×8)', 'Basic crop seeds', 1, 8),
-      ('seeds_tier2', '🌿', 'Tier 2 Seeds (×8)', 'Compost giant seeds', 4, 8),
-      ('water', '💧', 'Water (10m³)', 'Purified water delivery', 3, 1),
+      ('seeds_tier2', '🌿', 'Tier 2 Seeds (×8)', 'Advanced crop seeds', 4, 8),
+      ('glass', '🪟', 'Glass (×10)', 'Refined glass panels', 6, 10),
       ('chemicals', '⚗️', 'Chemicals (×5)', 'Industrial reagents', 8, 5),
       ('ore', '🪨', 'Raw Ore (×5)', 'Unprocessed mineral ore', 12, 5),
       ('components', '⚙️', 'Components (×2)', 'Tech circuitry', 45, 2),

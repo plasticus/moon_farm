@@ -475,32 +475,54 @@ class _UpgradeDroneButton extends StatelessWidget {
 // ─── Drone Assignment Sheet ───────────────────────────────────────────────────
 
 class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
-  late Map<String, int> _assignments;
+  int _selectedTier = 1;
+  // Assignments stored per tier: {tier: {resource: count}}
+  late Map<int, Map<String, int>> _assignmentsByTier;
 
   @override
   void initState() {
     super.initState();
-    _assignments = {
-      'balanced': widget.game.miningDrones.where((d) => d.isBalanced).length,
-      'moon_dirt': widget.game.miningDrones.where((d) => d.assignedResource == 'moon_dirt').length,
-      'ore': widget.game.miningDrones.where((d) => d.assignedResource == 'ore').length,
-      'sand': widget.game.miningDrones.where((d) => d.assignedResource == 'sand').length,
-      'chemicals': widget.game.miningDrones.where((d) => d.assignedResource == 'chemicals').length,
-    };
+    _assignmentsByTier = {};
+    final tiers = widget.game.miningDrones.map((d) => d.tier).toSet();
+    for (final tier in tiers) {
+      final tierDrones = widget.game.miningDrones.where((d) => d.tier == tier).toList();
+      _assignmentsByTier[tier] = {
+        'balanced':  tierDrones.where((d) => d.isBalanced).length,
+        'moon_dirt': tierDrones.where((d) => d.assignedResource == 'moon_dirt').length,
+        'ore':       tierDrones.where((d) => d.assignedResource == 'ore').length,
+        'sand':      tierDrones.where((d) => d.assignedResource == 'sand').length,
+        'chemicals': tierDrones.where((d) => d.assignedResource == 'chemicals').length,
+      };
+    }
+    // Default selected tier to lowest available
+    if (tiers.isNotEmpty) _selectedTier = tiers.reduce((a, b) => a < b ? a : b);
   }
 
-  int get total => widget.game.miningDrones.length;
-  int get assigned => _assignments.values.fold(0, (a, b) => a + b);
+  List<int> get availableTiers =>
+      widget.game.miningDrones.map((d) => d.tier).toSet().toList()..sort();
+
+  int totalForTier(int tier) =>
+      widget.game.miningDrones.where((d) => d.tier == tier).length;
+
+  int assignedForTier(int tier) =>
+      (_assignmentsByTier[tier] ?? {}).values.fold(0, (a, b) => a + b);
 
   void _apply() {
-    final drones = <MiningDrone>[];
-    int idx = 0;
-    for (final entry in _assignments.entries) {
-      for (int i = 0; i < entry.value; i++) {
-        final original = widget.game.miningDrones[idx++];
-        drones.add(original.copyWith(
-          assignedResource: entry.key == 'balanced' ? null : entry.key,
-        ));
+    final drones = List<MiningDrone>.from(widget.game.miningDrones);
+    // Apply assignments tier by tier
+    for (final tier in availableTiers) {
+      final assignments = _assignmentsByTier[tier] ?? {};
+      final tierIndices = drones.asMap().entries
+          .where((e) => e.value.tier == tier)
+          .map((e) => e.key)
+          .toList();
+      int idx = 0;
+      for (final entry in assignments.entries) {
+        for (int i = 0; i < entry.value && idx < tierIndices.length; i++, idx++) {
+          drones[tierIndices[idx]] = drones[tierIndices[idx]].copyWith(
+            assignedResource: entry.key == 'balanced' ? null : entry.key,
+          );
+        }
       }
     }
     widget.ref.read(activeGameProvider.notifier).updateGameLocal(
@@ -511,11 +533,16 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final tiers = availableTiers;
+    final assignments = _assignmentsByTier[_selectedTier] ?? {};
+    final total = totalForTier(_selectedTier);
+    final assigned = assignedForTier(_selectedTier);
+
     final options = [
-      ('balanced', '⚖️', 'Balanced'),
+      ('balanced',  '⚖️', 'Balanced'),
       ('moon_dirt', '🌑', 'Moon Dirt'),
-      ('ore', '🪨', 'Ore'),
-      ('sand', '🏖️', 'Sand'),
+      ('ore',       '🪨', 'Ore'),
+      ('sand',      '🏖️', 'Sand'),
       ('chemicals', '⚗️', 'Chemicals'),
     ];
 
@@ -524,35 +551,68 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('ASSIGN $total DRONES',
-              style: MFTextStyles.labelLarge.copyWith(letterSpacing: 2)),
+          // Tier toggle
+          if (tiers.length > 1) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: tiers.map((t) {
+                final isActive = t == _selectedTier;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedTier = t),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? MFColors.neonCyan.withValues(alpha: 0.2)
+                          : MFColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isActive ? MFColors.neonCyan : MFColors.borderSubtle,
+                      ),
+                    ),
+                    child: Text('Mk$t',
+                        style: MFTextStyles.labelLarge.copyWith(
+                          color: isActive ? MFColors.neonCyan : MFColors.textMuted,
+                        )),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Text('ASSIGN $total Mk$_selectedTier DRONES',
+              style: MFTextStyles.labelLarge.copyWith(letterSpacing: 1)),
           const SizedBox(height: 4),
           Text('Balanced splits output evenly across all 4 resources.',
               style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ...options.map((opt) {
             final (key, emoji, label) = opt;
+            final count = assignments[key] ?? 0;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
                   Text(emoji, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 8),
                   Expanded(child: Text(label, style: MFTextStyles.bodyLarge)),
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: MFColors.neonPink),
-                    onPressed: (_assignments[key] ?? 0) > 0
-                        ? () => setState(() => _assignments[key] = (_assignments[key] ?? 0) - 1)
+                    icon: const Icon(Icons.remove_circle_outline, color: MFColors.neonPink),
+                    onPressed: count > 0
+                        ? () => setState(() {
+                      _assignmentsByTier[_selectedTier]![key] = count - 1;
+                    })
                         : null,
                   ),
-                  Text('${_assignments[key] ?? 0}',
-                      style: MFTextStyles.labelLarge),
+                  Text('$count', style: MFTextStyles.labelLarge),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline,
-                        color: MFColors.neonGreen),
+                    icon: const Icon(Icons.add_circle_outline, color: MFColors.neonGreen),
                     onPressed: assigned < total
-                        ? () => setState(() => _assignments[key] = (_assignments[key] ?? 0) + 1)
+                        ? () => setState(() {
+                      _assignmentsByTier[_selectedTier]![key] =
+                          (assignments[key] ?? 0) + 1;
+                    })
                         : null,
                   ),
                 ],
@@ -1392,7 +1452,7 @@ class _DomeBuildSection extends StatelessWidget {
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🏠 Dome ${game.domes.length} built!')),
+      SnackBar(content: Text('🏠 Dome ${game.domes.length + 1} built!')),
     );
   }
 }

@@ -378,12 +378,21 @@ class _WallSection extends StatelessWidget {
 
   Widget _buildRepairButton(
       BuildContext context, DefenseWall wall, List<Map<String, dynamic>> levels) {
-    final cfg = levels.firstWhere((l) => l['level'] == wall.level);
-    final oreCost = cfg['repair_cost_ore'] as int;
-    final dirtCost = cfg['repair_cost_moon_dirt'] as int;
+    final cfg = levels.firstWhere(
+          (l) => l['level'] == wall.level,
+      orElse: () => levels.first,
+    );
+    final oreCost = cfg['repair_cost_ore'] as int? ?? 10;
+    final dirtCost = cfg['repair_cost_moon_dirt'] as int? ?? 8;
     final canAfford = game.resources.ore >= oreCost &&
         game.resources.moonDirt >= dirtCost;
     final hpToRepair = wall.maxHp - wall.currentHp;
+
+    final missing = <String>[];
+    if (game.resources.ore < oreCost)
+      missing.add('${oreCost - game.resources.ore.toInt()} more ore');
+    if (game.resources.moonDirt < dirtCost)
+      missing.add('${dirtCost - game.resources.moonDirt.toInt()} more moon dirt');
 
     return Row(
       children: [
@@ -399,8 +408,12 @@ class _WallSection extends StatelessWidget {
         ),
         GestureDetector(
           onTap: canAfford ? () => _doRepair(context, cfg) : null,
-          child: AnimatedActionButton(label: 'REPAIR', canAfford: canAfford,
-              color: MFColors.neonGreen, missingText: 'Need more ore and moon dirt'),
+          child: AnimatedActionButton(
+            label: 'REPAIR',
+            canAfford: canAfford,
+            color: MFColors.neonGreen,
+            missingText: missing.isEmpty ? '' : 'Need: ${missing.join(', ')}',
+          ),
         ),
       ],
     );

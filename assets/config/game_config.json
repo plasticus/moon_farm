@@ -1796,11 +1796,11 @@
     ]
   },
   "raid_scaling": {
-    "base_fauna_count": 4,
+    "base_fauna_count": 5,
     "fauna_per_week": 1,
-    "max_fauna_count": 120,
-    "spawn_interval_base": 2.0,
-    "spawn_interval_min": 1.0,
+    "max_fauna_count": 60,
+    "spawn_interval_base": 3.0,
+    "spawn_interval_min": 1.5,
     "brute_chance_base": 0.02,
     "brute_chance_per_week": 0.001,
     "armored_chance_base": 0.05,
@@ -1809,7 +1809,8 @@
     "first_raid_week": 10,
     "raid_interval_easy": 12,
     "raid_interval_normal": 10,
-    "raid_interval_hard": 6
+    "raid_interval_hard": 6,
+    "fauna_per_week_divisor": 3
   },
   "radio_tips": [
     {

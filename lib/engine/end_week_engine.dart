@@ -20,6 +20,7 @@
 
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
+import '../config/upgrade_config_service.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -497,20 +498,12 @@ class EndWeekEngine {
     s = trophyResult.$1;
     newTrophies.addAll(trophyResult.$2);
 
-    // ── Step 9: Relay mood decay ──────────────────────────────────────────
-    // Mood only drifts down if the player IGNORED Kovacs this week.
-    // Talking to him (completing a conversation) maintains the relationship.
-    final moodConfig = _config.moodSystemConfig;
-    final moodDecay = moodConfig['mood_decay_per_week'] as int? ?? 2;
-    final talkedThisWeek = s.relay.conversationDoneThisWeek;
-    final newMood = talkedThisWeek
-        ? s.relay.mood
-        : (s.relay.mood - moodDecay).clamp(0, 100);
+    // ── Step 9: Relay reset ───────────────────────────────────────────────────
+    // Mood only changes via conversation — no automated decay.
     s = s.copyWith(
       relay: s.relay.copyWith(
-        mood: newMood,
         contractsRefreshedThisWeek: false,
-        conversationDoneThisWeek: false,  // reset so player must talk again
+        conversationDoneThisWeek: false,
       ),
     );
 
@@ -538,9 +531,9 @@ class EndWeekEngine {
     }
     if (s.currentWeek >= s.nextRaidWeek) {
       final interval = switch (s.difficulty) {
-        Difficulty.easy   => 12,
-        Difficulty.normal => 10,
-        Difficulty.hard   => 6,
+        Difficulty.easy   => UpgradeConfigService.instance.raidInterval('easy'),
+        Difficulty.normal => UpgradeConfigService.instance.raidInterval('normal'),
+        Difficulty.hard   => UpgradeConfigService.instance.raidInterval('hard'),
       };
       s = s.copyWith(
         nextRaidWeek: s.nextRaidWeek + interval,
@@ -564,6 +557,7 @@ class EndWeekEngine {
             'water' => r.copyWith(water: r.water + d.amount),
             'chemicals' => r.copyWith(chemicals: r.chemicals + d.amount),
             'ore' => r.copyWith(ore: r.ore + d.amount),
+            'glass' => r.copyWith(glass: r.glass + d.amount),
             'components' => r.copyWith(components: r.components + d.amount),
             _ => r,
           };
