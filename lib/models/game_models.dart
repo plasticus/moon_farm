@@ -86,6 +86,7 @@ class GameState {
   final int totalChitinCollected;
   final List<Contract> activeContracts;
   final List<Contract> completedContracts;
+  final List<PendingDelivery> pendingDeliveries;
   final List<Milestone> milestones;
   final List<Trophy> trophies;
   final List<WeeklyLogEntry> log;
@@ -126,6 +127,7 @@ class GameState {
     required this.totalChitinCollected,
     required this.activeContracts,
     required this.completedContracts,
+    this.pendingDeliveries = const [],
     required this.milestones,
     required this.trophies,
     required this.log,
@@ -179,6 +181,7 @@ class GameState {
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
     List<PendingSale>? pendingSales,
+    List<PendingDelivery>? pendingDeliveries,
     Map<String, double>? siloInventory,
     int? shipmentsThisWindow,
     int? nextShipWindowWeek,
@@ -207,6 +210,7 @@ class GameState {
       totalChitinCollected: totalChitinCollected ?? this.totalChitinCollected,
       activeContracts: activeContracts ?? this.activeContracts,
       completedContracts: completedContracts ?? this.completedContracts,
+      pendingDeliveries: pendingDeliveries ?? this.pendingDeliveries,
       milestones: milestones ?? this.milestones,
       trophies: trophies ?? this.trophies,
       log: log ?? this.log,
@@ -239,15 +243,24 @@ class GameState {
       if (dome.robot != null && dome.robot!.state != RobotState.offline) {
         draw += dome.robot!.powerDraw;
       }
+      if (dome.domeBot != null) {
+        draw += dome.domeBot!.powerDraw;
+      }
     }
     for (final silo in silos) {
       draw += silo.powerDraw;
     }
     for (final refinery in refineries) {
-      draw += refinery.powerDraw;
+      // Each installed machine draws its own power.
+      for (final m in refinery.machines) {
+        draw += m.powerDraw;
+      }
     }
     for (final sentry in laserSentries) {
       draw += sentry.powerDraw;
+    }
+    for (final drone in miningDrones) {
+      draw += drone.powerDraw;
     }
     return draw;
   }
@@ -424,7 +437,9 @@ class CropCell {
   final int weeksGrown;
   final bool wateredThisWeek;
   final bool fertilizedThisWeek;
-  final int healthPercent; // 0-100
+  final int healthPercent; // 0-100, doubles as yield multiplier (decay reduces it)
+  final int fertilizeCount; // how many times fertilized this growth cycle
+  final int lastFertilizeWeek; // weeksGrown value at last fertilize (for 3-week rule)
 
   const CropCell({
     required this.position,
@@ -434,6 +449,8 @@ class CropCell {
     this.wateredThisWeek = false,
     this.fertilizedThisWeek = false,
     this.healthPercent = 100,
+    this.fertilizeCount = 0,
+    this.lastFertilizeWeek = -99,
   });
 
   bool get isEmpty => state == CropState.empty;
@@ -449,6 +466,8 @@ class CropCell {
     bool? wateredThisWeek,
     bool? fertilizedThisWeek,
     int? healthPercent,
+    int? fertilizeCount,
+    int? lastFertilizeWeek,
   }) {
     return CropCell(
       position: position ?? this.position,
@@ -458,6 +477,8 @@ class CropCell {
       wateredThisWeek: wateredThisWeek ?? this.wateredThisWeek,
       fertilizedThisWeek: fertilizedThisWeek ?? this.fertilizedThisWeek,
       healthPercent: healthPercent ?? this.healthPercent,
+      fertilizeCount: fertilizeCount ?? this.fertilizeCount,
+      lastFertilizeWeek: lastFertilizeWeek ?? this.lastFertilizeWeek,
     );
   }
 
@@ -655,7 +676,7 @@ class RefineryMachine {
   }
 }
 
-// ─── Mining Drone ────────────────────────────────────────────────────────────
+// ─── Scavenger Drone ────────────────────────────────────────────────────────────
 
 class MiningDrone {
   final String id;
@@ -1075,12 +1096,11 @@ class CropConfig {
   final int growthWeeks;
   final int waterPerWeek;
   final int caloriesPerUnit;
-  final int baseSolarValue;
+  final int baseScripPerM3;
   final int compostYield;
   final String description;
-  final bool canDecay;
-  final bool decayIfNotWatered;
-  final bool decayIfNotHarvestedOnReady;
+  final String note;
+  final double decayRate; // fraction of yield lost per missed watering (0.0-1.0)
   final double fertilizerBonus;
   final double volumeM3; // cubic meters per cell per harvest
   final String? yieldsResource;
@@ -1095,44 +1115,99 @@ class CropConfig {
     required this.growthWeeks,
     required this.waterPerWeek,
     required this.caloriesPerUnit,
-    required this.baseSolarValue,
+    required this.baseScripPerM3,
     required this.compostYield,
     required this.description,
-    required this.canDecay,
-    required this.decayIfNotWatered,
-    required this.decayIfNotHarvestedOnReady,
+    required this.note,
+    required this.decayRate,
     required this.fertilizerBonus,
     required this.volumeM3,
     this.yieldsResource,
     required this.resourceYieldAmount,
   });
 
-  // Convenience accessor — baseSolarValue was renamed baseScrip in the JSON
-  int get baseScrip => baseSolarValue;
+  // Convenience accessors for older call sites
+  int get baseScrip => baseScripPerM3;
+  int get baseSolarValue => baseScripPerM3;
+  bool get canDecay => decayRate > 0;
+
+  // Max fertilizer applications: once per 3 growth-weeks
+  int get maxFertilizations => (growthWeeks / 3).floor().clamp(1, 99);
+
+  // Emojis assigned by crop id (crops.yaml has no emoji field)
+  static const Map<String, String> _emojiById = {
+    'terran_radishes': '🌶️',
+    'hydro_lettuce': '🥬',
+    'lunar_carrots': '🥕',
+    'spacetatoes': '🥔',
+    'moon_wheat': '🌾',
+    'sludge_fern': '🌿',
+    'bio_mash_pods': '🫛',
+    'pulp_gourd': '🎃',
+    'nitrate_squash': '🥒',
+    'fiber_kelp': '🌱',
+    'neon_berries': '🫐',
+    'glow_stalks': '🎋',
+    'glass_fronds': '🍃',
+    'nebula_melons': '🍈',
+    'crystalline_beans': '💎',
+    'hyper_mycelium': '🍄',
+    'silicon_shoots': '🔷',
+    'copper_root': '🟤',
+    'luna_lentils': '🫘',
+    'matrix_moss': '🟩',
+  };
 
   factory CropConfig.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String;
     return CropConfig(
-      id: json['id'] as String,
+      id: id,
       name: json['name'] as String,
-      emoji: json['emoji'] as String,
-      tier: json['tier'] as int,
-      domeTierRequired: json['dome_tier_required'] as int,
-      growthWeeks: json['growth_weeks'] as int,
-      waterPerWeek: json['water_per_week'] as int,
-      caloriesPerUnit: json['calories_per_unit'] as int? ?? 0,
-      baseSolarValue: json['base_scrip_value'] as int? ?? json['base_solar_value'] as int? ?? 5,
-      compostYield: json['compost_yield'] as int,
-      description: json['description'] as String,
-      canDecay: json['can_decay'] as bool? ?? false,
-      decayIfNotWatered: json['decay_if_not_watered'] as bool? ?? false,
-      decayIfNotHarvestedOnReady:
-      json['decay_if_not_harvested_on_ready'] as bool? ?? false,
+      emoji: _emojiById[id] ?? '🌱',
+      tier: (json['tier'] as num).toInt(),
+      domeTierRequired: (json['dome_tier_required'] as num?)?.toInt() ?? 1,
+      growthWeeks: (json['growth_weeks'] as num).toInt(),
+      waterPerWeek: (json['water_per_week'] as num).toInt(),
+      caloriesPerUnit: (json['calories_per_unit'] as num?)?.toInt() ?? 0,
+      baseScripPerM3: (json['base_scrip_per_m3'] as num?)?.toInt() ??
+          (json['base_scrip_value'] as num?)?.toInt() ?? 0,
+      compostYield: (json['compost_yield'] as num?)?.toInt() ?? 0,
+      description: json['description'] as String? ?? '',
+      note: json['note'] as String? ?? '',
+      decayRate: (json['decay_rate'] as num?)?.toDouble() ?? 0.1,
       fertilizerBonus: (json['fertilizer_bonus'] as num?)?.toDouble() ?? 1.0,
       volumeM3: (json['volume_m3'] as num?)?.toDouble() ?? 0.5,
       yieldsResource: json['yields_resource'] as String?,
-      resourceYieldAmount: json['resource_yield_amount'] as int? ?? 0,
+      resourceYieldAmount: (json['resource_yield_amount'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+// ─── Pending Delivery ─────────────────────────────────────────────────────────
+// Goods ordered from Kovacs arrive the following week, not immediately.
+
+class PendingDelivery {
+  final String resourceKey; // 'seeds', 'water', 'chemicals', 'ore', 'components'
+  final double amount;
+  final int arrivalWeek;
+
+  const PendingDelivery({
+    required this.resourceKey,
+    required this.amount,
+    required this.arrivalWeek,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'resource_key': resourceKey,
+    'amount': amount,
+    'arrival_week': arrivalWeek,
+  };
+
+  factory PendingDelivery.fromJson(Map<String, dynamic> j) => PendingDelivery(
+    resourceKey: j['resource_key'] as String,
+    amount: (j['amount'] as num).toDouble(),
+    arrivalWeek: (j['arrival_week'] as num).toInt(),
+  );
 }
 
 // ─── Dome Bot ─────────────────────────────────────────────────────────────────

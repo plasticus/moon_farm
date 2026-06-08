@@ -193,8 +193,13 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
   // ─── End Week ───────────────────────────────────────────────────────────
 
   Future<void> _doEndWeek(GameState game) async {
+    debugPrint('[EndWeek] Button pressed. Current week: ${game.currentWeek}');
     final isRaidWeek = ref.read(isRaidWeekProvider);
+    debugPrint('[EndWeek] isRaidWeek = $isRaidWeek '
+        '(currentWeek=${game.currentWeek}, nextRaidWeek=${game.nextRaidWeek}, '
+        'raidDefendedThisWeek=${game.raidDefendedThisWeek})');
     if (isRaidWeek) {
+      debugPrint('[EndWeek] BLOCKED — raid must be defended first.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('⚠️ Defend the raid first!')),
       );
@@ -204,47 +209,65 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     ref.read(endWeekLoadingProvider.notifier).state = true;
 
     try {
+      debugPrint('[EndWeek] Running engine...');
       final engine = EndWeekEngine();
       final (newState, summary) = engine.processEndWeek(game);
+      debugPrint('[EndWeek] Engine done. New week: ${newState.currentWeek}, '
+          'summary events: ${summary.events.length}');
 
       // Persist
       await ref.read(activeGameProvider.notifier).updateGame(newState);
+      debugPrint('[EndWeek] State persisted.');
 
       // Reset Kovacs conversation for next week
       ref.read(kovacsConversationProvider.notifier).state = null;
 
-      // Log to DB
-      await DatabaseHelper.instance.insertLogEntry(
-        newState.slotNumber,
-        WeeklyLogEntry(
-          week: summary.week,
-          events: summary.events,
-          scripGained: summary.scripReceived,
-          scripSpent: summary.scripSpent,
-          cropsHarvested: summary.cropsHarvested,
-          volumeDeliveredM3: summary.volumeToColonyM3,
-          raidOccurred: summary.raidOccurred,
-          raidSucceeded: false,
-          timestamp: DateTime.now(),
-        ),
-      );
-
+      // Set the summary BEFORE the DB log so a log failure can't block the screen.
       ref.read(weekSummaryProvider.notifier).state = summary;
 
-      if (context.mounted) {
-        // Always return to Dashboard tab first
-        setState(() => _currentTab = 0);
+      // Log to DB (non-fatal if it fails)
+      try {
+        await DatabaseHelper.instance.insertLogEntry(
+          newState.slotNumber,
+          WeeklyLogEntry(
+            week: summary.week,
+            events: summary.events,
+            scripGained: summary.scripReceived,
+            scripSpent: summary.scripSpent,
+            cropsHarvested: summary.cropsHarvested,
+            volumeDeliveredM3: summary.volumeToColonyM3,
+            raidOccurred: summary.raidOccurred,
+            raidSucceeded: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+        debugPrint('[EndWeek] Log entry saved.');
+      } catch (e, st) {
+        debugPrint('[EndWeek] WARNING: log insert failed (non-fatal): $e\n$st');
+      }
 
+      debugPrint('[EndWeek] context.mounted = ${context.mounted}');
+      if (context.mounted) {
+        setState(() => _currentTab = 0);
+        debugPrint('[EndWeek] Pushing WeekSummaryScreen...');
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => WeekSummaryScreen(summary: summary),
           ),
         );
+        debugPrint('[EndWeek] WeekSummaryScreen closed.');
 
         if (newState.status == GameStatus.terminated && context.mounted) {
           ref.read(activeGameProvider.notifier).clearGame();
           Navigator.of(context).pop();
         }
+      }
+    } catch (e, st) {
+      debugPrint('[EndWeek] ERROR: $e\n$st');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('End week failed: $e')),
+        );
       }
     } finally {
       ref.read(endWeekLoadingProvider.notifier).state = false;
@@ -319,9 +342,15 @@ class _DashboardTab extends ConsumerWidget {
         _InfraCards(game: game),
         const SizedBox(height: 16),
         if (game.pendingSales.isNotEmpty) ...[
-          const _SectionHeader('PENDING SALES'),
+          const _SectionHeader('OUTGOING SHIPMENTS'),
           const SizedBox(height: 8),
           _PendingSalesCard(sales: game.pendingSales),
+          const SizedBox(height: 16),
+        ],
+        if (game.pendingDeliveries.isNotEmpty) ...[
+          const _SectionHeader('INCOMING FROM KOVACS'),
+          const SizedBox(height: 8),
+          _PendingDeliveriesCard(deliveries: game.pendingDeliveries),
           const SizedBox(height: 16),
         ],
         if (game.siloInventory.isNotEmpty) ...[
@@ -564,6 +593,55 @@ class _PendingSalesCard extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingDeliveriesCard extends StatelessWidget {
+  final List<PendingDelivery> deliveries;
+  const _PendingDeliveriesCard({required this.deliveries});
+
+  @override
+  Widget build(BuildContext context) {
+    // Group by arrival week for a tidy summary.
+    final byWeek = <int, List<PendingDelivery>>{};
+    for (final d in deliveries) {
+      byWeek.putIfAbsent(d.arrivalWeek, () => []).add(d);
+    }
+    final weeks = byWeek.keys.toList()..sort();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MFColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.neonCyan.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🚚', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 12),
+              Text('${deliveries.length} order${deliveries.length == 1 ? '' : 's'} incoming',
+                  style: MFTextStyles.labelLarge),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...weeks.map((wk) {
+            final items = byWeek[wk]!;
+            final summary = items
+                .map((d) => '${d.amount.toInt()} ${d.resourceKey}')
+                .join(', ');
+            return Padding(
+              padding: const EdgeInsets.only(left: 32, top: 2),
+              child: Text('Week $wk: $summary',
+                  style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan)),
+            );
+          }),
         ],
       ),
     );

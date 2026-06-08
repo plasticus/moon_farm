@@ -224,16 +224,33 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       return;
     }
 
-    var r = game.resources.copyWith(starScrip: game.resources.starScrip - totalCost);
-    switch (itemId) {
-      case 'seeds_tier1': r = r.copyWith(seeds: r.seeds + quantity);
-      case 'water': r = r.copyWith(water: r.water + quantity);
-      case 'chemicals': r = r.copyWith(chemicals: r.chemicals + quantity);
-      case 'ore': r = r.copyWith(ore: r.ore + quantity);
-      case 'components': r = r.copyWith(components: r.components + quantity);
-    }
+    // Charge scrip now; goods arrive next week as a pending delivery.
+    final r = game.resources.copyWith(starScrip: game.resources.starScrip - totalCost);
 
-    ref.read(activeGameProvider.notifier).updateGameLocal(game.copyWith(resources: r));
+    final resourceKey = switch (itemId) {
+      'seeds_tier1' => 'seeds',
+      'seeds_tier2' => 'seeds',
+      'water' => 'water',
+      'chemicals' => 'chemicals',
+      'ore' => 'ore',
+      'components' => 'components',
+      _ => 'seeds',
+    };
+    // Water is sold in batches of 10m³; everything else 1:1 with quantity.
+    final amount = itemId == 'water' ? quantity * 10.0 : quantity.toDouble();
+
+    final delivery = PendingDelivery(
+      resourceKey: resourceKey,
+      amount: amount,
+      arrivalWeek: game.currentWeek + 1,
+    );
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        resources: r,
+        pendingDeliveries: [...game.pendingDeliveries, delivery],
+      ),
+    );
     _showMsg('"Order placed. Arrives Week ${game.currentWeek + 1}."');
   }
 
@@ -1032,13 +1049,14 @@ class _BuyTab extends StatelessWidget {
     final mood = game.relay.mood;
     final markup = mood < 40 ? 1.3 : mood < 65 ? 1.0 : 0.9;
 
+    // (id, emoji, name, desc, pricePerUnit, batchSize)
     final items = [
-      ('seeds_tier1', '🌾', 'Tier 1 Seeds', 'Basic crop seeds', 10),
-      ('seeds_tier2', '🌿', 'Tier 2 Seeds', 'Compost giant seeds', 25),
-      ('water', '💧', 'Water (10m³)', 'Purified water delivery', 3),
-      ('chemicals', '⚗️', 'Chemicals', 'Industrial reagents', 8),
-      ('ore', '🪨', 'Raw Ore', 'Unprocessed mineral ore', 15),
-      ('components', '⚙️', 'Components', 'Tech circuitry', 50),
+      ('seeds_tier1', '🌾', 'Tier 1 Seeds (×8)', 'Basic crop seeds', 1, 8),
+      ('seeds_tier2', '🌿', 'Tier 2 Seeds (×8)', 'Compost giant seeds', 4, 8),
+      ('water', '💧', 'Water (10m³)', 'Purified water delivery', 3, 1),
+      ('chemicals', '⚗️', 'Chemicals (×5)', 'Industrial reagents', 8, 5),
+      ('ore', '🪨', 'Raw Ore (×5)', 'Unprocessed mineral ore', 12, 5),
+      ('components', '⚙️', 'Components (×2)', 'Tech circuitry', 45, 2),
     ];
 
     return ListView(
@@ -1061,8 +1079,9 @@ class _BuyTab extends StatelessWidget {
           ),
         ),
         ...items.map((item) {
-          final (id, emoji, name, desc, basePrice) = item;
-          final price = (basePrice * 2 * markup).round();
+          final (id, emoji, name, desc, basePrice, batchSize) = item;
+          // Price shown is for the whole batch, scaled by mood markup.
+          final price = (basePrice * batchSize * markup).round();
           final canAfford = game.resources.starScrip >= price;
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -1097,7 +1116,7 @@ class _BuyTab extends StatelessWidget {
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: canAfford
-                          ? () => onBuy(id, 1, price, game)
+                          ? () => onBuy(id, batchSize, (price / batchSize).ceil(), game)
                           : null,
                       child: Container(
                         padding: const EdgeInsets.symmetric(

@@ -28,7 +28,7 @@ dependencies:
   yaml: ^3.1.2
 
   # Ads placeholder (AdMob - configure later)
-  google_mobile_ads: ^5.1.0
+#   google_mobile_ads: ^5.1.0
 
   cupertino_icons: ^1.0.6
 

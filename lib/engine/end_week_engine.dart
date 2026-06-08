@@ -24,6 +24,35 @@ import '../config/game_config_service.dart';
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
 
+  /// Computes the actual harvested yield (units) for a cell, factoring in:
+  ///  - decay: healthPercent acts as a yield multiplier (100 = full)
+  ///  - fertilizer: each application stacks fertilizerBonus multiplicatively
+  /// Base yield is 1 unit per cell before modifiers.
+  double _cellYield(CropCell cell, CropConfig crop) {
+    final healthMult = (cell.healthPercent / 100.0).clamp(0.0, 1.0);
+    double fertMult = 1.0;
+    for (int i = 0; i < cell.fertilizeCount; i++) {
+      fertMult *= crop.fertilizerBonus;
+    }
+    final units = 1.0 * healthMult * fertMult;
+    return units < 0 ? 0 : units;
+  }
+
+  /// Adds a quantity of a named resource to a bundle (for resource-yielding crops).
+  Resources _addResource(Resources r, String key, double amt) {
+    return switch (key) {
+      'sand' => r.copyWith(sand: r.sand + amt),
+      'ore' => r.copyWith(ore: r.ore + amt),
+      'moon_dirt' => r.copyWith(moonDirt: r.moonDirt + amt),
+      'chemicals' => r.copyWith(chemicals: r.chemicals + amt),
+      'metals' => r.copyWith(metals: r.metals + amt),
+      'glass' => r.copyWith(glass: r.glass + amt),
+      'components' => r.copyWith(components: r.components + amt),
+      'water' => r.copyWith(water: r.water + amt),
+      _ => r, // power_kwh and unknowns ignored (no battery bulbs anymore)
+    };
+  }
+
   /// Main entry point. Takes current state, returns (newState, summary).
   (GameState, WeekSummary) processEndWeek(GameState state) {
     final events = <String>[];
@@ -98,17 +127,29 @@ class EndWeekEngine {
         // HARVEST — bot harvests ready crops into silo
         if (bot.canHarvest) {
           final updatedInv = Map<String, double>.from(s.siloInventory);
+          var harvestRes = s.resources;
           for (var i = 0; i < cells.length; i++) {
             final cell = cells[i];
             if (cell.state != CropState.ready || cell.cropId == null) continue;
             final crop = config.getCrop(cell.cropId!);
             if (crop == null) continue;
-            updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + 1;
+            final yieldAmount = _cellYield(cell, crop);
+            // Resource crops deposit raw materials; food crops go to silo.
+            if (crop.yieldsResource != null) {
+              harvestRes = _addResource(harvestRes, crop.yieldsResource!,
+                  crop.resourceYieldAmount * yieldAmount);
+            } else {
+              updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + yieldAmount;
+            }
+            harvestRes = harvestRes.copyWith(
+              compost: harvestRes.compost + crop.compostYield,
+            );
             cells[i] = cell.cleared();
             botHarvested++;
           }
           s = s.copyWith(
             siloInventory: updatedInv,
+            resources: harvestRes,
             totalCropsHarvested: s.totalCropsHarvested + botHarvested,
           );
         }
@@ -150,7 +191,7 @@ class EndWeekEngine {
       }
     }
 
-    // ── Step 0b: Mining drone output ─────────────────────────────────────────
+    // ── Step 0b: Scavenger drone output ─────────────────────────────────────────
     if (s.miningDrones.isNotEmpty) {
       var moonDirt = 0.0, ore = 0.0, sand = 0.0, chemicals = 0.0;
       for (final drone in s.miningDrones) {
@@ -181,7 +222,7 @@ class EndWeekEngine {
           if (sand > 0) '+${sand.toStringAsFixed(1)} sand',
           if (chemicals > 0) '+${chemicals.toStringAsFixed(1)} chem',
         ];
-        events.add('⛏️ Mining drones: ${parts.join(', ')}');
+        events.add('⛏️ Scavenger drones: ${parts.join(', ')}');
       }
     }
 
@@ -249,9 +290,15 @@ class EndWeekEngine {
           final cropId = cell.cropId!;
           final crop = _config.getCrop(cropId);
           if (crop != null) {
-            siloUpdates[cropId] = (siloUpdates[cropId] ?? 0) + 1.0;
+            final yieldAmount = _cellYield(cell, crop);
+            if (crop.yieldsResource != null) {
+              resourcesAfterRobots = _addResource(resourcesAfterRobots,
+                  crop.yieldsResource!, crop.resourceYieldAmount * yieldAmount);
+            } else {
+              siloUpdates[cropId] = (siloUpdates[cropId] ?? 0) + yieldAmount;
+            }
             resourcesAfterRobots = resourcesAfterRobots.copyWith(
-              seeds: resourcesAfterRobots.seeds + 1,
+              compost: resourcesAfterRobots.compost + crop.compostYield,
             );
             cropsHarvested++;
             actions.add('harvested ${crop.name}');
@@ -328,7 +375,6 @@ class EndWeekEngine {
 
     // ── Step 3 & 4: Crop growth + decay ───────────────────────────────────
     final updatedDomesAfterGrowth = <Dome>[];
-    final decayRate = _config.getCropDecayRate(s.difficulty);
 
     for (final dome in s.domes) {
       var updatedCells = List<CropCell>.from(dome.cells);
@@ -340,39 +386,23 @@ class EndWeekEngine {
         final crop = _config.getCrop(cell.cropId ?? '');
         if (crop == null) continue;
 
-        // Step 4: Decay check — die if not watered and crop requires water
-        if (cell.state == CropState.growing &&
-            crop.canDecay &&
-            crop.decayIfNotWatered &&
-            !cell.wateredThisWeek) {
-          // Decay rate modifies probability: hard mode = 2x more likely to die
-          if (decayRate >= 1.0 || (decayRate * 100) > (50 + (cell.healthPercent * 0.5))) {
-            updatedCells[i] = cell.copyWith(state: CropState.dead);
-            cropsDied++;
-            events.add('💀 ${crop.name} in ${dome.name} died — not watered.');
-            continue;
-          }
+        // Step 4: Decay — missing water reduces yield (healthPercent), doesn't kill.
+        // healthPercent acts as the yield multiplier at harvest.
+        if (cell.state == CropState.growing && !cell.wateredThisWeek) {
+          final lossPct = (crop.decayRate * 100).round();
+          final newHealth = (cell.healthPercent - lossPct).clamp(0, 100);
+          updatedCells[i] = cell.copyWith(healthPercent: newHealth);
+          events.add('🥀 ${crop.name} in ${dome.name} lost $lossPct% yield — not watered.');
+          // fall through to growth tick using the updated cell
         }
 
-        // Step 5: Neon Berry — die if ready and not harvested this turn
-        if (cell.state == CropState.ready &&
-            crop.canDecay &&
-            crop.decayIfNotHarvestedOnReady) {
-          updatedCells[i] = cell.copyWith(state: CropState.dead);
-          cropsDied++;
-          events.add('💀 ${crop.name} in ${dome.name} rotted — left unharvested!');
-          continue;
-        }
+        final workingCell = updatedCells[i];
 
-        // Step 3: Growth tick
-        if (cell.state == CropState.growing) {
-          final fertilizeBonus = cell.fertilizedThisWeek ? crop.fertilizerBonus : 1.0;
-          // Fertilizer can effectively add a fraction of a week's growth
-          final newWeeksGrown = cell.weeksGrown + 1;
-          final effectiveGrowth = fertilizeBonus > 1.0 ? newWeeksGrown + (fertilizeBonus - 1.0) : newWeeksGrown.toDouble();
-
-          if (effectiveGrowth >= crop.growthWeeks) {
-            updatedCells[i] = cell.copyWith(
+        // Step 3: Growth tick. Fertilizer adds growth speed (multiplicative on progress).
+        if (workingCell.state == CropState.growing) {
+          final newWeeksGrown = workingCell.weeksGrown + 1;
+          if (newWeeksGrown >= crop.growthWeeks) {
+            updatedCells[i] = workingCell.copyWith(
               state: CropState.ready,
               weeksGrown: crop.growthWeeks,
               wateredThisWeek: false,
@@ -380,7 +410,7 @@ class EndWeekEngine {
             );
             events.add('✅ ${crop.name} in ${dome.name} are ready to harvest!');
           } else {
-            updatedCells[i] = cell.copyWith(
+            updatedCells[i] = workingCell.copyWith(
               weeksGrown: newWeeksGrown,
               wateredThisWeek: false,
               fertilizedThisWeek: false,
@@ -468,11 +498,17 @@ class EndWeekEngine {
     newTrophies.addAll(trophyResult.$2);
 
     // ── Step 9: Relay mood decay ──────────────────────────────────────────
+    // Mood only drifts down if the player IGNORED Kovacs this week.
+    // Talking to him (completing a conversation) maintains the relationship.
     final moodConfig = _config.moodSystemConfig;
-    final moodDecay = moodConfig['mood_decay_per_week'] as int? ?? 3;
+    final moodDecay = moodConfig['mood_decay_per_week'] as int? ?? 2;
+    final talkedThisWeek = s.relay.conversationDoneThisWeek;
+    final newMood = talkedThisWeek
+        ? s.relay.mood
+        : (s.relay.mood - moodDecay).clamp(0, 100);
     s = s.copyWith(
       relay: s.relay.copyWith(
-        mood: (s.relay.mood - moodDecay).clamp(0, 100),
+        mood: newMood,
         contractsRefreshedThisWeek: false,
         conversationDoneThisWeek: false,  // reset so player must talk again
       ),
@@ -515,6 +551,27 @@ class EndWeekEngine {
     // ── Step 11: Advance week ─────────────────────────────────────────────
     final nextWeek = s.currentWeek + 1;
     s = s.copyWith(currentWeek: nextWeek);
+
+    // ── Step 11b: Pending deliveries that arrive this new week ─────────────
+    if (s.pendingDeliveries.isNotEmpty) {
+      final arrived = s.pendingDeliveries.where((d) => d.arrivalWeek <= nextWeek).toList();
+      final remaining = s.pendingDeliveries.where((d) => d.arrivalWeek > nextWeek).toList();
+      if (arrived.isNotEmpty) {
+        var r = s.resources;
+        for (final d in arrived) {
+          r = switch (d.resourceKey) {
+            'seeds' => r.copyWith(seeds: r.seeds + d.amount.toInt()),
+            'water' => r.copyWith(water: r.water + d.amount),
+            'chemicals' => r.copyWith(chemicals: r.chemicals + d.amount),
+            'ore' => r.copyWith(ore: r.ore + d.amount),
+            'components' => r.copyWith(components: r.components + d.amount),
+            _ => r,
+          };
+          events.add('📦 Delivery arrived: ${d.amount.toInt()} ${d.resourceKey}');
+        }
+        s = s.copyWith(resources: r, pendingDeliveries: remaining);
+      }
+    }
 
     // ── Step 12: Build summary ────────────────────────────────────────────
     final summary = WeekSummary(

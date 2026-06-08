@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  lib/screens/operations/operations_screen.dart
 // ═══════════════════════════════════════════════════════════════
-// Power grid and mining drones.
+// Power grid and scavenger drones.
 // Sentries moved to Habitat. Dome bots handled here.
 
 import 'package:flutter/material.dart';
@@ -10,7 +10,26 @@ import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
+import '../../config/upgrade_config_service.dart';
 import '../../utils/game_factory.dart';
+
+/// Returns true if the game has enough spare power to add [additionalDraw] KWh.
+/// Power never shuts anything off — this only gates NEW construction.
+bool _hasPowerFor(GameState game, int additionalDraw) {
+  if (additionalDraw <= 0) return true;
+  return game.powerSurplus >= additionalDraw;
+}
+
+/// Shows a brief "not enough power" message at the bottom of the screen.
+void _powerSnack(BuildContext context, int needed, int surplus) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('⚡ Not enough power. Needs $needed KWh, only $surplus KWh spare. Build more power first.'),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
 
 class OperationsScreen extends ConsumerWidget {
   const OperationsScreen({super.key});
@@ -104,27 +123,18 @@ class _PowerSection extends StatelessWidget {
         const SizedBox(height: 8),
         ...powerBuildings.entries.map((entry) {
           final b = entry.value as Map<String, dynamic>;
-          final costScrip = b['cost_scrip'] as int? ?? 0;
           final costMetals = b['cost_metals'] as int? ?? 0;
           final costGlass = b['cost_glass'] as int? ?? 0;
           final costComponents = b['cost_components'] as int? ?? 0;
-          final costMoonDirt = b['cost_moon_dirt'] as int? ?? 0;
-          final costCompost = b['cost_compost'] as int? ?? 0;
 
-          final canAfford = game.resources.starScrip >= costScrip &&
-              game.resources.metals >= costMetals &&
+          final canAfford = game.resources.metals >= costMetals &&
               game.resources.glass >= costGlass &&
-              game.resources.components >= costComponents &&
-              game.resources.moonDirt >= costMoonDirt &&
-              game.resources.compost >= costCompost;
+              game.resources.components >= costComponents;
 
           final costParts = <String>[];
-          if (costScrip > 0) costParts.add('$costScrip 🎫');
           if (costMetals > 0) costParts.add('$costMetals metals');
           if (costGlass > 0) costParts.add('$costGlass glass');
           if (costComponents > 0) costParts.add('$costComponents comp');
-          if (costMoonDirt > 0) costParts.add('$costMoonDirt dirt');
-          if (costCompost > 0) costParts.add('$costCompost compost');
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -147,22 +157,16 @@ class _PowerSection extends StatelessWidget {
 
   String _missingText(GameState game, Map<String, dynamic> b) {
     final parts = <String>[];
-    final costScrip = b['cost_scrip'] as int? ?? 0;
     final costMetals = b['cost_metals'] as int? ?? 0;
     final costGlass = b['cost_glass'] as int? ?? 0;
-    final costMoonDirt = b['cost_moon_dirt'] as int? ?? 0;
-    final costCompost = b['cost_compost'] as int? ?? 0;
+    final costComponents = b['cost_components'] as int? ?? 0;
 
-    if (game.resources.starScrip < costScrip)
-      parts.add('${costScrip - game.resources.starScrip} more 🎫');
     if (game.resources.metals < costMetals)
       parts.add('${costMetals - game.resources.metals.toInt()} more metals');
     if (game.resources.glass < costGlass)
       parts.add('${costGlass - game.resources.glass.toInt()} more glass');
-    if (game.resources.moonDirt < costMoonDirt)
-      parts.add('${costMoonDirt - game.resources.moonDirt.toInt()} more dirt');
-    if (game.resources.compost < costCompost)
-      parts.add('${costCompost - game.resources.compost.toInt()} more compost');
+    if (game.resources.components < costComponents)
+      parts.add('${costComponents - game.resources.components.toInt()} more comp');
     return parts.isEmpty ? '' : 'Need: ${parts.join(', ')}';
   }
 
@@ -171,7 +175,6 @@ class _PowerSection extends StatelessWidget {
       'solar_array' => PowerSourceType.solarArray,
       'wind_turbine' => PowerSourceType.windTurbine,
       'geothermal_tap' => PowerSourceType.geothermalTap,
-      'biofuel_generator' => PowerSourceType.solarArray, // reuse slot
       _ => PowerSourceType.solarArray,
     };
 
@@ -185,12 +188,9 @@ class _PowerSection extends StatelessWidget {
       game.copyWith(
         powerSources: [...game.powerSources, newSource],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (b['cost_scrip'] as int? ?? 0),
           metals: game.resources.metals - (b['cost_metals'] as int? ?? 0),
           glass: game.resources.glass - (b['cost_glass'] as int? ?? 0),
           components: game.resources.components - (b['cost_components'] as int? ?? 0),
-          moonDirt: game.resources.moonDirt - (b['cost_moon_dirt'] as int? ?? 0),
-          compost: game.resources.compost - (b['cost_compost'] as int? ?? 0),
         ),
       ),
     );
@@ -226,7 +226,7 @@ class _DroneSection extends StatelessWidget {
 
     return _OpsCard(
       icon: '⛏️',
-      title: 'MINING DRONES',
+      title: 'SCAVENGER DRONES',
       subtitle: '${drones.length} drones  ·  '
           '${totalOutput.toStringAsFixed(1)} units/wk total',
       subtitleColor: MFColors.textSecondary,
@@ -289,23 +289,24 @@ class _DroneSection extends StatelessWidget {
                 color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
         const SizedBox(height: 8),
         ...droneTiers.map((tier) {
-          final costScrip = tier['cost_scrip'] as int;
           final costMetals = tier['cost_metals'] as int;
           final costComponents = tier['cost_components'] as int? ?? 0;
-          final canAfford = game.resources.starScrip >= costScrip &&
-              game.resources.metals >= costMetals &&
-              game.resources.components >= costComponents;
+          final powerNeeded = tier['power_draw_kwh'] as int;
+          final hasPower = _hasPowerFor(game, powerNeeded);
+          final canAfford = game.resources.metals >= costMetals &&
+              game.resources.components >= costComponents &&
+              hasPower;
 
-          final costParts = ['$costScrip 🎫', '$costMetals metals'];
+          final costParts = ['$costMetals metals'];
           if (costComponents > 0) costParts.add('$costComponents comp');
 
           final missing = <String>[];
-          if (game.resources.starScrip < costScrip)
-            missing.add('${costScrip - game.resources.starScrip} more 🎫');
           if (game.resources.metals < costMetals)
             missing.add('${costMetals - game.resources.metals.toInt()} more metals');
           if (game.resources.components < costComponents)
             missing.add('${costComponents - game.resources.components.toInt()} more comp');
+          if (!hasPower)
+            missing.add('${powerNeeded - game.powerSurplus} more KWh spare power');
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -327,6 +328,11 @@ class _DroneSection extends StatelessWidget {
   }
 
   void _buildDrone(BuildContext context, Map<String, dynamic> tier, GameState game) {
+    final powerNeeded = tier['power_draw_kwh'] as int;
+    if (!_hasPowerFor(game, powerNeeded)) {
+      _powerSnack(context, powerNeeded, game.powerSurplus);
+      return;
+    }
     final newDrone = MiningDrone(
       id: 'drone_${DateTime.now().millisecondsSinceEpoch}',
       tier: tier['tier'] as int,
@@ -339,7 +345,6 @@ class _DroneSection extends StatelessWidget {
       game.copyWith(
         miningDrones: [...game.miningDrones, newDrone],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (tier['cost_scrip'] as int),
           metals: game.resources.metals - (tier['cost_metals'] as int),
           components: game.resources.components - (tier['cost_components'] as int? ?? 0),
         ),
@@ -387,15 +392,21 @@ class _UpgradeDroneButton extends StatelessWidget {
     final nextConfig = droneTiers.where((t) => t['tier'] == nextTier).firstOrNull;
     if (nextConfig == null) return const SizedBox();
 
-    final costScrip = nextConfig['cost_scrip'] as int;
     final costMetals = nextConfig['cost_metals'] as int;
     final costComponents = nextConfig['cost_components'] as int? ?? 0;
-    final canAfford = game.resources.starScrip >= costScrip &&
-        game.resources.metals >= costMetals &&
-        game.resources.components >= costComponents;
+    // Upgrading changes power draw — gate on the DELTA only.
+    final powerDelta = (nextConfig['power_draw_kwh'] as int) - drone.powerDraw;
+    final hasPower = _hasPowerFor(game, powerDelta);
+    final canAfford = game.resources.metals >= costMetals &&
+        game.resources.components >= costComponents &&
+        hasPower;
 
     return GestureDetector(
-      onTap: canAfford ? () => _doUpgrade(context, drone, nextConfig) : null,
+      onTap: canAfford
+          ? () => _doUpgrade(context, drone, nextConfig)
+          : () {
+        if (!hasPower) _powerSnack(context, powerDelta, game.powerSurplus);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -413,7 +424,7 @@ class _UpgradeDroneButton extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Upgrade 1 Mk${drone.tier} → Mk$nextTier  ·  $costScrip 🎫  ·  $costMetals metals'
+                'Upgrade 1 Mk${drone.tier} → Mk$nextTier  ·  $costMetals metals'
                     '${costComponents > 0 ? '  ·  $costComponents comp' : ''}',
                 style: MFTextStyles.bodySmall.copyWith(
                   color: canAfford ? MFColors.neonCyan : MFColors.textMuted,
@@ -449,7 +460,6 @@ class _UpgradeDroneButton extends StatelessWidget {
       game.copyWith(
         miningDrones: updatedDrones,
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (nextConfig['cost_scrip'] as int),
           metals: game.resources.metals - (nextConfig['cost_metals'] as int),
           components: game.resources.components - (nextConfig['cost_components'] as int? ?? 0),
         ),
@@ -846,13 +856,17 @@ class _DomeBotSection extends StatelessWidget {
       BuildContext context, Dome dome, List<Map<String, dynamic>> botLevels) {
     if (botLevels.isEmpty) return const SizedBox();
     final mk1 = botLevels.first;
-    final costScrip = mk1['cost_scrip'] as int;
     final costMetals = mk1['cost_metals'] as int;
-    final canAfford = game.resources.starScrip >= costScrip &&
-        game.resources.metals >= costMetals;
+    final powerNeeded = mk1['power_draw_kwh'] as int? ?? 2;
+    final hasPower = _hasPowerFor(game, powerNeeded);
+    final canAfford = game.resources.metals >= costMetals && hasPower;
 
     return GestureDetector(
-      onTap: canAfford ? () => _installBot(context, dome, mk1) : null,
+      onTap: canAfford
+          ? () => _installBot(context, dome, mk1)
+          : () {
+        if (!hasPower) _powerSnack(context, powerNeeded, game.powerSurplus);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
@@ -868,9 +882,11 @@ class _DomeBotSection extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            canAfford
-                ? 'INSTALL Mk1  ·  $costScrip 🎫  ·  $costMetals metals'
-                : 'Need $costScrip 🎫 + $costMetals metals',
+            !hasPower
+                ? 'Need ${powerNeeded - game.powerSurplus} more KWh spare'
+                : canAfford
+                ? 'INSTALL Mk1  ·  $costMetals metals'
+                : 'Need $costMetals metals',
             style: MFTextStyles.bodySmall.copyWith(
               color: canAfford ? MFColors.neonCyan : MFColors.textMuted,
             ),
@@ -887,16 +903,14 @@ class _DomeBotSection extends StatelessWidget {
         botLevels.where((l) => l['level'] == nextLevel).firstOrNull;
     if (nextConfig == null) return const SizedBox();
 
-    final costScrip = nextConfig['cost_scrip'] as int;
     final costMetals = nextConfig['cost_metals'] as int;
     final costComponents = nextConfig['cost_components'] as int? ?? 0;
     final costChemicals = nextConfig['cost_chemicals'] as int? ?? 0;
-    final canAfford = game.resources.starScrip >= costScrip &&
-        game.resources.metals >= costMetals &&
+    final canAfford = game.resources.metals >= costMetals &&
         game.resources.components >= costComponents &&
         game.resources.chemicals >= costChemicals;
 
-    final costParts = ['$costScrip 🎫', '$costMetals metals'];
+    final costParts = ['$costMetals metals'];
     if (costComponents > 0) costParts.add('$costComponents comp');
     if (costChemicals > 0) costParts.add('$costChemicals chem');
 
@@ -935,7 +949,7 @@ class _DomeBotSection extends StatelessWidget {
       level: 1,
       powerDraw: cfg['power_draw_kwh'] as int,
     );
-    _applyBotChange(dome, newBot, cfg['cost_scrip'] as int,
+    _applyBotChange(dome, newBot,
         cfg['cost_metals'] as int, 0, 0, 0);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!')),
@@ -951,7 +965,6 @@ class _DomeBotSection extends StatelessWidget {
     _applyBotChange(
       dome,
       upgraded,
-      cfg['cost_scrip'] as int,
       cfg['cost_metals'] as int,
       cfg['cost_components'] as int? ?? 0,
       cfg['cost_chemicals'] as int? ?? 0,
@@ -964,7 +977,7 @@ class _DomeBotSection extends StatelessWidget {
     );
   }
 
-  void _applyBotChange(Dome dome, DomeBot newBot, int costScrip,
+  void _applyBotChange(Dome dome, DomeBot newBot,
       int costMetals, int costComponents, int costChemicals, int costChitin) {
     final updatedDomes = game.domes
         .map((d) => d.id == dome.id ? d.copyWith(domeBot: newBot) : d)
@@ -973,7 +986,6 @@ class _DomeBotSection extends StatelessWidget {
       game.copyWith(
         domes: updatedDomes,
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - costScrip,
           metals: game.resources.metals - costMetals,
           components: game.resources.components - costComponents,
           chemicals: game.resources.chemicals - costChemicals,
@@ -1192,7 +1204,171 @@ class _DomeBuildSection extends StatelessWidget {
             ],
           ),
         ),
+
+        // Per-dome tier upgrade cards
+        if (game.domes.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text('DOME TIERS',
+              style: MFTextStyles.bodySmall.copyWith(
+                  color: MFColors.textMuted, letterSpacing: 1, fontSize: 9)),
+          const SizedBox(height: 6),
+          ...game.domes.map((dome) => _domeTierRow(context, dome)),
+        ],
       ],
+    );
+  }
+
+  Widget _domeTierRow(BuildContext context, Dome dome) {
+    final upgrades = UpgradeConfigService.instance;
+    final maxTier = upgrades.domeMaxTier;
+    final currentDraw = upgrades.domeTierPowerDraw(dome.tier);
+    final nextTier = dome.tier + 1;
+    final nextCfg = nextTier <= maxTier ? upgrades.getDomeTier(nextTier) : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: MFColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${dome.name}  ·  Tier ${dome.tier}',
+                    style: MFTextStyles.bodyLarge),
+                Text(
+                  nextCfg != null
+                      ? 'Grows T${dome.tier} crops  ·  $currentDraw KWh'
+                      : 'Max tier  ·  grows T${dome.tier} crops  ·  $currentDraw KWh',
+                  style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+                ),
+                if (nextCfg != null)
+                  Text(
+                    '→ T$nextTier: ${_tierCostLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  ${nextCfg['power_draw_kwh']} KWh',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: _canAffordTier(nextCfg) ? MFColors.textSecondary : MFColors.neonPink,
+                      fontSize: 10,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (nextCfg != null) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _canAffordTier(nextCfg)
+                  ? () => _upgradeDome(context, dome, nextCfg, nextTier)
+                  : () {
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Need: ${_tierMissing(nextCfg)}'),
+                      duration: const Duration(seconds: 2)),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _canAffordTier(nextCfg)
+                      ? MFColors.neonCyan.withValues(alpha: 0.12)
+                      : MFColors.borderSubtle,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _canAffordTier(nextCfg)
+                        ? MFColors.neonCyan.withValues(alpha: 0.5)
+                        : MFColors.borderSubtle,
+                  ),
+                ),
+                child: Text('T$nextTier↑',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: _canAffordTier(nextCfg) ? MFColors.neonCyan : MFColors.textMuted,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _tierCostLine(Map cost) => cost.entries
+      .map((e) => '${e.value} ${e.key.toString().replaceAll('_', ' ')}')
+      .join(', ');
+
+  double _haveFor(String key) {
+    final r = game.resources;
+    return switch (key) {
+      'glass' => r.glass,
+      'metals' => r.metals,
+      'components' => r.components,
+      'chitin' => r.ore, // proxy
+      'ore' => r.ore,
+      _ => 0,
+    };
+  }
+
+  bool _canAffordTier(Map<String, dynamic> cfg) {
+    final cost = cfg['upgrade_cost'] as Map? ?? {};
+    for (final e in cost.entries) {
+      if (_haveFor(e.key.toString()) < (e.value as num).toDouble()) return false;
+    }
+    return true;
+  }
+
+  String _tierMissing(Map<String, dynamic> cfg) {
+    final cost = cfg['upgrade_cost'] as Map? ?? {};
+    final parts = <String>[];
+    for (final e in cost.entries) {
+      final need = (e.value as num).toDouble();
+      final have = _haveFor(e.key.toString());
+      if (have < need) {
+        parts.add('${(need - have).toInt()} more ${e.key.toString().replaceAll('_', ' ')}');
+      }
+    }
+    return parts.join(', ');
+  }
+
+  void _upgradeDome(BuildContext context, Dome dome,
+      Map<String, dynamic> cfg, int newTier) {
+    // Gate on the power delta between current and new tier draw.
+    final newDraw = cfg['power_draw_kwh'] as int;
+    final powerDelta = newDraw - dome.powerDraw;
+    if (!_hasPowerFor(game, powerDelta)) {
+      _powerSnack(context, powerDelta, game.powerSurplus);
+      return;
+    }
+
+    var r = game.resources;
+    final cost = cfg['upgrade_cost'] as Map? ?? {};
+    for (final e in cost.entries) {
+      final amt = (e.value as num).toDouble();
+      final key = e.key.toString();
+      r = switch (key) {
+        'glass' => r.copyWith(glass: r.glass - amt),
+        'metals' => r.copyWith(metals: r.metals - amt),
+        'components' => r.copyWith(components: r.components - amt),
+        'chitin' => r.copyWith(ore: r.ore - amt),
+        'ore' => r.copyWith(ore: r.ore - amt),
+        _ => r,
+      };
+    }
+
+    final updatedDomes = game.domes
+        .map((d) => d.id == dome.id
+        ? d.copyWith(tier: newTier, powerDraw: newDraw)
+        : d)
+        .toList();
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(domes: updatedDomes, resources: r),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('🏠 ${dome.name} upgraded to Tier $newTier! Now grows T$newTier crops.')),
     );
   }
 

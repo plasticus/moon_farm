@@ -172,6 +172,17 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
       _snack(ref.context, 'Already fertilized this week.');
       return;
     }
+    final crop = GameConfigService.instance.getCrop(cell.cropId ?? '');
+    if (crop == null) return;
+    // Max once per 3 growth-weeks
+    if (cell.fertilizeCount >= crop.maxFertilizations) {
+      _snack(ref.context, 'This crop can\'t be fertilized any more times.');
+      return;
+    }
+    if (cell.weeksGrown - cell.lastFertilizeWeek < 3 && cell.lastFertilizeWeek >= 0) {
+      _snack(ref.context, 'Must wait 3 weeks between fertilizing.');
+      return;
+    }
     if (game.resources.compost < 1) {
       _snack(ref.context, 'No compost available.');
       return;
@@ -179,7 +190,11 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
 
     _updateCell(
       ref, game, dome, domeIndex,
-      cell.copyWith(fertilizedThisWeek: true),
+      cell.copyWith(
+        fertilizedThisWeek: true,
+        fertilizeCount: cell.fertilizeCount + 1,
+        lastFertilizeWeek: cell.weeksGrown,
+      ),
       game.resources.copyWith(compost: game.resources.compost - 1),
     );
   }
@@ -193,28 +208,45 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
     final crop = GameConfigService.instance.getCrop(cell.cropId ?? '');
     if (crop == null) return;
 
-    // Deposit into silo inventory (sell via Relay, not auto-shipped)
-    final updatedInventory = Map<String, double>.from(game.siloInventory);
-    updatedInventory[cell.cropId!] =
-        (updatedInventory[cell.cropId!] ?? 0) + 1.0;
+    // Compute actual yield: base 1 × decay multiplier × fertilizer stacking
+    final healthMult = (cell.healthPercent / 100.0).clamp(0.0, 1.0);
+    double fertMult = 1.0;
+    for (int i = 0; i < cell.fertilizeCount; i++) {
+      fertMult *= crop.fertilizerBonus;
+    }
+    final yieldAmount = (1.0 * healthMult * fertMult).clamp(0.0, 999.0);
 
-    // Return a seed + resource yields for cyber-organic crops
-    var newResources = game.resources.copyWith(
-      seeds: game.resources.seeds + 1,
-    );
+    final updatedInventory = Map<String, double>.from(game.siloInventory);
+    var newResources = game.resources;
+
+    // Resource crops deposit raw materials; food crops go to silo.
     if (crop.yieldsResource != null) {
+      final amt = crop.resourceYieldAmount * yieldAmount;
       switch (crop.yieldsResource!) {
         case 'metals':
-          newResources = newResources.copyWith(
-              metals: newResources.metals + crop.resourceYieldAmount);
+          newResources = newResources.copyWith(metals: newResources.metals + amt);
         case 'sand':
-          newResources = newResources.copyWith(
-              sand: newResources.sand + crop.resourceYieldAmount);
+          newResources = newResources.copyWith(sand: newResources.sand + amt);
+        case 'ore':
+          newResources = newResources.copyWith(ore: newResources.ore + amt);
         case 'components':
-          newResources = newResources.copyWith(
-              components: newResources.components + crop.resourceYieldAmount);
+          newResources = newResources.copyWith(components: newResources.components + amt);
+        case 'moon_dirt':
+          newResources = newResources.copyWith(moonDirt: newResources.moonDirt + amt);
+        case 'chemicals':
+          newResources = newResources.copyWith(chemicals: newResources.chemicals + amt);
+        case 'glass':
+          newResources = newResources.copyWith(glass: newResources.glass + amt);
       }
+    } else {
+      updatedInventory[cell.cropId!] =
+          (updatedInventory[cell.cropId!] ?? 0) + yieldAmount;
     }
+
+    // Compost byproduct on harvest
+    newResources = newResources.copyWith(
+      compost: newResources.compost + crop.compostYield,
+    );
 
     final newHarvestCount = game.totalCropsHarvested + 1;
     var updatedGame = game.copyWith(
@@ -255,8 +287,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
     final crop = GameConfigService.instance.getCrop(cropId);
     if (crop == null) return;
 
-    if (crop.domeTierRequired > dome.tier) {
-      _snack(ref.context, '${crop.name} needs a Tier ${crop.domeTierRequired} dome.');
+    if (crop.domeTierRequired != dome.tier) {
+      _snack(ref.context, '${crop.name} needs a Tier ${crop.domeTierRequired} dome. This dome is Tier ${dome.tier}.');
       return;
     }
     if (game.resources.seeds < 1) {

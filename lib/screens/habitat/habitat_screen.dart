@@ -531,14 +531,15 @@ class _SentriesSection extends StatelessWidget {
                 color: MFColors.textMuted, letterSpacing: 2)),
         const SizedBox(height: 8),
         ...sentryLevels.map((cfg) {
-          final costScrip = cfg['cost_scrip'] as int;
           final costMetals = cfg['cost_metals'] as int;
           final costComponents = cfg['cost_components'] as int;
           final costChitin = cfg['cost_chitin'] as int? ?? 0;
-          final canAfford = game.resources.starScrip >= costScrip &&
-              game.resources.metals >= costMetals &&
+          final powerNeeded = cfg['power_draw_kwh'] as int;
+          final hasPower = game.powerSurplus >= powerNeeded;
+          final canAfford = game.resources.metals >= costMetals &&
               game.resources.components >= costComponents &&
-              game.resources.ore >= costChitin; // chitin in ore slot
+              game.resources.ore >= costChitin && // chitin in ore slot
+              hasPower;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -559,7 +560,7 @@ class _SentriesSection extends StatelessWidget {
                       children: [
                         Text(cfg['name'] as String, style: MFTextStyles.bodyLarge),
                         Text(
-                          '$costScrip 🎫  ·  $costMetals metals'
+                          '$costMetals metals'
                               '${costComponents > 0 ? '  ·  $costComponents comp' : ''}'
                               '${costChitin > 0 ? '  ·  $costChitin chitin' : ''}',
                           style: MFTextStyles.bodySmall.copyWith(
@@ -568,14 +569,28 @@ class _SentriesSection extends StatelessWidget {
                         ),
                         Text(
                           '${cfg['damage']} dmg  ·  ${cfg['fire_rate']}/sec  ·  '
-                              '${cfg['power_draw_kwh']} KWh',
-                          style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+                              '${cfg['power_draw_kwh']} KWh'
+                              '${!hasPower ? '  ·  need ${powerNeeded - game.powerSurplus} more KWh' : ''}',
+                          style: MFTextStyles.bodySmall.copyWith(
+                              color: hasPower ? MFColors.textMuted : MFColors.neonPink),
                         ),
                       ],
                     ),
                   ),
                   GestureDetector(
-                    onTap: canAfford ? () => _buildSentry(context, cfg) : null,
+                    onTap: canAfford
+                        ? () => _buildSentry(context, cfg)
+                        : () {
+                      if (!hasPower) {
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(
+                              '⚡ Not enough power. Needs $powerNeeded KWh, '
+                                  'only ${game.powerSurplus} KWh spare.'),
+                              duration: const Duration(seconds: 3)),
+                        );
+                      }
+                    },
                     child: _ActionButton(
                         label: 'BUILD', canAfford: canAfford, color: MFColors.neonCyan),
                   ),
@@ -602,9 +617,9 @@ class _SentriesSection extends StatelessWidget {
       game.copyWith(
         laserSentries: [...game.laserSentries, newSentry],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (cfg['cost_scrip'] as int),
           metals: game.resources.metals - (cfg['cost_metals'] as int),
           components: game.resources.components - (cfg['cost_components'] as int),
+          ore: game.resources.ore - (cfg['cost_chitin'] as int? ?? 0),
         ),
       ),
     );
@@ -759,8 +774,7 @@ class _GrenadeSection extends StatelessWidget {
   }
 
   bool _canAffordBench(Map<String, dynamic> cfg) {
-    return game.resources.starScrip >= (cfg['cost_scrip'] as int? ?? 0) &&
-        game.resources.metals >= (cfg['cost_metals'] as int? ?? 0) &&
+    return game.resources.metals >= (cfg['cost_metals'] as int? ?? 0) &&
         game.resources.components >= (cfg['cost_components'] as int? ?? 0);
   }
 
@@ -769,7 +783,6 @@ class _GrenadeSection extends StatelessWidget {
       game.copyWith(
         grenades: game.grenades.copyWith(benchLevel: cfg['level'] as int),
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (cfg['cost_scrip'] as int? ?? 0),
           metals: game.resources.metals - (cfg['cost_metals'] as int? ?? 0),
           components: game.resources.components - (cfg['cost_components'] as int? ?? 0),
         ),

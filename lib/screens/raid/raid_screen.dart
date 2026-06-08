@@ -491,7 +491,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   // ── End raid ──────────────────────────────────────────────────────────────
 
-  void _endRaid({required bool wallBroken}) {
+  void _endRaid({required bool wallBroken}) async {
     if (_raidOver) return;
     _raidOver = true;
     _gameTimer?.cancel();
@@ -519,9 +519,10 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     );
 
     // Apply results to game state
-    _applyRaidResults(result);
+    await _applyRaidResults(result);
 
     // Navigate to results screen
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => RaidResultScreen(result: result, game: widget.game),
@@ -529,7 +530,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     );
   }
 
-  void _applyRaidResults(RaidResult result) {
+  Future<void> _applyRaidResults(RaidResult result) async {
     final game = widget.game;
 
     // Update wall HP
@@ -572,13 +573,16 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }).toList();
     }
 
-    ref.read(activeGameProvider.notifier).updateGameLocal(
+    final interval = GameConfigService.instance.getRaidInterval(game.difficulty);
+
+    await ref.read(activeGameProvider.notifier).updateGame(
       game.copyWith(
         defenseWall: newWall,
         grenades: newGrenades,
         resources: resources,
         domes: domes,
         raidDefendedThisWeek: true,
+        nextRaidWeek: game.currentWeek + interval,
         totalRaidsDefended: game.totalRaidsDefended + 1,
         totalFaunaKilled: game.totalFaunaKilled + result.faunaKilled,
         totalChitinCollected: game.totalChitinCollected + result.chitinDropped,

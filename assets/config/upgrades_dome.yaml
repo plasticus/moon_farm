@@ -1,0 +1,63 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/upgrades_dome.yaml
+# ═══════════════════════════════════════════════════════════════
+#
+# Dome TIER upgrade paths (improving an existing dome's structure to
+# grow higher-tier crops). This is SEPARATE from building a brand-new
+# dome — new dome land-rights cost lives in game_config.json.
+#
+# WHAT A TIER UNLOCKS:
+#   Tier gates which crop tiers you can plant in that dome.
+#   Tier 1 dome  → Tier 1 crops only
+#   Tier 2 dome  → Tier 2 crops only
+#   Tier 3 dome  → Tier 3 crops only
+#   Tier 4 dome  → Tier 4 crops only
+#   NOT backward-compatible — a Tier 4 dome grows only Tier 4 crops.
+#
+# POWER:
+#   Each tier roughly doubles the dome's passive power draw.
+#   Make sure total base draw fits under the starting Wind Turbine (45 KWh):
+#   T1 dome (25) + 1 sentry (2) + 1 drone (3) = 30 KWh at game start. OK.
+#
+# COSTS:
+#   No scrip for upgrades — you're improving a structure you already own,
+#   not buying new land. Just materials.
+#   (The build_cost on tier 1 is informational; actual new-dome cost,
+#    including scrip land-rights, is in game_config.json under dome_building.)
+#
+# EDITING TIPS:
+#   - Indentation matters. 2 spaces, no tabs.
+#   - chitin maps to the ore resource slot internally (proxy) for now.
+#   - power_draw_kwh is the dome's passive draw once at this tier.
+
+dome_tiers:
+  - tier: 1
+    power_draw_kwh: 25
+    # Informational only — real new-dome cost (incl. scrip) is in game_config.json
+    build_cost:
+      glass: 20
+      metals: 5
+      components: 1
+
+  - tier: 2
+    power_draw_kwh: 50
+    upgrade_cost:
+      glass: 20
+      metals: 10
+      components: 5
+
+  - tier: 3
+    power_draw_kwh: 100
+    upgrade_cost:
+      glass: 10
+      metals: 20
+      components: 10
+      chitin: 10
+
+  - tier: 4
+    power_draw_kwh: 200
+    upgrade_cost:
+      glass: 10
+      metals: 40
+      components: 20
+      chitin: 20

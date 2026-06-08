@@ -5,6 +5,7 @@
 import 'package:uuid/uuid.dart';
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
+import '../config/upgrade_config_service.dart';
 
 /// Creates a brand new GameState for a given save slot, farm name, and difficulty.
 class GameFactory {
@@ -135,7 +136,7 @@ class GameFactory {
       lifetimeScripEarned: startingScrip,
       totalCropsHarvested: 0,
       totalCompostGenerated: 0,
-      nextRaidWeek: 8, // first raid at week 8
+      nextRaidWeek: _config.getFirstRaidWeek(),
       miningDrones: [
         MiningDrone(
           id: 'drone_start_0',
@@ -172,7 +173,7 @@ class GameFactory {
   }
 
   static Dome _createNewDome({required String name, int tier = 1}) {
-    final tierConfig = _config.getDomeTier(tier);
+    final powerDraw = UpgradeConfigService.instance.domeTierPowerDraw(tier);
     return Dome(
       id: _uuid.v4(),
       name: name,
@@ -183,7 +184,7 @@ class GameFactory {
       ),
       robot: null,
       structuralHealth: 100,
-      powerDraw: (tierConfig['power_draw_kwh'] as num).toInt(),
+      powerDraw: powerDraw,
     );
   }
 

@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 12,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -313,6 +313,8 @@ class DatabaseHelper {
       'active_contracts': state.activeContracts.map(_contractToJson).toList(),
       'completed_contracts':
       state.completedContracts.map(_contractToJson).toList(),
+      'pending_deliveries':
+      state.pendingDeliveries.map((d) => d.toJson()).toList(),
       'milestones': state.milestones.map(_milestoneToJson).toList(),
       'trophies': state.trophies.map(_trophyToJson).toList(),
       'log': state.log.map(_logEntryToJson).toList(),
@@ -351,6 +353,9 @@ class DatabaseHelper {
       laserSentries: (json['laser_sentries'] as List).map((s) => _sentryFromJson(s as Map<String, dynamic>)).toList(),
       activeContracts: (json['active_contracts'] as List).map((c) => _contractFromJson(c as Map<String, dynamic>)).toList(),
       completedContracts: (json['completed_contracts'] as List).map((c) => _contractFromJson(c as Map<String, dynamic>)).toList(),
+      pendingDeliveries: (json['pending_deliveries'] as List?)
+          ?.map((d) => PendingDelivery.fromJson(d as Map<String, dynamic>))
+          .toList() ?? const [],
       milestones: (json['milestones'] as List).map((m) => _milestoneFromJson(m as Map<String, dynamic>)).toList(),
       trophies: (json['trophies'] as List).map((t) => _trophyFromJson(t as Map<String, dynamic>)).toList(),
       log: (json['log'] as List).map((l) => _logEntryFromJson(l as Map<String, dynamic>)).toList(),
@@ -442,6 +447,7 @@ class DatabaseHelper {
     'position': c.position, 'crop_id': c.cropId, 'state': c.state.name,
     'weeks_grown': c.weeksGrown, 'watered': c.wateredThisWeek,
     'fertilized': c.fertilizedThisWeek, 'health': c.healthPercent,
+    'fertilize_count': c.fertilizeCount, 'last_fertilize_week': c.lastFertilizeWeek,
   };
 
   CropCell _cellFromJson(Map<String, dynamic> j) => CropCell(
@@ -449,6 +455,8 @@ class DatabaseHelper {
     state: CropState.values.firstWhere((e) => e.name == j['state']),
     weeksGrown: (j['weeks_grown'] as num).toInt(), wateredThisWeek: j['watered'] as bool,
     fertilizedThisWeek: j['fertilized'] as bool, healthPercent: (j['health'] as num).toInt(),
+    fertilizeCount: (j['fertilize_count'] as num?)?.toInt() ?? 0,
+    lastFertilizeWeek: (j['last_fertilize_week'] as num?)?.toInt() ?? -99,
   );
 
   Map<String, dynamic> _robotToJson(DomeRobot r) => {
@@ -480,12 +488,25 @@ class DatabaseHelper {
   Map<String, dynamic> _refineryToJson(Refinery r) => {
     'id': r.id, 'tier': r.tier, 'power_draw': r.powerDraw,
     'unlocked_recipes': r.unlockedRecipes,
+    'machines': r.machines.map((m) => {
+      'type': m.type.name,
+      'level': m.level,
+      'power_draw': m.powerDraw,
+    }).toList(),
   };
 
   Refinery _refineryFromJson(Map<String, dynamic> j) => Refinery(
     id: j['id'] as String, tier: (j['tier'] as num).toInt(),
     powerDraw: (j['power_draw'] as num).toInt(),
     unlockedRecipes: List<String>.from(j['unlocked_recipes'] as List),
+    machines: (j['machines'] as List?)?.map((m) {
+      final mm = m as Map<String, dynamic>;
+      return RefineryMachine(
+        type: MachineType.values.firstWhere((e) => e.name == mm['type']),
+        level: (mm['level'] as num).toInt(),
+        powerDraw: (mm['power_draw'] as num).toInt(),
+      );
+    }).toList() ?? const [],
   );
 
   Map<String, dynamic> _powerSourceToJson(PowerSource p) => {

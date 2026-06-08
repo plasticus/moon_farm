@@ -105,7 +105,8 @@ class _WaterPurifierCard extends StatelessWidget {
                       Text('Upgrade to Mk$nextLevel', style: MFTextStyles.bodyLarge),
                       Text(
                         '+${nextConfig['output_water_per_week']}m³/wk  ·  '
-                            '${nextConfig['cost_scrip']} 🎫  ·  ${nextConfig['cost_metals']} metals',
+                            '${nextConfig['cost_metals']} metals'
+                            '${(nextConfig['cost_glass'] as int? ?? 0) > 0 ? '  ·  ${nextConfig['cost_glass']} glass' : ''}',
                         style: MFTextStyles.bodySmall,
                       ),
                     ],
@@ -114,8 +115,8 @@ class _WaterPurifierCard extends StatelessWidget {
                 _MiniButton(
                   label: 'UPGRADE',
                   color: MFColors.neonCyan,
-                  canAfford: game.resources.starScrip >= (nextConfig['cost_scrip'] as int) &&
-                      game.resources.metals >= (nextConfig['cost_metals'] as int? ?? 0),
+                  canAfford: game.resources.metals >= (nextConfig['cost_metals'] as int? ?? 0) &&
+                      game.resources.glass >= (nextConfig['cost_glass'] as int? ?? 0),
                   onTap: () => _upgrade(context, nextConfig),
                 ),
               ],
@@ -131,15 +132,15 @@ class _WaterPurifierCard extends StatelessWidget {
   }
 
   void _upgrade(BuildContext context, Map<String, dynamic> cfg) {
-    final cost = cfg['cost_scrip'] as int;
     final metalCost = cfg['cost_metals'] as int? ?? 0;
-    if (game.resources.starScrip < cost || game.resources.metals < metalCost) return;
+    final glassCost = cfg['cost_glass'] as int? ?? 0;
+    if (game.resources.metals < metalCost || game.resources.glass < glassCost) return;
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         waterPurifierLevel: game.waterPurifierLevel + 1,
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - cost,
           metals: game.resources.metals - metalCost,
+          glass: game.resources.glass - glassCost,
         ),
       ),
     );

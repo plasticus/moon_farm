@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
@@ -20,7 +21,7 @@ class GameConfigService {
     final jsonStr =
     await rootBundle.loadString('assets/config/game_config.json');
     _config = jsonDecode(jsonStr) as Map<String, dynamic>;
-    _buildCropConfigs();
+    await _buildCropConfigs();
   }
 
   Map<String, dynamic> get _c {
@@ -28,11 +29,26 @@ class GameConfigService {
     return _config!;
   }
 
-  void _buildCropConfigs() {
+  Future<void> _buildCropConfigs() async {
     _cropConfigs = {};
-    for (final cropJson in _c['crops'] as List) {
-      final crop = CropConfig.fromJson(cropJson as Map<String, dynamic>);
+    // Crops now live in their own editable YAML file.
+    final raw = await rootBundle.loadString('assets/config/crops.yaml');
+    final doc = loadYaml(raw);
+    final list = _deepConvert(doc)['crops'] as List? ?? [];
+    for (final cropMap in list) {
+      final crop = CropConfig.fromJson(Map<String, dynamic>.from(cropMap as Map));
       _cropConfigs![crop.id] = crop;
+    }
+  }
+
+  // Convert YamlMap/YamlList to plain Dart structures recursively.
+  dynamic _deepConvert(dynamic node) {
+    if (node is YamlMap) {
+      return node.map((k, v) => MapEntry(k.toString(), _deepConvert(v)));
+    } else if (node is YamlList) {
+      return node.map(_deepConvert).toList();
+    } else {
+      return node;
     }
   }
 
@@ -47,9 +63,11 @@ class GameConfigService {
   List<CropConfig> getCropsByTier(int tier) =>
       _cropConfigs!.values.where((c) => c.tier == tier).toList();
 
+  // A dome grows ONLY crops of its exact tier (not backward-compatible).
+  // A Tier 4 dome grows only Tier 4 crops.
   List<CropConfig> getCropsForDomeTier(int domeTier) =>
       _cropConfigs!.values
-          .where((c) => c.domeTierRequired <= domeTier)
+          .where((c) => c.domeTierRequired == domeTier)
           .toList();
 
   // ─── Difficulty ───────────────────────────────────────────────────────────
@@ -321,6 +339,19 @@ class GameConfigService {
 
   Map<String, dynamic> getRaidScaling() {
     return _c['raid_scaling'] as Map<String, dynamic>? ?? {};
+  }
+
+  int getFirstRaidWeek() {
+    return getRaidScaling()['first_raid_week'] as int? ?? 10;
+  }
+
+  int getRaidInterval(Difficulty difficulty) {
+    final rs = getRaidScaling();
+    return switch (difficulty) {
+      Difficulty.easy => rs['raid_interval_easy'] as int? ?? 12,
+      Difficulty.normal => rs['raid_interval_normal'] as int? ?? 10,
+      Difficulty.hard => rs['raid_interval_hard'] as int? ?? 6,
+    };
   }
 
   Map<String, dynamic> getGrenadeBenchConfig() {

@@ -16,19 +16,25 @@ class UpgradeConfigService {
   Map<String, dynamic>? _refinery;
   Map<String, dynamic>? _defense;
   Map<String, dynamic>? _domebots;
+  Map<String, dynamic>? _domeTiers;
 
-  bool get isLoaded => _refinery != null && _defense != null && _domebots != null;
+  bool get isLoaded =>
+      _refinery != null && _defense != null && _domebots != null && _domeTiers != null;
 
   Future<void> load() async {
     _refinery = await _loadYaml('assets/config/upgrades_refinery.yaml');
     _defense = await _loadYaml('assets/config/upgrades_defense.yaml');
     _domebots = await _loadYaml('assets/config/upgrades_domebots.yaml');
+    _domeTiers = await _loadYaml('assets/config/upgrades_dome.yaml');
   }
 
   Future<Map<String, dynamic>> _loadYaml(String path) async {
     final raw = await rootBundle.loadString(path);
     final doc = loadYaml(raw);
-    return _deepConvert(doc) as Map<String, dynamic>;
+    final converted = _deepConvert(doc);
+    if (converted is Map<String, dynamic>) return converted;
+    // Empty or malformed YAML — return empty map rather than crashing.
+    return <String, dynamic>{};
   }
 
   // YAML returns YamlMap/YamlList — convert to plain Dart maps/lists recursively.
@@ -133,4 +139,25 @@ class UpgradeConfigService {
   }
 
   int get domeBotMaxLevel => domeBotLevels.length;
+
+  // ─── DOME TIERS ────────────────────────────────────────────────
+
+  List<Map<String, dynamic>> get domeTiers {
+    final levels = _domeTiers?['dome_tiers'] as List?;
+    return levels?.map((l) => Map<String, dynamic>.from(l as Map)).toList() ?? [];
+  }
+
+  Map<String, dynamic>? getDomeTier(int tier) {
+    for (final t in domeTiers) {
+      if (t['tier'] == tier) return t;
+    }
+    return null;
+  }
+
+  int domeTierPowerDraw(int tier) {
+    final t = getDomeTier(tier);
+    return t?['power_draw_kwh'] as int? ?? 25;
+  }
+
+  int get domeMaxTier => domeTiers.length;
 }
