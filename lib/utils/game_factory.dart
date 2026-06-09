@@ -2,15 +2,18 @@
 //  lib/utils/game_factory.dart
 // ═══════════════════════════════════════════════════════════════
 
+import 'dart:math';
 import 'package:uuid/uuid.dart';
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
 import '../config/upgrade_config_service.dart';
+import '../config/raid_config_service.dart';
 
 /// Creates a brand new GameState for a given save slot, farm name, and difficulty.
 class GameFactory {
   static const _uuid = Uuid();
   static final _config = GameConfigService.instance;
+  static final _rng = Random();
 
   static GameState createNewGame({
     required int slotNumber,
@@ -136,7 +139,7 @@ class GameFactory {
       lifetimeScripEarned: startingScrip,
       totalCropsHarvested: 0,
       totalCompostGenerated: 0,
-      nextRaidWeek: UpgradeConfigService.instance.firstRaidWeek,
+      nextRaidWeek: RaidConfigService.instance.firstRaidWeek,
       miningDrones: [
         MiningDrone(
           id: 'drone_start_0',
@@ -275,20 +278,27 @@ class GameFactory {
     final picked = shuffled.take(3).toList();
 
     return picked.map((crop) {
-      // Scale quantity to crop growth time and value
-      final baseQty = (50 / (crop.baseSolarValue * 0.1).clamp(1, 10)).round().clamp(5, 100);
-      final rewardBonus = (crop.baseSolarValue * baseQty * 0.4).round();
+      // Quantity scaled to crop value — cheaper crops need bigger orders
+      final baseQty = (80 / (crop.baseScrip * 0.1).clamp(1, 10)).round().clamp(8, 60);
+
+      // Market value = baseScrip * qty (what relay would pay at neutral mood)
+      final marketValue = crop.baseScrip * baseQty;
+
+      // Contracts pay 15-25% above market as a bonus for committing early
+      final bonusPct = 0.15 + (_rng.nextDouble() * 0.10); // 15-25%
+      final rewardScrip = (marketValue * (1 + bonusPct)).round();
+      final bonusDisplay = '${(bonusPct * 100).round()}% above market';
 
       return Contract(
         id: _uuid.v4(),
         title: '${crop.name} Order',
         description:
         'The colony requests $baseQty units of ${crop.name}. '
-            'Bonus solar payout on delivery.',
+            'Pays $bonusDisplay. Deliver before next ship window.',
         cropId: crop.id,
         requiredAmount: baseQty,
         currentAmount: 0,
-        rewardScrip: rewardBonus,
+        rewardScrip: rewardScrip,
         status: ContractStatus.available,
         weekAccepted: currentWeek,
       );

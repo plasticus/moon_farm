@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -398,7 +398,8 @@ class DatabaseHelper {
     'moon_dirt': r.moonDirt, 'chemicals': r.chemicals, 'water': r.water,
     'compost': r.compost, 'z_soil': r.zSoil, 'metals': r.metals,
     'sand': r.sand, 'glass': r.glass, 'components': r.components,
-    'ore': r.ore, 'star_scrip': r.starScrip, 'seeds': r.seeds,
+    'ore': r.ore, 'meat': r.meat, 'chitin': r.chitin,
+    'star_scrip': r.starScrip, 'seeds': r.seeds,
   };
 
   Resources _resourcesFromJson(Map<String, dynamic> j) => Resources(
@@ -412,6 +413,8 @@ class DatabaseHelper {
     glass: (j['glass'] as num).toDouble(),
     components: (j['components'] as num).toDouble(),
     ore: (j['ore'] as num).toDouble(),
+    meat: (j['meat'] as num?)?.toDouble() ?? 0,
+    chitin: (j['chitin'] as num?)?.toDouble() ?? 0,
     starScrip: (j['star_scrip'] as num).toInt(),
     seeds: (j['seeds'] as num).toInt(),
   );

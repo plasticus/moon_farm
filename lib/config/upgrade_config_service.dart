@@ -6,6 +6,7 @@
 //   - upgrades_defense.yaml
 //   - upgrades_domebots.yaml
 
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 
@@ -186,5 +187,29 @@ class UpgradeConfigService {
       'hard' => raidScheduling['raid_interval_hard'] as int? ?? 6,
       _ => raidScheduling['raid_interval_normal'] as int? ?? 10,
     };
+  }
+
+  // ─── FAUNA TYPES ────────────────────────────────────────────────
+
+  List<Map<String, dynamic>> get faunaTypes {
+    final list = _raids?['fauna_types'] as List?;
+    return list?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
+  }
+
+  Map<String, dynamic>? getFaunaType(String id) {
+    for (final f in faunaTypes) {
+      if (f['id'] == id) return f;
+    }
+    return null;
+  }
+
+  /// Pick a fauna type based on spawn_chance ordering.
+  /// Types are checked in list order; first one whose spawn_chance roll passes wins.
+  Map<String, dynamic> pickFaunaType(Random rng) {
+    for (final f in faunaTypes) {
+      final chance = (f['spawn_chance'] as num?)?.toDouble() ?? 1.0;
+      if (rng.nextDouble() < chance) return f;
+    }
+    return faunaTypes.last; // fallback
   }
 }

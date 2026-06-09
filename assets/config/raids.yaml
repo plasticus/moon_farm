@@ -1,86 +1,166 @@
 # ═══════════════════════════════════════════════════════════════
 #  assets/config/raids.yaml
 # ═══════════════════════════════════════════════════════════════
-# All raid and fauna configuration in one editable file.
-# Edit this to tune raid difficulty, frequency, and fauna types.
-#
-# FAUNA COUNT:
-#   At each raid, fauna count = base_fauna_count + (raid_week ~/ fauna_per_week_divisor) * fauna_per_week
-#   Example: week 10 → 5 + (10 ~/ 3) * 1 = 5 + 3 = 8 fauna
-#   Capped at max_fauna_count.
-#
-# SPAWN INTERVAL:
-#   Time between fauna spawning, in seconds.
-#   spawn_interval_base = slowest (used at low fauna count)
-#   spawn_interval_min  = fastest (used at high fauna count)
-#   Actual interval = (raid_duration_max / fauna_count).clamp(min, base)
-#
-# FAUNA TYPES (chance values 0.0–1.0, checked in order per spawn):
-#   brute:   high HP, slow, guaranteed chitin drop
-#   armored: medium HP, medium speed, damage resistant
-#   swarmer: low HP, fast, comes in groups
-#   standard: default if no special type rolls
+# Sequential unlock configuration.
+# Wave 1 (Week 10) is 100% locked to the weakest fallback creature.
+# Every subsequent 10 weeks, the next tier unlocks.
 
 scheduling:
   first_raid_week: 10
   raid_interval_easy: 12
   raid_interval_normal: 10
   raid_interval_hard: 6
-  raid_warning_weeks_before: 2   # how many weeks before raid to show warning
+  raid_warning_weeks_before: 2
 
 scaling:
   base_fauna_count: 5
-  fauna_per_week: 1
-  fauna_per_week_divisor: 3      # divide week by this before multiplying by per_week
+  fauna_per_week: 2
+  fauna_per_week_divisor: 5      # Week 10 = 8 fauna, Week 20 = 13 fauna (50%+ jump)
   max_fauna_count: 60
-  raid_duration_max: 90          # max seconds before raid auto-ends
+  raid_duration_max: 90
   spawn_interval_base: 3.0
   spawn_interval_min: 1.5
 
+# ─── FAUNA TYPES ─────────────────────────────────────────────────────────────
+# Sorted strictly by power. High-tier threats are mathematically locked out
+# in early weeks by checking the raid_week threshold.
 fauna_types:
-  brute:
-    hp: 180
-    speed: 0.06
-    size: 28.0
-    color: "0xFFE53935"          # red
-    damage_to_wall: 20
-    scrip_reward: 0
-    drops_meat: true
-    drops_chitin: true           # brutes always drop chitin
-    spawn_chance_base: 0.02      # base chance per spawn
-    spawn_chance_per_week: 0.001 # increases each week
+  # UNLOCKS AT WAVE 10 (WEEK 100)
+  - id: stalker
+    name: Apex Stalker
+    emoji: 🦂
+    hp: 100
+    speed: 1.4
+    damage: 20
+    hit_interval: 1.0
+    is_brute: true
+    meat_chance: 0.9
+    chitin_chance: 1.0
+    score_value: 6
+    spawn_chance: 0.01
 
-  armored:
+  # UNLOCKS AT WAVE 9 (WEEK 90)
+  - id: goliath
+    name: Ridge Goliath
+    emoji: 🦣
+    hp: 200
+    speed: 0.3
+    damage: 10
+    hit_interval: 1.5
+    is_brute: true
+    meat_chance: 0.9
+    chitin_chance: 1.0
+    score_value: 5
+    spawn_chance: 0.02
+
+  # UNLOCKS AT WAVE 8 (WEEK 80)
+  - id: brute
+    name: Crater Brute
+    emoji: 🦏
     hp: 120
-    speed: 0.09
-    size: 22.0
-    color: "0xFF7B1FA2"          # purple
-    damage_to_wall: 15
-    drops_meat: true
-    drops_chitin: false
-    spawn_chance_base: 0.05
+    speed: 0.4
+    damage: 25
+    hit_interval: 1.5
+    is_brute: true
+    meat_chance: 0.9
+    chitin_chance: 0.8
+    score_value: 5
+    spawn_chance: 0.03
 
-  swarmer:
-    hp: 40
-    speed: 0.16
-    size: 14.0
-    color: "0xFFFF8F00"          # amber
-    damage_to_wall: 5
-    drops_meat: true
-    drops_chitin: false
-    spawn_chance_base: 0.12
-
-  standard:
+  # UNLOCKS AT WAVE 7 (WEEK 70)
+  - id: wrecker
+    name: Sledge Wrecker
+    emoji: 🦀
     hp: 80
-    speed: 0.10
-    size: 18.0
-    color: "0xFF43A047"          # green
-    damage_to_wall: 10
-    drops_meat: true
-    drops_chitin: false
-    spawn_chance_base: 1.0       # always spawns if no other type rolled
+    speed: 0.5
+    damage: 35
+    hit_interval: 2.0
+    is_brute: false
+    meat_chance: 0.7
+    chitin_chance: 0.60
+    score_value: 4
+    spawn_chance: 0.04
 
-drops:
-  meat_chance: 0.7               # chance any fauna drops meat on death
-  chitin_chance_non_brute: 0.15  # chance non-brute drops chitin
-  scrip_per_fauna: 0             # scrip reward per kill (0 = disabled)
+  # UNLOCKS AT WAVE 6 (WEEK 60)
+  - id: armored
+    name: Shell-Back
+    emoji: 🐢
+    hp: 60
+    speed: 0.7
+    damage: 15
+    hit_interval: 1.2
+    is_brute: false
+    meat_chance: 0.6
+    chitin_chance: 0.5
+    score_value: 3
+    spawn_chance: 0.05
+
+  # UNLOCKS AT WAVE 5 (WEEK 50)
+  - id: vanguard
+    name: Dune Vanguard
+    emoji: 🐜
+    hp: 45
+    speed: 1.0
+    damage: 12
+    hit_interval: 1.2
+    is_brute: false
+    meat_chance: 0.5
+    chitin_chance: 0.40
+    score_value: 3
+    spawn_chance: 0.06
+
+  # UNLOCKS AT WAVE 4 (WEEK 40)
+  - id: leech
+    name: Chitin Leech
+    emoji: 🪱
+    hp: 30
+    speed: 1.1
+    damage: 5
+    hit_interval: 0.5
+    is_brute: false
+    meat_chance: 0.4
+    chitin_chance: 0.20
+    score_value: 2
+    spawn_chance: 0.08
+
+  # UNLOCKS AT WAVE 3 (WEEK 30)
+  - id: swarmer
+    name: Dust Swarmer
+    emoji: 🪲
+    hp: 8
+    speed: 2.0
+    damage: 4
+    hit_interval: 0.8
+    is_brute: false
+    meat_chance: 0.2
+    chitin_chance: 0.02
+    score_value: 1
+    spawn_chance: 0.12
+
+  # UNLOCKS AT WAVE 2 (WEEK 20)
+  - id: scout
+    name: Lunar Scout
+    emoji: 🕷️
+    hp: 14
+    speed: 1.6
+    damage: 6
+    hit_interval: 0.9
+    is_brute: false
+    meat_chance: 0.3
+    chitin_chance: 0.05
+    score_value: 1
+    spawn_chance: 0.15
+
+  # THE STARTING SQUAD (WEEK 10)
+  - id: crawler
+    name: Lunar Crawler
+    emoji: 🦎
+    hp: 20
+    speed: 1.2
+    damage: 8
+    hit_interval: 1.0
+    is_brute: false
+    meat_chance: 0.4
+    chitin_chance: 0.05
+    score_value: 1
+    spawn_chance: 1.0   # Fallback default — catches everything early on

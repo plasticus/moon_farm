@@ -123,18 +123,31 @@ class _PowerSection extends StatelessWidget {
         const SizedBox(height: 8),
         ...powerBuildings.entries.map((entry) {
           final b = entry.value as Map<String, dynamic>;
+          final costScrip = b['cost_scrip'] as int? ?? 0;
           final costMetals = b['cost_metals'] as int? ?? 0;
           final costGlass = b['cost_glass'] as int? ?? 0;
           final costComponents = b['cost_components'] as int? ?? 0;
 
-          final canAfford = game.resources.metals >= costMetals &&
+          final canAfford = game.resources.starScrip >= costScrip &&
+              game.resources.metals >= costMetals &&
               game.resources.glass >= costGlass &&
               game.resources.components >= costComponents;
 
           final costParts = <String>[];
+          if (costScrip > 0) costParts.add('$costScrip 🎫');
           if (costMetals > 0) costParts.add('$costMetals metals');
           if (costGlass > 0) costParts.add('$costGlass glass');
           if (costComponents > 0) costParts.add('$costComponents comp');
+
+          final missing = <String>[];
+          if (game.resources.starScrip < costScrip)
+            missing.add('${costScrip - game.resources.starScrip} more 🎫');
+          if (game.resources.metals < costMetals)
+            missing.add('${costMetals - game.resources.metals.toInt()} more metals');
+          if (game.resources.glass < costGlass)
+            missing.add('${costGlass - game.resources.glass.toInt()} more glass');
+          if (game.resources.components < costComponents)
+            missing.add('${costComponents - game.resources.components.toInt()} more comp');
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -146,7 +159,7 @@ class _PowerSection extends StatelessWidget {
               outputLine: '+${b['power_output_kwh']} KWh',
               outputColor: MFColors.neonGreen,
               canAfford: canAfford,
-              missingText: _missingText(game, b),
+              missingText: missing.isEmpty ? '' : 'Need: ${missing.join(', ')}',
               onBuild: () => _buildPower(context, entry.key, b, game),
             ),
           );
@@ -155,20 +168,6 @@ class _PowerSection extends StatelessWidget {
     );
   }
 
-  String _missingText(GameState game, Map<String, dynamic> b) {
-    final parts = <String>[];
-    final costMetals = b['cost_metals'] as int? ?? 0;
-    final costGlass = b['cost_glass'] as int? ?? 0;
-    final costComponents = b['cost_components'] as int? ?? 0;
-
-    if (game.resources.metals < costMetals)
-      parts.add('${costMetals - game.resources.metals.toInt()} more metals');
-    if (game.resources.glass < costGlass)
-      parts.add('${costGlass - game.resources.glass.toInt()} more glass');
-    if (game.resources.components < costComponents)
-      parts.add('${costComponents - game.resources.components.toInt()} more comp');
-    return parts.isEmpty ? '' : 'Need: ${parts.join(', ')}';
-  }
 
   void _buildPower(BuildContext context, String key, Map<String, dynamic> b, GameState game) {
     final type = switch (key) {
@@ -188,6 +187,7 @@ class _PowerSection extends StatelessWidget {
       game.copyWith(
         powerSources: [...game.powerSources, newSource],
         resources: game.resources.copyWith(
+          starScrip: game.resources.starScrip - (b['cost_scrip'] as int? ?? 0),
           metals: game.resources.metals - (b['cost_metals'] as int? ?? 0),
           glass: game.resources.glass - (b['cost_glass'] as int? ?? 0),
           components: game.resources.components - (b['cost_components'] as int? ?? 0),
@@ -991,9 +991,7 @@ class _DomeBotSection extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            canAfford
-                ? 'UPGRADE TO Mk$nextLevel  ·  ${costParts.join('  ·  ')}'
-                : 'Not enough resources for Mk$nextLevel',
+            'UPGRADE TO Mk$nextLevel  ·  ${costParts.join('  ·  ')}',
             style: MFTextStyles.bodySmall.copyWith(
               color: canAfford ? MFColors.neonOrange : MFColors.textMuted,
             ),
@@ -1060,6 +1058,7 @@ class _DomeBotSection extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: MFColors.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
         side: BorderSide(color: MFColors.borderDefault),
@@ -1090,71 +1089,91 @@ class _BotConfigSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = GameConfigService.instance;
-    final crops = config.getAllCrops();
+    // Only show crops matching this dome's tier
+    final crops = config.getCropsForDomeTier(dome.tier);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${dome.name} — Bot Mk${bot.level}',
-              style: MFTextStyles.labelLarge.copyWith(letterSpacing: 1)),
-          const SizedBox(height: 4),
-          Text(
-            bot.canPlant
-                ? 'Choose which crop the bot will auto-plant.'
-                : 'Upgrade to Mk4 to enable auto-planting.',
-            style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
-          ),
-          const SizedBox(height: 16),
-          if (bot.canPlant) ...[
-            ...crops.map((crop) {
-              final isSelected = bot.plantCropId == crop.id;
-              return GestureDetector(
-                onTap: () {
-                  final updatedBot = bot.withCrop(crop.id);
-                  final updatedDomes = game.domes
-                      .map((d) => d.id == dome.id
-                      ? d.copyWith(domeBot: updatedBot)
-                      : d)
-                      .toList();
-                  ref.read(activeGameProvider.notifier).updateGameLocal(
-                    game.copyWith(domes: updatedDomes),
-                  );
-                  Navigator.of(context).pop();
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? MFColors.neonGreen.withValues(alpha: 0.1)
-                        : MFColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: isSelected
-                          ? MFColors.neonGreen
-                          : MFColors.borderSubtle,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(crop.emoji, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                          child: Text(crop.name, style: MFTextStyles.bodyLarge)),
-                      if (isSelected)
-                        const Text('✓',
-                            style: TextStyle(
-                                color: MFColors.neonGreen, fontSize: 16)),
-                    ],
-                  ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: MFColors.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              );
-            }),
+              ),
+            ),
+            Text('${dome.name} — Bot Mk${bot.level}',
+                style: MFTextStyles.labelLarge.copyWith(letterSpacing: 1)),
+            const SizedBox(height: 4),
+            Text(
+              bot.canPlant
+                  ? 'Choose which crop the bot will auto-plant.'
+                  : 'Upgrade to Mk4 to enable auto-planting.',
+              style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+            ),
+            const SizedBox(height: 16),
+            if (bot.canPlant)
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: crops.map((crop) {
+                    final isSelected = bot.plantCropId == crop.id;
+                    return GestureDetector(
+                      onTap: () {
+                        final updatedBot = bot.withCrop(crop.id);
+                        final updatedDomes = game.domes
+                            .map((d) => d.id == dome.id
+                            ? d.copyWith(domeBot: updatedBot)
+                            : d)
+                            .toList();
+                        ref.read(activeGameProvider.notifier).updateGameLocal(
+                          game.copyWith(domes: updatedDomes),
+                        );
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? MFColors.neonGreen.withValues(alpha: 0.1)
+                              : MFColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isSelected
+                                ? MFColors.neonGreen
+                                : MFColors.borderSubtle,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(crop.emoji, style: const TextStyle(fontSize: 18)),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(crop.name,
+                                style: MFTextStyles.bodyLarge)),
+                            if (isSelected)
+                              const Text('✓', style: TextStyle(
+                                  color: MFColors.neonGreen, fontSize: 16)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }

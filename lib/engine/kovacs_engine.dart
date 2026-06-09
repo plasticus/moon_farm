@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 //  lib/engine/kovacs_engine.dart
 // ═══════════════════════════════════════════════════════════════
+// Kovacs conversation engine — reads all dialogue from
+// assets/config/kovacs_dialog.json via KovacsConfigService.
 
 import 'dart:math';
-import '../data/kovacs_script.dart';
+import '../config/kovacs_config_service.dart';
 import '../models/game_models.dart';
 
 // ─── Conversation Models ──────────────────────────────────────────────────────
@@ -11,20 +13,19 @@ import '../models/game_models.dart';
 enum SpeakerSide { kovacs, player }
 
 enum ConversationPhase {
-  greeting,       // Kovacs greeting (+ optional contextual line)
-  playerTurn1,    // Player picks from 3 options
-  kovacsReact1,   // Kovacs reacts to player's choice
-  playerTurn2,    // Player picks follow-up
-  kovacsSignOff,  // Kovacs signs off — conversation done, tabs unlock
-  complete,       // Tabs unlocked
+  greeting,     // Kovacs greeting
+  playerTurn1,  // Player picks topic
+  kovacsReact1, // Kovacs responds to topic
+  playerTurn2,  // Player picks follow-up
+  kovacsSignOff,// Kovacs signs off
+  complete,     // Done
 }
 
-/// A single bubble in the conversation UI.
 class ConversationBubble {
   final SpeakerSide side;
   final String text;
-  final String? reactionNote; // italic stage direction before text (Kovacs only)
-  final bool isSelected;      // player bubble that was picked
+  final String? reactionNote;
+  final bool isSelected;
 
   const ConversationBubble({
     required this.side,
@@ -34,11 +35,25 @@ class ConversationBubble {
   });
 }
 
-/// The full conversation state for a given week.
+/// A player-selectable option backed by a JSON topic.
+class PlayerLine {
+  final String id;
+  final String label;
+  final int moodChange;
+  final String? unlocksTopicId;
+
+  const PlayerLine({
+    required this.id,
+    required this.label,
+    required this.moodChange,
+    this.unlocksTopicId,
+  });
+}
+
 class KovacsConversation {
   final ConversationPhase phase;
-  final List<ConversationBubble> history;   // what's been said so far
-  final List<PlayerLine> currentOptions;    // current 3 options (empty if not player turn)
+  final List<ConversationBubble> history;
+  final List<PlayerLine> currentOptions;
   final int moodAtStart;
   final int moodCurrent;
   final int netMoodChange;
@@ -81,43 +96,28 @@ class KovacsConversation {
 class KovacsEngine {
   static final _rng = Random();
 
-  /// Start a fresh conversation for the week.
-  /// Pass [gameState] for variable substitution and contextual lines.
-  /// Pass [unlockedTopicIds] — the set of Tier 2 topic IDs unlocked so far.
-  /// Pass [contextualEvents] — set of event keys that occurred this week.
   static KovacsConversation startConversation({
     required GameState game,
     required Set<String> unlockedTopicIds,
     required Set<String> contextualEvents,
   }) {
+    final config = KovacsConfigService.instance;
     final mood = game.relay.mood;
     final history = <ConversationBubble>[];
 
-    // 1. Kovacs greeting based on mood tier
-    final greetingPool = _greetingPool(mood);
-    final greeting = _pick(greetingPool);
+    // 1. Greeting from JSON based on mood tier
+    final moodKey = _moodKey(mood);
+    final greetingPool = config.greetingsForMood(moodKey);
+    final greetingText = greetingPool.isNotEmpty
+        ? _pickStr(greetingPool)
+        : 'LC-4 Relay, Kovacs here.';
     history.add(ConversationBubble(
       side: SpeakerSide.kovacs,
-      text: _substitute(greeting.text, game),
-      reactionNote: greeting.reactionNote,
+      text: _substitute(greetingText, game),
     ));
 
-    // 2. Contextual line if any events occurred
-    for (final event in contextualEvents) {
-      final pool = KovacsScript.contextualLines[event];
-      if (pool != null && pool.isNotEmpty) {
-        final line = _pick(pool);
-        history.add(ConversationBubble(
-          side: SpeakerSide.kovacs,
-          text: _substitute(line.text, game),
-          reactionNote: line.reactionNote,
-        ));
-        break; // max one contextual line per week
-      }
-    }
-
-    // 3. Build player options pool (Tier 1 + unlocked Tier 2)
-    final options = _buildPlayerOptions(unlockedTopicIds);
+    // 2. Build player options (tier 1 + unlocked tier 2), shuffle, take 3
+    final options = _buildOptions(unlockedTopicIds);
 
     return KovacsConversation(
       phase: ConversationPhase.playerTurn1,
@@ -129,8 +129,6 @@ class KovacsEngine {
     );
   }
 
-  /// Player picks an option. Returns updated conversation.
-  /// Also returns the new mood value and any newly unlocked topic ID.
   static ({
   KovacsConversation conversation,
   int newMood,
@@ -141,10 +139,10 @@ class KovacsEngine {
     required GameState game,
     required Set<String> unlockedTopicIds,
   }) {
+    final config = KovacsConfigService.instance;
     final newMood = (conv.moodCurrent + picked.moodChange).clamp(0, 100);
     final netChange = conv.netMoodChange + picked.moodChange;
 
-    // Add player bubble (selected)
     final history = List<ConversationBubble>.from(conv.history)
       ..add(ConversationBubble(
         side: SpeakerSide.player,
@@ -155,43 +153,44 @@ class KovacsEngine {
     String? newlyUnlocked;
 
     if (conv.phase == ConversationPhase.playerTurn1) {
-      // Kovacs reacts to exchange 1
-      final reaction = _kovacsReaction(picked, newMood, conv.moodCurrent, unlockedTopicIds, game);
+      // Kovacs responds using topic's response_pool
+      final responses = config.responsesForTopic(picked.id);
+      final hint = config.moodHintForTopic(picked.id);
+      final responseText = responses.isNotEmpty
+          ? _pickStr(responses)
+          : 'Copy that.';
       history.add(ConversationBubble(
         side: SpeakerSide.kovacs,
-        text: _substitute(reaction.text, game),
-        reactionNote: reaction.reactionNote,
+        text: _substitute(responseText, game),
+        reactionNote: hint,
       ));
 
-      // Check if this unlocks a Tier 2 topic (only if Kovacs responded positively)
-      final moodDelta = newMood - conv.moodCurrent;
-      if (picked.unlocksTopicId != null && moodDelta >= 0) {
-        // Unlock on neutral or positive reaction
-        newlyUnlocked = picked.unlocksTopicId;
+      // Unlock topics listed in this topic's "unlocks" array
+      final unlocks = config.unlocksForTopic(picked.id);
+      if (unlocks.isNotEmpty) {
+        newlyUnlocked = unlocks.first;
       }
 
       // Build follow-up options
-      final followUpPool = _followUpPool(moodDelta);
+      final followUps = _buildFollowUps(newMood - conv.moodCurrent);
 
       return (
       conversation: conv.copyWith(
         phase: ConversationPhase.playerTurn2,
         history: history,
-        currentOptions: followUpPool,
+        currentOptions: followUps,
         moodCurrent: newMood,
         netMoodChange: netChange,
       ),
       newMood: newMood,
       newlyUnlockedTopicId: newlyUnlocked,
       );
-
     } else {
-      // Exchange 2 — Kovacs signs off
-      final signOff = _pickSignOff(netChange, game);
+      // Exchange 2 — sign off
+      final signOff = _pickSignOff(netChange);
       history.add(ConversationBubble(
         side: SpeakerSide.kovacs,
-        text: _substitute(signOff.text, game),
-        reactionNote: signOff.reactionNote,
+        text: _substitute(signOff, game),
       ));
 
       return (
@@ -203,85 +202,99 @@ class KovacsEngine {
         netMoodChange: netChange,
       ),
       newMood: newMood,
-      newlyUnlockedTopicId: newlyUnlocked,
+      newlyUnlockedTopicId: null,
       );
     }
   }
 
-  // ─── Private helpers ────────────────────────────────────────────
+  // ─── Private helpers ─────────────────────────────────────────────────────────
 
-  static List<KovacsLine> _greetingPool(int mood) {
-    if (mood >= 85) return KovacsScript.greetings['elated']!;
-    if (mood >= 65) return KovacsScript.greetings['happy']!;
-    if (mood >= 40) return KovacsScript.greetings['neutral']!;
-    if (mood >= 20) return KovacsScript.greetings['sour']!;
-    return KovacsScript.greetings['hostile']!;
+  static String _moodKey(int mood) {
+    if (mood >= 85) return 'elated';
+    if (mood >= 65) return 'happy';
+    if (mood >= 40) return 'neutral';
+    if (mood >= 20) return 'sour';
+    return 'hostile';
   }
 
-  static List<PlayerLine> _buildPlayerOptions(Set<String> unlockedTopicIds) {
-    final pool = <PlayerLine>[...KovacsScript.tier1Starters];
+  static List<PlayerLine> _buildOptions(Set<String> unlockedTopicIds) {
+    final config = KovacsConfigService.instance;
+    final pool = <PlayerLine>[];
 
-    // Add unlocked Tier 2 topics
-    for (final topic in KovacsScript.tier2Topics) {
-      if (unlockedTopicIds.contains(topic.id)) {
-        pool.add(topic);
+    // All tier 1 topics
+    for (final t in config.tier1Topics) {
+      pool.add(_topicToPlayerLine(t));
+    }
+
+    // Unlocked tier 2 topics
+    for (final t in config.tier2Topics) {
+      if (unlockedTopicIds.contains(t['id'] as String)) {
+        pool.add(_topicToPlayerLine(t));
       }
     }
 
-    // Shuffle and take 3
-    pool.shuffle();
+    pool.shuffle(_rng);
     return pool.take(3).toList();
   }
 
-  static KovacsLine _kovacsReaction(
-      PlayerLine picked,
-      int newMood,
-      int oldMood,
-      Set<String> unlockedTopicIds,
-      GameState game,
-      ) {
-    // Check for a specific Tier 2 reaction first
-    if (KovacsScript.tier2Reactions.containsKey(picked.id)) {
-      return KovacsScript.tier2Reactions[picked.id]!;
-    }
-
-    // Otherwise pick from pool by mood delta
-    final delta = newMood - oldMood;
-    String poolKey;
-    if (delta >= 4) poolKey = 'friendly';
-    else if (delta >= 1) poolKey = 'positive';
-    else if (delta == 0) poolKey = 'neutral';
-    else if (delta >= -3) poolKey = 'negative';
-    else poolKey = 'hostile';
-
-    return _pick(KovacsScript.reactions[poolKey]!);
+  static PlayerLine _topicToPlayerLine(Map<String, dynamic> topic) {
+    final unlocks = topic['unlocks'] as List?;
+    return PlayerLine(
+      id: topic['id'] as String,
+      label: topic['visible_label'] as String,
+      moodChange: topic['mood_change'] as int? ?? 0,
+      unlocksTopicId: (unlocks != null && unlocks.isNotEmpty)
+          ? unlocks.first.toString()
+          : null,
+    );
   }
 
-  static List<PlayerLine> _followUpPool(int moodDelta) {
-    String key;
-    if (moodDelta >= 4) key = 'after_friendly';
-    else if (moodDelta >= 1) key = 'after_positive';
-    else if (moodDelta == 0) key = 'after_neutral';
-    else if (moodDelta >= -3) key = 'after_negative';
-    else key = 'after_hostile';
-
-    final pool = List<PlayerLine>.from(KovacsScript.followUps[key]!);
-    pool.shuffle();
-    return pool.take(3).toList();
+  // Generic follow-ups for exchange 2 — not in JSON, inline here.
+  // These are intentionally bland so the topic response is the memorable moment.
+  static List<PlayerLine> _buildFollowUps(int moodDelta) {
+    final options = moodDelta >= 0
+        ? [
+      PlayerLine(id: 'fu_thanks', label: 'Appreciated, Kovacs.', moodChange: 1),
+      PlayerLine(id: 'fu_noted', label: 'Noted. Anything else I should know?', moodChange: 0),
+      PlayerLine(id: 'fu_good', label: 'Good to know. Stay sharp out there.', moodChange: 1),
+      PlayerLine(id: 'fu_understood', label: 'Understood. I will keep that in mind.', moodChange: 0),
+    ]
+        : [
+      PlayerLine(id: 'fu_sorry', label: 'Fair enough. Sorry to bother you.', moodChange: 1),
+      PlayerLine(id: 'fu_copy', label: 'Copy that. Signing off.', moodChange: 0),
+      PlayerLine(id: 'fu_drop', label: "Let's drop it.", moodChange: -1),
+    ];
+    options.shuffle(_rng);
+    return options.take(3).toList();
   }
 
-  static KovacsLine _pickSignOff(int netMoodChange, GameState game) {
-    String key;
-    if (netMoodChange > 0) key = 'positive';
-    else if (netMoodChange == 0) key = 'neutral';
-    else key = 'negative';
+  static String _pickSignOff(int netMoodChange) {
+    final positive = [
+      'Good talk. LC-4 standing by.',
+      'Alright. You know where to find me.',
+      'LC-4 out. Keep it together down there.',
+      'Copy. Stay productive.',
+    ];
+    final neutral = [
+      'LC-4 out.',
+      'Acknowledged. LC-4 standing by.',
+      'Right. LC-4 clear.',
+      'Copy that. Kovacs out.',
+    ];
+    final negative = [
+      'LC-4 out. Do not make this a habit.',
+      'Acknowledged. Try not to call again soon.',
+      "Fine. LC-4 out.",
+    ];
 
-    return _pick(KovacsScript.signOffs[key]!);
+    if (netMoodChange > 0) return _pickStr(positive);
+    if (netMoodChange < 0) return _pickStr(negative);
+    return _pickStr(neutral);
   }
 
-  static T _pick<T>(List<T> pool) => pool[_rng.nextInt(pool.length)];
+  static String _pickStr(List<String> pool) =>
+      pool[_rng.nextInt(pool.length)];
 
-  /// Replace {farm_name} and {week} placeholders in Kovacs' text.
   static String _substitute(String text, GameState game) {
     return text
         .replaceAll('{farm_name}', game.farmName)

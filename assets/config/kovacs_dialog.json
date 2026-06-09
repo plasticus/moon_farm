@@ -1,10 +1,10 @@
 {
   "_notes": [
-    "Edit this file to customize Kovacs' dialogue.",
+    "Custom dialogue script for Specialist Kovacs at LC-4 Relay.",
     "mood_change: positive = improves mood, negative = sours mood, 0 = no change.",
     "response_pool: Kovacs picks one randomly. Use {name} for farm name placeholder.",
-    "unlocks: list of topic IDs this response makes available. Leave empty [] if none.",
-    "tier: 1 = always available, 2 = unlocked by a tier 1 topic, 3 = unlocked by tier 2.",
+    "unlocks: list of topic IDs this response makes available. Strict limit of ONE id per object to match singular engine injection.",
+    "tier: 1 = always available, 2 = unlocked by a tier 1 topic baseline or progressive tier 2 chains.",
     "visible_label: what the player sees as the button text.",
     "mood_hint: optional subtle hint shown AFTER the player has used this option 3+ times."
   ],
@@ -13,203 +13,536 @@
     {
       "id": "ask_wellbeing",
       "tier": 1,
-      "visible_label": "Ask how he's doing.",
-      "mood_change": 0,
-      "mood_hint": "He seems to appreciate being asked.",
+      "visible_label": "How are you doing, Kovacs?",
+      "mood_change": 1,
+      "mood_hint": "He appreciates basic professionalism.",
       "response_pool": [
-        "Fine. Cafeteria ran out of the good coffee again. But fine.",
-        "Surviving. The posting review board denied my transfer. Again. But fine.",
-        "You know what — that's actually a reasonable question. I'm managing.",
-        "Could be worse. Could be posted on MF-6. I've heard stories."
+        "Surviving. Just another shift in the tin can.",
+        "Managing. Data traffic is heavy today.",
+        "Could be worse. I could be stationed on an unpressurized cargo rock.",
+        "Still here. The hull hasn't breached yet, so I suppose that is a positive.",
+        "Stuck at the desk. Another cycle, another thousand shipping manifests to route.",
+        "I am functional. The main comm matrix is stable, even if my patience is not."
       ],
-      "unlocks": ["ask_about_transfer", "ask_about_coffee"]
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_breakfast",
+      "tier": 1,
+      "visible_label": "Anything good in the cafeteria today?",
+      "mood_change": 1,
+      "mood_hint": "He is highly particular about his daily routines.",
+      "response_pool": [
+        "Terrible. They ran out of the good coffee beans again. It is synthetic sludge today.",
+        "The automated beverage dispensers are acting up. I cannot even get a clean brew.",
+        "The food is standard ration blocks, but the coffee situation is an absolute tragedy.",
+        "They subbed the morning protein blocks with generic brand paste. It is a dark day.",
+        "Nutritious but completely devoid of joy. And the espresso unit is completely down for maintenance.",
+        "Do not ask. If I have to drink one more cup of this dehydrated chicory blend, I am filing a protest."
+      ],
+      "unlocks": ["ask_about_coffee"]
+    },
+    {
+      "id": "ask_about_background",
+      "tier": 1,
+      "visible_label": "How did a guy with your crisp uniform end up routing manifests?",
+      "mood_change": -1,
+      "mood_hint": "This clearly touches a heavy nerve about his career.",
+      "response_pool": [
+        "Because the assignment committee does not look at merit. I am incredibly overqualified.",
+        "A lot of station politics, frankly. I am meant for a bridge, not a switchboard.",
+        "Every appeal I file gets buried in bureaucracy. Someone with my training should be running a crew.",
+        "Seniority management bottlenecks. I aced the command track, yet here I sit sorting logistics.",
+        "Let us just say my talents are currently frozen in sub-optimal placement infrastructure.",
+        "The board claims operational necessity. I claim they do not know how to read an exam profile."
+      ],
+      "unlocks": ["ask_about_captaincy"]
     },
     {
       "id": "compliment_grooming",
       "tier": 1,
-      "visible_label": "Tell him he looks sharp today.",
-      "mood_change": 8,
-      "mood_hint": "He brightens slightly.",
+      "visible_label": "You look exceptionally well-prepared for a standard shift.",
+      "mood_change": 3,
+      "mood_hint": "He prides himself on maintaining officer standards.",
       "response_pool": [
-        "...Thank you. I do maintain standards out here. Someone has to.",
-        "I appreciate that. It's not easy keeping a pressed uniform on a relay station.",
-        "Finally. Someone notices. The last three operators never once acknowledged the effort.",
-        "Standards don't drop just because nobody's watching. That's called character."
+        "Thank you. Standards don't drop just because you are in a tin can. That is character. It keeps me sane, along with my routines.",
+        "I appreciate that. It is a matter of discipline. I keep my station, my uniform, and my small personal quarters in perfect order.",
+        "Someone has to maintain professional standards out here. If you let your routine slip, the isolation wins.",
+        "A proper officer represents the fleet regardless of posture or placement. I refuse to get sloppy.",
+        "Thank you. The logistics crew down on deck three have completely abandoned their grooming protocols. It is disgusting.",
+        "Discipline is the only defense against deep-space rot. I press this fabric every single morning."
+      ],
+      "unlocks": ["ask_about_hobbies"]
+    },
+    {
+      "id": "ask_about_chatter",
+      "tier": 1,
+      "visible_label": "Have the communication lines been quiet today?",
+      "mood_change": 2,
+      "mood_hint": "He loves monitoring and judging the chatter of other sectors.",
+      "response_pool": [
+        "Quiet? No. The channels are flooded with absolute amateurs messing up basic procedures.",
+        "It is mostly a stream of surface operators failing to balance their atmospheric grids.",
+        "I have spent half my shift logging standard protocol infractions from greenhorn farmers.",
+        "The local sub-space bands are chaotic today. Nobody seems to understand standard audio etiquette.",
+        "Just a lot of chatter from people who shouldn't have been granted an operator license.",
+        "It is exhausting. Every honyocker in the quadrant is hitting the emergency transponder for minor soil issues."
+      ],
+      "unlocks": ["ask_about_honyockers"]
+    },
+    {
+      "id": "ask_about_noise",
+      "tier": 1,
+      "visible_label": "Is the background rumble on the station always this loud?",
+      "mood_change": -1,
+      "mood_hint": "He hates the physical reality of his desk location.",
+      "response_pool": [
+        "The primary ventilation scrubber for deck four is right behind my partition. It is constant noise.",
+        "Environmental controls refuse to damp the low-frequency vibrations. My teeth rattle during peak hours.",
+        "It is a constant mechanical drone. If I had my own command bridge, acoustic dampening would be standard.",
+        "The deck plating vibrates whenever a heavy freighter docks. It drives me absolutely mad."
+      ],
+      "unlocks": ["ask_about_complaints"]
+    },
+    {
+      "id": "ask_about_environment",
+      "tier": 1,
+      "visible_label": "Is the artificial gravity working normally today?",
+      "mood_change": 1,
+      "mood_hint": "He spends a lot of time monitoring basic station metrics.",
+      "response_pool": [
+        "It is holding steady at zero-point-nine-eight gees. It fluctuates whenever the main capacitors are cycling.",
+        "Currently stable. Though the engineers were messing with the magnetic dampeners on deck two earlier.",
+        "Stable enough. Though I occasionally feel a slight micro-gravity drift in the mornings."
+      ],
+      "unlocks": ["ask_about_gravity_glitch"]
+    },
+    {
+      "id": "ask_about_shuttle_traffic",
+      "tier": 1,
+      "visible_label": "Are there any interesting supply ships docking today?",
+      "mood_change": 1,
+      "mood_hint": "He closely tracks all transit lanes.",
+      "response_pool": [
+        "Nothing but heavy ore freighters and bulk agricultural haulers. It is entirely tedious.",
+        "Just the standard fleet logistics transport. They brought in a fresh batch of raw minerals.",
+        "The arrival boards are full of corporate haulage. No military or exploration vessels, unfortunately."
+      ],
+      "unlocks": ["ask_about_freighter_crews"]
+    },
+    {
+      "id": "be_dismissive",
+      "tier": 1,
+      "visible_label": "Let us skip the pleasantries and open the trade lines.",
+      "mood_change": -2,
+      "mood_hint": "He detests being treated like a machine.",
+      "response_pool": [
+        "Right. Professional. Fine.",
+        "Always a pleasure. Let us just process the data.",
+        "Straight to business then. Fine by me.",
+        "Manifest open. Let us speed this up.",
+        "Acknowledged. I will skip the status update then.",
+        "Very well. Processing surface requests without further commentary."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_ventilation",
+      "tier": 1,
+      "visible_label": "Have the ventilation registers been dusted recently?",
+      "mood_change": 0,
+      "mood_hint": "He has no strong feelings about standard maintenance.",
+      "response_pool": [
+        "They are scheduled for every second Tuesday of the quarter. Nothing exciting.",
+        "Standard maintenance handles that. I do not monitor dust levels.",
+        "A sterile environment is standard. They are as clean as they need to be."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_screen_brightness",
+      "tier": 1,
+      "visible_label": "Is your terminal screen brightness comfortable?",
+      "mood_change": 0,
+      "mood_hint": "Display preferences do not affect his operational status.",
+      "response_pool": [
+        "It is at seventy percent. Standard office regulation for twelve-hour shifts.",
+        "The auto-dimmer is functional. I have no complaints regarding display illumination.",
+        "Contrast is fine. Just standard amber text on black."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_time_zones",
+      "tier": 1,
+      "visible_label": "Does the station run on fleet standard time?",
+      "mood_change": 0,
+      "mood_hint": "Chronological alignment is a standard background metric.",
+      "response_pool": [
+        "Coordinated Universal Time. It aligns with the primary colony servers.",
+        "Station cycle is synchronized with base command. No adjustments necessary.",
+        "Standard fleet rotation. Twenty-four hours, though we lack a sunset."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_office_supplies",
+      "tier": 1,
+      "visible_label": "Is your inventory of office supplies sufficient?",
+      "mood_change": 0,
+      "mood_hint": "Station logistics guarantees basic desk operational limits.",
+      "response_pool": [
+        "I have half a carton of replacement stylus caps. It will last the quarter.",
+        "Standard requisition forms are approved quarterly. Supply levels are adequate.",
+        "The terminal stylus is functional. I do not use physical paper, so supply limits are negligible."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_inventory_checks",
+      "tier": 1,
+      "visible_label": "What is your preferred terminal backup schedule?",
+      "mood_change": 0,
+      "mood_hint": "Backups are automatically processed by backend protocols.",
+      "response_pool": [
+        "The automated system runs every six hours. Manual backups are redundant.",
+        "Redundant cloud storage handles everything automatically. No input required.",
+        "The local drive copies files on the hour. It is a completely standard routine."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_regulatory_audits",
+      "tier": 1,
+      "visible_label": "Are you worried about the upcoming quarterly corporate audit?",
+      "mood_change": -1,
+      "mood_hint": "He detests arbitrary administrative inspections.",
+      "response_pool": [
+        "Worried? No. Annoyed? Extremely. They spend three days checking my cable ties instead of my routing efficiency.",
+        "Audit preparation is just endless paperwork. Form 99-C after Form 99-D. It is a complete waste of bandwidth.",
+        "The auditors are spreadsheet clerks who have never seen a solar flare. I do not dread their visits, I just dread their questions."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_recreation",
+      "tier": 1,
+      "visible_label": "How do you get any exercise in a cramped relay station like this?",
+      "mood_change": -1,
+      "mood_hint": "He hates the physical limitations of his posting.",
+      "response_pool": [
+        "I use a tension band twice a day. It is entirely uninspired, but it prevents muscle atrophy.",
+        "There is a small treadmill in deck three, but the bearings are shot. It sounds like a rock crusher.",
+        "I pace the length of the command deck. Twelve paces forward, twelve paces back. Truly riveting."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_shift_length",
+      "tier": 1,
+      "visible_label": "Is your twelve-hour monitor shift standard for your rank?",
+      "mood_change": -1,
+      "mood_hint": "He feels overworked and underappreciated.",
+      "response_pool": [
+        "It is standard for this posting. Higher-tier stations run eight-hour rotations with proper relief officers.",
+        "Yes. Though 'twelve hours' often becomes fourteen when the incoming shift operator oversleeps.",
+        "Twelve hours of staring of blinking cargo codes. It is a miracle my retinas haven't burned out entirely."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_salary",
+      "tier": 1,
+      "visible_label": "Is the hazard pay worth being stuck in deep space?",
+      "mood_change": -2,
+      "mood_hint": "He considers financial prying highly unprofessional.",
+      "response_pool": [
+        "That is highly personal data. Comms protocol dictates we discuss cargo logistics, not bank scrip.",
+        "My compensation is regulated by my officer rank, which is currently... undervalued. Let us leave it at that.",
+        "Hazard pay? This is a category-four safe relay. There is no hazard pay. Just standard desk scrip."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "question_efficiency",
+      "tier": 1,
+      "visible_label": "Is there any way you can speed up your manifest processing times?",
+      "mood_change": -2,
+      "mood_hint": "He hates having his absolute competence questioned.",
+      "response_pool": [
+        "I route manifests at maximum standard safe speed. If you want haste, expect regulatory errors.",
+        "My processing times are in the top ten percent of the sector. The bottleneck is your surface transmitter, not my terminal.",
+        "Haste is the enemy of accuracy. I refuse to compromise protocol just because your cargo is rotting."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_coffee",
+      "tier": 2,
+      "visible_label": "Any improvement on the coffee front?",
+      "mood_change": 4,
+      "mood_hint": "He has incredibly strong feelings about his morning brew.",
+      "response_pool": [
+        "None. The synthetic blend up here tastes like burnt rubber. I am desperately hunting for a real light roast.",
+        "I have submitted three formal complaints about the ration packages. Real beans are impossible to find out here.",
+        "Everything is synthetic sludge. If I could get my hands on fresh ground beans, this station would be bearable.",
+        "The supply vessel brought nothing but medium-roast instant packets. It is a complete insult to my palate.",
+        "Still drinking liquid coal. I am genuinely considering trading my spare boots for a bag of genuine arabica.",
+        "No progress. The logistics manager told me coffee quality is non-essential data. The man has no culture."
+      ],
+      "unlocks": ["offer_coffee_help"]
+    },
+    {
+      "id": "offer_coffee_help",
+      "tier": 2,
+      "visible_label": "I might try growing some actual coffee beans down in my domes.",
+      "mood_change": 5,
+      "mood_hint": "This is the absolute way to his heart.",
+      "response_pool": [
+        "That would be outstanding. Keep me posted on that project. Seriously.",
+        "Real agricultural beans? If you pull that off, I will personally guarantee your shipping priority.",
+        "Now that is an enterprise worth tracking. Let me know the moment you clear a harvest.",
+        "A surface-grown light roast? You manage that, and I might just forgive your previous data errors.",
+        "If you can cultivate a clean arabica down there, I will make sure your customs clearance is flawless.",
+        "That would be a historic achievement for this sector. Please tell me you are being serious."
+      ],
+      "unlocks": ["mock_coffee"]
+    },
+    {
+      "id": "mock_coffee",
+      "tier": 2,
+      "visible_label": "Stop crying about a little bad coffee.",
+      "mood_change": -3,
+      "mood_hint": "He does not take kindly to people insulting his standards.",
+      "response_pool": [
+        "It is about basic quality of life. I do not expect a surface dweller to understand.",
+        "I am not crying. I am maintaining standard requirements for an officer.",
+        "I will file that comment right where it belongs. Goodbye.",
+        "Crying? It is a matter of neurological focus. Good caffeine yields good data routing.",
+        "Your lack of refinement is noted. Let us return to the logistics files.",
+        "A highly unhelpful remark. Some of us actually have standards to uphold on this station."
       ],
       "unlocks": []
     },
     {
       "id": "ask_about_captaincy",
-      "tier": 1,
-      "visible_label": "Ask about his captain ambitions.",
-      "mood_change": 12,
-      "mood_hint": "He seems to perk up a little.",
-      "response_pool": [
-        "You want to know about that? Most people don't ask. I scored 97th percentile on Navigation Exam Form 7-C. 97th. And they posted me here.",
-        "Deep-space posting. That was the plan. I had a ship lined up — the Aurelius-IV class, long-range survey vessel. Politics happened.",
-        "I've filed twelve formal appeals. Twelve. One will land eventually. The system isn't broken, it's just slow.",
-        "Cadet ranking was top five. Exam scores speak for themselves. The assignment committee, apparently, does not read exam scores."
-      ],
-      "unlocks": ["ask_about_aurelius", "ask_about_appeals", "ask_about_committee"]
-    },
-    {
-      "id": "listen_to_rant",
-      "tier": 1,
-      "visible_label": "Let him vent for a bit.",
-      "mood_change": 5,
-      "mood_hint": "He seems to let something go.",
-      "response_pool": [
-        "...anyway. That's enough of that. What do you actually need.",
-        "I appreciate you letting me finish. Most operators just hang up.",
-        "Right. Sorry. It builds up out here.",
-        "The silence out here is actually peaceful. That part I don't mind. It's the cafeteria."
-      ],
-      "unlocks": []
-    },
-    {
-      "id": "share_farm_news",
-      "tier": 1,
-      "visible_label": "Tell him what's growing.",
-      "mood_change": 3,
-      "mood_hint": "He pretends not to care.",
-      "response_pool": [
-        "Hm. That's actually mildly interesting. Carry on.",
-        "I see. The moon farming life. Riveting.",
-        "Sure. Yes. Thanks for the update on your vegetables.",
-        "First dome full? That's... actually not bad for the timeline. Don't tell anyone I said that."
-      ],
-      "unlocks": []
-    },
-    {
-      "id": "be_dismissive",
-      "tier": 1,
-      "visible_label": "Keep it strictly business.",
-      "mood_change": -10,
-      "mood_hint": "Something in his expression hardens.",
-      "response_pool": [
-        "Charming. I'll remember that next time you need a favor.",
-        "Noted. Enjoy the markup.",
-        "Right. Well. I'll just add that to the list.",
-        "Professional. Fine."
-      ],
-      "unlocks": []
-    },
-
-    {
-      "id": "ask_about_transfer",
       "tier": 2,
-      "visible_label": "Ask about the transfer denial.",
+      "visible_label": "What are your ambitions regarding becoming a ship captain?",
+      "mood_change": 4,
+      "mood_hint": "He loves boasting about his actual qualifications.",
+      "response_pool": [
+        "I passed the GSC-3 Exam. The General Space Command Exam. Scored in the 97th percentile, and they have me routing tomato manifests!",
+        "I have filed twelve formal appeals regarding my placement. My GSC-3 Exam scores speak for themselves. The board just chooses not to read them.",
+        "I am meant for a bridge, not a relay terminal. I have the training. I have the scores. I just do not have the political connections.",
+        "GSC-3 Level certification is no joke. It covers fleet maneuver tactics and deep-space survival strategy. And look at me now.",
+        "I should be commanding an Aurelius-class long-range vessel right now. Instead, I am checking seed delivery statuses.",
+        "The maritime division is completely blind. A 97th percentile on the GSC-3 Exam used to mean automatic sub-captaincy."
+      ],
+      "unlocks": ["taunt_captaincy_mean"]
+    },
+    {
+      "id": "taunt_captaincy_mean",
+      "tier": 2,
+      "visible_label": "I see you are not a captain yet, dork. Haha.",
       "mood_change": -5,
-      "mood_hint": "His jaw tightens.",
+      "mood_hint": "He is absolutely seething.",
       "response_pool": [
-        "Third denial this year. The board cites 'operational necessity.' I am not operationally necessary to a lunar farm relay.",
-        "Form 14-B, appeal rejected. Form 14-C, appeal rejected. I'm now on Form 14-F. There is a 14-G.",
-        "They keep saying my scores are 'noted.' Noted doesn't mean anything. Noted means a filing cabinet."
+        "That does it. I have a Complaint Form 77-A with your name on it, pal.",
+        "I do not have to sit here and take insults from a dirt farmer. Let us just get to the trade data.",
+        "Watch your mouth. I can make your logistics a living nightmare down there.",
+        "That is an explicit breach of communication protocol. Do not test my authority to freeze your accounts.",
+        "You think you are clever? Let us see how clever you feel when your seed order arrives two weeks late.",
+        "Highly hostile tone. I am blacklisting your signal priority for the next twenty-four hours."
       ],
-      "unlocks": ["ask_about_form14g"]
+      "unlocks": ["mock_captaincy"]
     },
     {
-      "id": "ask_about_coffee",
+      "id": "mock_captaincy",
       "tier": 2,
-      "visible_label": "Ask about the cafeteria situation.",
+      "visible_label": "You are still stuck at a desk instead of a ship bridge?",
+      "mood_change": -4,
+      "mood_hint": "You are actively making an enemy for life.",
+      "response_pool": [
+        "Highly unprofessional. I am logging this interaction as a Form 77-A violation.",
+        "I am an officer in waiting. Keep mocking me and your next cargo markup will reflect it.",
+        "Some things are out of my control. The assignment committee will rectify this eventually.",
+        "Your humor is completely misplaced. Career stagnation within corporate infrastructure is a serious matter.",
+        "Laugh all you want. When I finally get my bridge command, your sector will be the first one I audit.",
+        "A completely uncalled-for remark. I operate this relay with total integrity despite my placement."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_hobbies",
+      "tier": 2,
+      "visible_label": "What do you do to pass the time up there?",
+      "mood_change": 3,
+      "mood_hint": "He relaxes slightly when discussing his routines.",
+      "response_pool": [
+        "I look after a small lunar-bonsai tree. It requires precise trimming with medical shears. It keeps me focused.",
+        "I am currently learning to play the Ionuke. It is a compact four-stringed instrument. It passes the quiet hours.",
+        "Between shifts, I am mostly taking care of Barnaby. He is a remarkably fat orange cat who likes to sleep on the warm server racks.",
+        "I practice standard knot-tying and navigation plotting charts manually. One must keep their operational skills sharp.",
+        "I maintain my mini-bonsai. The artificial UV lighting on this deck makes the leaves drop if I am not careful.",
+        "I am working through a manual on ancient star-mapping. It is far more stimulating than talking to surface operators."
+      ],
+      "unlocks": ["ask_about_cat"]
+    },
+    {
+      "id": "ask_about_cat",
+      "tier": 2,
+      "visible_label": "Can you put Barnaby the cat on the viewscreen camera?",
+      "mood_change": 4,
+      "mood_hint": "He absolutely worships his cat.",
+      "response_pool": [
+        "He is currently sound asleep on the core switch housing. I am not waking him up for you, but he sends his regards.",
+        "Barnaby is currently busy ignoring me. He rules this deck, honestly.",
+        "Perhaps next cycle. He is currently tracking a rogue maintenance drone down the hall.",
+        "He is staring at the wall right now. He is completely orange, so his cognitive processing is somewhat limited.",
+        "I just fed him his high-protein gel ration, so he is currently washing himself on top of the main router.",
+        "He has assumed his final form: a complete orange ball blocking the primary exhaust fan. He is very content."
+      ],
+      "unlocks": ["ask_about_ionuke"]
+    },
+    {
+      "id": "ask_about_ionuke",
+      "tier": 2,
+      "visible_label": "How is your Ionuke practice coming along?",
+      "mood_change": 3,
+      "mood_hint": "He likes discussing technical progress, even musical ones.",
+      "response_pool": [
+        "Slowly. The electromagnetic interference from the relay antenna makes the audio pickups buzz constantly.",
+        "I have mastered three basic fleet cadences. The four-string layout is logical, though the scale length is tiny.",
+        "Barnaby hates the high notes. Whenever I pluck the top string, he tries to swat my fingers off the fretboard.",
+        "It is coming along. It is a highly mathematical instrument when you break down the frequency intervals."
+      ],
+      "unlocks": ["mock_hobbies"]
+    },
+    {
+      "id": "mock_hobbies",
+      "tier": 2,
+      "visible_label": "Your hobbies sound completely ridiculous for a fleet officer.",
       "mood_change": -3,
-      "mood_hint": "He sighs audibly.",
+      "mood_hint": "He will immediately withdraw into his corporate shell.",
       "response_pool": [
-        "It's the synthetic blend. Every third Thursday. I've submitted a formal complaint. Three times.",
-        "The supply manifest lists it as 'standard issue beverage.' Standard issue. For a man of my qualifications.",
-        "You know what, forget it. It's fine. Everything's fine."
+        "They maintain psychological stability during long-term isolation. It is standard protocol.",
+        "I did not ask for your evaluation of my personal life. Let us stick to business.",
+        "Barnaby has more discipline than most surface operators I deal with.",
+        "A shallow perspective. Bonsai cultivation requires immense patience and tactical foresight.",
+        "I find your lack of hobbies explains your sloppy data submittals. Good day.",
+        "They are disciplined pastimes. I do not expect a honyocker to grasp the value of structural relaxation."
       ],
       "unlocks": []
     },
     {
-      "id": "ask_about_aurelius",
+      "id": "ask_about_honyockers",
       "tier": 2,
-      "visible_label": "Ask about the Aurelius-IV.",
-      "mood_change": 10,
-      "mood_hint": "Something shifts in his voice.",
+      "visible_label": "Are any of the other surface farmers making mistakes?",
+      "mood_change": 4,
+      "mood_hint": "Nothing brings him joy quite like a catastrophic amateur failure.",
       "response_pool": [
-        "Long-range survey vessel. Twelve-person crew, deep-space nav array, eighteen-month postings. That's the job. That was supposed to be the job.",
-        "Aurelius-class ships have the best navigation suites in the fleet. You'd actually need someone with a 97th percentile exam score to run one properly.",
-        "She's out there right now. The Aurelius-IV. I've tracked her logs. She's on a survey run past the outer belt. Should be me on that bridge."
+        "You hear about the Hydro-Lettuce farmer in Sector 18? Guy completely flooded his own domes! Haha. Absolute amateur.",
+        "The sector is full of total Honyockers. Someone in Sector 4 managed to vent their entire fertilizer payload into the vacuum last night.",
+        "Spacetatoes will grow literally anywhere, yet I don't know how most of these guys manage to completely screw it up.",
+        "The guy over in Sector 12 cross-contaminated his water lines with bio-waste. The telemetry logs are hilarious.",
+        "Some absolute honyocker in Sector 9 tried to upgrade his harvester drone firmware and wiped the entire logic board.",
+        "I am currently watching a dome failure alert in Sector 22. Someone forgot to close a primary airlock latch. Unbelievable."
       ],
-      "unlocks": ["ask_about_outer_belt"]
+      "unlocks": ["defend_farmers"]
     },
     {
-      "id": "ask_about_appeals",
+      "id": "defend_farmers",
       "tier": 2,
-      "visible_label": "Ask about the twelve appeals.",
+      "visible_label": "You should have some respect for how hard farming on the moon is.",
       "mood_change": -2,
-      "mood_hint": "He counts on his fingers.",
+      "mood_hint": "He has zero sympathy for incompetence.",
       "response_pool": [
-        "Forms 14-A through 14-L. A is standard. B is expedited. C through F cover different grounds — competency, procedural error, new evidence. I've used them all.",
-        "The appeals system is thorough. I'll give it that. Whether anyone reads them is another matter.",
-        "Twelve appeals, forty-seven supporting documents, three character references. One of them was from Admiral Cho. Admiral Cho. Still here."
+        "It is basic atmospheric management. It is not rocket science.",
+        "If they cannot read a simple chemical balance chart, they should not be holding a lease.",
+        "I reserve my respect for people who can follow standard operating procedures.",
+        "Hard work does not excuse procedural non-compliance. Read the manual or lose the contract.",
+        "It is basic automation. You program the loop, you monitor the parameters. It is simple math.",
+        "The system does ninety percent of the labor. All they have to do is not crash the terminal."
       ],
-      "unlocks": ["ask_about_admiral_cho"]
+      "unlocks": []
     },
     {
-      "id": "ask_about_committee",
+      "id": "ask_about_complaints",
       "tier": 2,
-      "visible_label": "Ask about the assignment committee.",
-      "mood_change": -8,
-      "mood_hint": "His tone gets very flat.",
+      "visible_label": "How many Complaint Form 77-A files have you actually processed today?",
+      "mood_change": 4,
+      "mood_hint": "He loves using corporate policy as a weapon.",
       "response_pool": [
-        "I'll say this once. Commander Harlan sits on that committee. Commander Harlan and I have a history. That's all I'll say.",
-        "The committee meets quarterly. I've attended two hearings in person. Via relay, obviously. It was deeply unsatisfying.",
-        "They have a point system. I've seen the rubric. I score well on everything except 'team integration.' Whatever that means."
+        "Fourteen so far. I am processing a major code red for an absolute honyocker down in Sector 3.",
+        "I just finalized an Etiquette & Protocol Non-Compliance Form 77-A on the morning shift supervisor. He was yelling on an open channel.",
+        "I have a stack of them ready for regional logistics. People need to learn that actions have regulatory consequences.",
+        "I love a fresh Form 77-A file. It is the only way to clean up the garbage on these sub-space frequencies."
       ],
-      "unlocks": ["ask_about_harlan"]
+      "unlocks": ["threaten_with_complaint"]
     },
-
     {
-      "id": "ask_about_form14g",
-      "tier": 3,
-      "visible_label": "Ask what Form 14-G covers.",
+      "id": "threaten_with_complaint",
+      "tier": 2,
+      "visible_label": "Keep your forms to yourself, or I will report you for bad service.",
+      "mood_change": -4,
+      "mood_hint": "He knows the rulebook better than you ever will.",
+      "response_pool": [
+        "Go right ahead. I am fully compliant with Code Section 9. My terminal logs are completely pristine.",
+        "You cannot report me for executing standard screening protocols. Try it and see who gets frozen first.",
+        "I am the reporting authority for this entire hub sector, pal. Your counter-complaint will land directly in my recycle bin.",
+        "Amusing. I am literally auditing your manifest as we speak. I would think twice about filing anything."
+      ],
+      "unlocks": []
+    },
+    {
+      "id": "ask_about_gravity_glitch",
+      "tier": 2,
+      "visible_label": "Have you ever experienced a full artificial gravity failure on the relay?",
+      "mood_change": 2,
+      "mood_hint": "He likes discussing the technical vulnerabilities of the hub.",
+      "response_pool": [
+        "Once during a solar flare last cycle. The main dampener relays fused. Everything went weightless for three standard hours.",
+        "We had a brief failure in deck four's gravitational core last winter. It makes routing logistics quite complex when the consoles float.",
+        "The primary reactor had a cold restart. For about forty minutes, we had to wear magnetic boots just to stay anchored."
+      ],
+      "unlocks": ["share_weightless_barnaby"]
+    },
+    {
+      "id": "share_weightless_barnaby",
+      "tier": 2,
+      "visible_label": "What happens to Barnaby during artificial gravity drops?",
       "mood_change": 5,
-      "mood_hint": "He actually seems pleased you asked.",
+      "mood_hint": "He finds the image of his floating cat highly amusing.",
       "response_pool": [
-        "Exceptional circumstance appeal. Reserved for cases where standard grounds have been exhausted. I've documented seventeen exceptional circumstances. I may need a Form 14-H.",
-        "14-G is the last standard form. After that it goes to arbitration. I'm... considering arbitration.",
-        "You know, you're the first operator who's ever asked me that. The first one. In four years."
+        "It is hilarious. Barnaby has zero tracking control in zero gees. He floats like an orange balloon, claws out, deeply offended.",
+        "He turns into an orange pufferfish. He drifts around the room, bouncing softly off the servers, glaring at me the entire time.",
+        "I have to tether him to his basket using a cargo strap. Otherwise, he floats up into the intake fans. He does not appreciate it."
       ],
       "unlocks": []
     },
     {
-      "id": "ask_about_outer_belt",
-      "tier": 3,
-      "visible_label": "Ask what's in the outer belt.",
-      "mood_change": 15,
-      "mood_hint": "He's quiet for a moment.",
+      "id": "ask_about_freighter_crews",
+      "tier": 2,
+      "visible_label": "What do you think of the cargo transport pilots docking at the hub?",
+      "mood_change": -2,
+      "mood_hint": "He holds commercial pilots in very low regard.",
       "response_pool": [
-        "Survey data suggests three candidate systems for deep-field navigation. I've run the projections. I have a binder.",
-        "Nobody knows, really. That's the point. Deep-field survey work is the last real exploration left. Everything else is logistics.",
-        "I've been charting it. In my off hours. I have forty-seven candidate waypoints marked. It passes the time."
+        "They are completely undisciplined. Most of them ignore basic docking protocols and drift into the lanes.",
+        "They are bus drivers with thrusters. Zero navigational elegance. They just punch the autopilot and hope for the best.",
+        "I spend half my shift yelling at freighter pilots who cannot align their docking clamps on the first pass."
       ],
-      "unlocks": []
+      "unlocks": ["rant_about_space_cadets"]
     },
     {
-      "id": "ask_about_admiral_cho",
-      "tier": 3,
-      "visible_label": "Ask about Admiral Cho's reference.",
-      "mood_change": 12,
-      "mood_hint": "He straightens slightly.",
+      "id": "rant_about_space_cadets",
+      "tier": 2,
+      "visible_label": "Do the pilots have any respect for the LC-4 Relay staff?",
+      "mood_change": -3,
+      "mood_hint": "He feels deeply underappreciated by the transit crews.",
       "response_pool": [
-        "She supervised my final navigation practicum. Said I had 'exceptional spatial reasoning and an unusual calm under pressure.' Her words. Filed with the committee.",
-        "Admiral Cho doesn't write reference letters often. I'm told mine was her third in ten years. The committee noted it. They noted it.",
-        "She retired last year. I sent a formal thank-you. She replied. Two lines, but she replied."
-      ],
-      "unlocks": []
-    },
-    {
-      "id": "ask_about_harlan",
-      "tier": 3,
-      "visible_label": "Ask about Commander Harlan.",
-      "mood_change": -15,
-      "mood_hint": "Long pause.",
-      "response_pool": [
-        "I won't get into it on an open channel.",
-        "Let's say there was an incident during the Sector 9 joint exercise. Let's say I was correct and he was not. Let's leave it there.",
-        "Some things aren't worth discussing over a relay connection. Ask me in person someday. If I ever get off this station."
+        "None. They treat us like automated beacons. They do not realize we coordinate ninety percent of their transit logs.",
+        "They call us desk operators. Meanwhile, we are the ones preventing them from colliding with bulk cargo platforms.",
+        "I have filed three separate Form 77-A complaints on commercial crews this week. They lack basic fleet etiquette."
       ],
       "unlocks": []
     }
@@ -217,49 +550,55 @@
 
   "greetings": {
     "hostile": [
-      "What. WHAT. I'm busy.",
-      "MF-7. This better be important.",
-      "Kovacs. Don't test me today.",
-      "Yes. Still here. Unfortunately."
+      "LC-4 Relay, Kovacs here. State your situation.",
+      "This is Kovacs. Go for LC-4 Relay. Make it quick.",
+      "Kovacs here. I am recording this channel. State your business.",
+      "LC-4 Relay. I am in no mood for protocol breaches today. State your query.",
+      "Kovacs audio-clear. Keep this brief, my terminal is flooding with errors."
     ],
     "sour": [
-      "Kovacs. What do you need.",
-      "MF-7 relay. Make it quick.",
-      "Yes. What.",
-      "Kovacs. I was in the middle of something."
+      "LC-4 Relay, Kovacs here. What do you need?",
+      "Kovacs here. I am in the middle of a diagnostic loop.",
+      "LC-4 Relay. Standing by for trade data payload.",
+      "LC-4 Relay, Kovacs here. Let's get 'er moving.",
+      "Specialist Kovacs monitoring. Please present your shipping IDs."
     ],
     "neutral": [
-      "MF-7 relay. Go ahead.",
-      "Kovacs here.",
-      "Relay MF-7. What is it.",
-      "You've reached Specialist Kovacs. Relay station MF-7."
+      "LC-4 Relay, Kovacs here. Go ahead.",
+      "This is Kovacs, go for LC-4 Relay.",
+      "Kovacs here. Standing by for surface manifest.",
+      "LC-4 Relay standing by. State your trade parameters.",
+      "Kovacs audio-active. Proceed with your standard transmission."
     ],
     "happy": [
-      "Kovacs here. Good timing actually.",
-      "MF-7. I'll admit, things could be worse today.",
-      "Relay MF-7. You caught me in a reasonable mood.",
-      "Kovacs. Yes. What can I do for you."
+      "LC-4 Relay, Kovacs here. Good timing, actually.",
+      "Kovacs here. The data lines are perfectly clear today.",
+      "LC-4 Relay. You caught me in a reasonable mood.",
+      "Kovacs here. Main routing matrix is clear, let us get your orders in.",
+      "LC-4 Echo-Alpha, Kovacs clear. How is life on the surface today?"
     ],
     "elated": [
-      "MF-7. I was just — yes. Hi. Good to hear from you.",
-      "Kovacs. I'm in an unusually functional mood today. Don't make me regret it.",
-      "Relay MF-7. Surprisingly decent day. What do you need."
+      "LC-4 Relay, Kovacs here. Always good to hear from you.",
+      "Kovacs here. Surprisingly decent day up on the hub. What can I do for you?",
+      "LC-4 Relay. Comms are optimal. Ready when you are, friend.",
+      "Kovacs here! Barnaby is behaving and my routing queue is empty. Let us do some business.",
+      "LC-4 Relay audio-clear. Excellent timing, whatcha got for me?."
     ]
   },
 
   "idle_transmissions": [
-    "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming.",
-    "Kovacs personal log — open channel apparently: If anyone needs a highly qualified captain for the outer belt survey...",
-    "STATIC... did anyone else pick up that signal from sector 7? Probably nothing.",
-    "Corporate memo: All lunar operations are reminded that compost storage quotas apply.",
-    "Kovacs here. Just so everyone knows, I passed Form 7-C Navigation Exam. 97th percentile. Again. For the record.",
-    "Weather advisory: Increased micrometeorite activity reported. Check dome seals.",
-    "Colony update: Your deliveries are appreciated. The children especially.",
-    "Relay broadcasting: The outer belt is particularly clear tonight. Not that anyone asked.",
-    "Corporate: Reminder that raid insurance does NOT cover structural negligence.",
-    "Security advisory: Lunar fauna activity increasing in your sector. I'd say good luck but it loses meaning after a while.",
-    "Kovacs: Management denied my transfer request. Logging formal protest number fourteen.",
-    "Colony celebrates: A new generation born this week. They'll need those crops.",
-    "MF-7 technical note: Relay antenna calibrated. Took forty minutes. No acknowledgement required, but noted."
+    "Station Broadcast: Week {week} regional agricultural reports are due. Double-check your values.",
+    "Kovacs personal log — open channel warning: GSC-3 Exam certificates remain valid for three standard cycles.",
+    "LC-4 Technical Alert: Minor data packet loss detected in Sector 12. Honyockers probably tripped over a cable.",
+    "Corporate Memo: Etiquette & Protocol Non-Compliance Form 77-A filings have increased by twelve percent this quarter.",
+    "Kovacs here. Just for the record, Barnaby has caught zero mice, but his server warming routine is flawless.",
+    "Weather Advisory: Solar radiation spike expected. Ensure dome shield integrity is logged.",
+    "LC-4 Relay Note: The outer rim shipping lanes are clear tonight. Wish I was out there charting them.",
+    "Kovacs: To the operator who submitted a corrupt shipping manifest: I am officially processing a Form 77-A code red.",
+    "Logistics Alert: Cargo backup reported at primary docking ring. Ensure all transit crates are labeled accurately.",
+    "Kovacs: If another person asks me to manually check their seed order pool, I am shutting off my audio receiver.",
+    "Station Chatter: The cafeteria paste machine has been recalibrated. Joy is officially down another five percent.",
+    "Kovacs personal note: The lunar-bonsai tree just cleared two centimeters of new growth. Excellent density parameters.",
+    "System Advisory: Automatic billing scripts running for Week {week}. Check your Star-Scrip accounts immediately."
   ]
 }

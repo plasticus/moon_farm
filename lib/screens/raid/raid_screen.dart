@@ -16,7 +16,7 @@ import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
-import '../../config/upgrade_config_service.dart';
+import '../../config/raid_config_service.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
   final GameState game;
@@ -76,11 +76,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   }
 
   void _initRaid() {
+    final raidConfig = RaidConfigService.instance;
     final config = GameConfigService.instance;
-    final upgradeConfig = UpgradeConfigService.instance;
-    final scaling = upgradeConfig.raidScaling.isNotEmpty
-        ? upgradeConfig.raidScaling
-        : config.getRaidScaling();
     final game = widget.game;
 
     // Wall HP
@@ -92,21 +89,17 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     _wallMaxHp = wallConfig['hp'] as int;
     _wallHp = game.defenseWall.currentHp.clamp(0, _wallMaxHp);
 
-    // Fauna count
+    // Fauna count — use RaidConfigService helpers
     final week = game.currentWeek;
-    final baseFauna = scaling['base_fauna_count'] as int;
-    final perWeek = scaling['fauna_per_week'] as int;
-    final divisor = scaling['fauna_per_week_divisor'] as int? ?? 1;
-    final maxFauna = scaling['max_fauna_count'] as int;
-    _maxFauna = (baseFauna + (week ~/ divisor) * perWeek).clamp(baseFauna, maxFauna);
+    _maxFauna = raidConfig.faunaCountForWeek(week);
 
     // Spawn interval
-    final baseInterval = (scaling['spawn_interval_base'] as num).toDouble();
-    final minInterval = (scaling['spawn_interval_min'] as num).toDouble();
-    // Speed up as fauna count increases
-    _spawnInterval = (90.0 / _maxFauna).clamp(minInterval, baseInterval);
+    final baseInterval = raidConfig.spawnIntervalBase;
+    final minInterval = raidConfig.spawnIntervalMin;
+    _spawnInterval = (raidConfig.raidDurationMax / _maxFauna)
+        .clamp(minInterval, baseInterval);
 
-    _timeRemaining = scaling['raid_duration_max'] as int;
+    _timeRemaining = raidConfig.raidDurationMax.toInt();
     _fauna = [];
     _grenades = [];
     _effects = [];
@@ -145,24 +138,11 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   // ── Spawn ─────────────────────────────────────────────────────────────────
 
   void _spawnFauna() {
-    final config = GameConfigService.instance;
-    final scaling = config.getRaidScaling();
-    final week = widget.game.currentWeek;
-
-    // Pick type
-    final brute = (scaling['brute_chance_base'] as num).toDouble() +
-        week * (scaling['brute_chance_per_week'] as num).toDouble();
-    final armored = (scaling['armored_chance_base'] as num).toDouble();
-    final swarmer = (scaling['swarmer_chance_base'] as num).toDouble();
-
-    final roll = _rng.nextDouble();
-    String typeId;
-    if (roll < brute) typeId = 'brute';
-    else if (roll < brute + armored) typeId = 'armored';
-    else if (roll < brute + armored + swarmer) typeId = 'swarmer';
-    else typeId = 'crawler';
-
-    final faunaConfig = config.getFaunaType(typeId)!;
+    // raidNumber = how many raids have been completed + 1 (this one)
+    final raidNumber = widget.game.totalRaidsDefended + 1;
+    final faunaConfig = RaidConfigService.instance
+        .pickFaunaType(_rng, raidNumber: raidNumber);
+    final typeId = faunaConfig['id'] as String;
     final x = 0.05 + _rng.nextDouble() * 0.90;
 
     _fauna.add(FaunaUnit(
@@ -174,7 +154,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       speed: (faunaConfig['speed'] as num).toDouble(),
       damage: faunaConfig['damage'] as int,
       hitInterval: (faunaConfig['hit_interval'] as num).toDouble(),
-      isBrute: faunaConfig['is_brute'] as bool,
+      isBrute: faunaConfig['is_brute'] as bool? ?? false,
       x: x,
       y: 0.0,
     ));
@@ -265,8 +245,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   void _handleFaunaDeath(FaunaUnit f) {
     _faunaKilled++;
-    final config = GameConfigService.instance;
-    final faunaConfig = config.getFaunaType(f.typeId);
+    final raidConfig = RaidConfigService.instance;
+    final faunaConfig = raidConfig.getFaunaType(f.typeId);
     if (faunaConfig == null) return;
 
     if (_rng.nextDouble() < (faunaConfig['meat_chance'] as num).toDouble()) {
@@ -542,21 +522,11 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     // Update wall HP
     final newWall = game.defenseWall.copyWith(currentHp: _wallHp);
 
-    // Add dropped resources
-    var resources = game.resources;
-    if (result.meatDropped > 0) {
-      resources = resources.copyWith(
-        // Meat stored as a resource — add to game (we'll add 'meat' field later)
-        // For now store in a placeholder — compost as proxy until meat field added
-        compost: resources.compost + result.meatDropped,
-      );
-    }
-    if (result.chitinDropped > 0) {
-      // Chitin stored in ore slot as proxy until chitin field added
-      resources = resources.copyWith(
-        ore: resources.ore + result.chitinDropped,
-      );
-    }
+    // Add dropped resources to proper fields
+    var resources = game.resources.copyWith(
+      meat: game.resources.meat + result.meatDropped,
+      chitin: game.resources.chitin + result.chitinDropped,
+    );
 
     // Update grenade inventory
     final newGrenades = game.grenades.copyWith(counts: _grenadeInventory);
@@ -579,9 +549,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }).toList();
     }
 
-    final diffName = game.difficulty.name; // 'easy', 'normal', 'hard'
-    final interval = UpgradeConfigService.instance.raidInterval(diffName);
-
+    // Don't advance nextRaidWeek here — the end-week engine owns that.
+    // Just mark the raid as defended so the engine skips the wall damage.
     await ref.read(activeGameProvider.notifier).updateGame(
       game.copyWith(
         defenseWall: newWall,
@@ -589,7 +558,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
         resources: resources,
         domes: domes,
         raidDefendedThisWeek: true,
-        nextRaidWeek: game.currentWeek + interval,
         totalRaidsDefended: game.totalRaidsDefended + 1,
         totalFaunaKilled: game.totalFaunaKilled + result.faunaKilled,
         totalChitinCollected: game.totalChitinCollected + result.chitinDropped,
@@ -966,6 +934,16 @@ class _FaunaWidget extends StatelessWidget {
   }
 }
 
+/// Returns the item-quality color for a given Mk level.
+/// Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5=orange
+Color mkColor(int level) => switch (level) {
+  1 => const Color(0xFF9E9E9E), // gray
+  2 => const Color(0xFF66BB6A), // green
+  3 => const Color(0xFF42A5F5), // blue
+  4 => const Color(0xFFAB47BC), // purple
+  _ => const Color(0xFFFF9800), // orange (Mk5+)
+};
+
 class _SentryWidget extends StatelessWidget {
   final LaserSentry sentry;
   final double x, y;
@@ -980,6 +958,7 @@ class _SentryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = mkColor(sentry.level);
     return Positioned(
       left: x * fieldSize.width - 16,
       top: y * fieldSize.height - 16,
@@ -987,12 +966,12 @@ class _SentryWidget extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: MFColors.neonCyan.withValues(alpha: 0.15),
-          border: Border.all(color: MFColors.neonCyan.withValues(alpha: 0.6)),
+          color: color.withValues(alpha: 0.2),
+          border: Border.all(color: color.withValues(alpha: 0.8), width: 1.5),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: const Center(
-          child: Text('🔫', style: TextStyle(fontSize: 16)),
+        child: Center(
+          child: Text('🔫', style: TextStyle(fontSize: sentry.level > 2 ? 18 : 16)),
         ),
       ),
     );

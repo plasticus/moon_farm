@@ -17,7 +17,6 @@ import '../main_menu/main_menu_screen.dart';
 import '../relay/relay_screen.dart';
 import '../operations/operations_screen.dart';
 import '../habitat/habitat_screen.dart';
-import '../raid/raid_screen.dart';
 import '../refinery/refinery_screen.dart';
 
 class SaveSlotDetailScreen extends ConsumerStatefulWidget {
@@ -76,93 +75,115 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     final isRaidWeek = ref.watch(isRaidWeekProvider);
     final unreadRadio = ref.watch(unreadRadioCountProvider);
 
-    return AppBar(
-      automaticallyImplyLeading: false,
-      titleSpacing: 0,
-      title: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            // Farm name — long press opens dev tools
-            Expanded(
-              child: GestureDetector(
-                onLongPress: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const DevToolsScreen()),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(64),
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          color: MFColors.background,
+          padding: const EdgeInsets.fromLTRB(16, 6, 4, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Row 1: Farm name full width + menu
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onLongPress: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const DevToolsScreen()),
+                      ),
+                      child: Text(
+                        game.farmName.toUpperCase(),
+                        style: MFTextStyles.labelLarge,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    color: MFColors.surface,
+                    iconColor: MFColors.textSecondary,
+                    padding: EdgeInsets.zero,
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'save',
+                        child: Text('Save Game', style: MFTextStyles.bodyLarge),
+                      ),
+                      const PopupMenuItem(
+                        value: 'mainmenu',
+                        child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
+                      ),
+                    ],
+                    onSelected: (val) async {
+                      if (val == 'save') {
+                        await ref.read(activeGameProvider.notifier).persistCurrentState();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Game saved.')),
+                          );
+                        }
+                      } else if (val == 'mainmenu') {
+                        ref.read(activeGameProvider.notifier).clearGame();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+                                (route) => false,
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // Row 2: W67 · N  ⚡+236  🎫1893  🌱23  ⚠️2w  📡1
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
                     Text(
-                      game.farmName.toUpperCase(),
-                      style: MFTextStyles.labelLarge,
-                      overflow: TextOverflow.ellipsis,
+                      'W${game.currentWeek} · ${game.difficulty.name[0].toUpperCase()}  ',
+                      style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
                     ),
-                    Text(
-                      'Week ${game.currentWeek}  ·  ${game.difficulty.name.toUpperCase()}',
-                      style: MFTextStyles.bodySmall,
+                    _StatusChip(
+                      label: '${powerSurplus >= 0 ? '+' : ''}$powerSurplus',
+                      color: powerSurplus >= 0 ? MFColors.statusOptimal : MFColors.statusCritical,
+                      icon: '⚡',
                     ),
+                    const SizedBox(width: 4),
+                    _StatusChip(
+                      label: '${game.resources.starScrip}',
+                      color: MFColors.starScrip,
+                      icon: '🎫',
+                    ),
+                    const SizedBox(width: 4),
+                    _StatusChip(
+                      label: '${game.resources.seeds}',
+                      color: MFColors.neonGreen,
+                      icon: '🌱',
+                    ),
+                    if (isRaidWeek) ...[
+                      const SizedBox(width: 4),
+                      _StatusChip(label: 'RAID!', color: MFColors.neonPink, icon: '🚨'),
+                    ] else if (raidWarning) ...[
+                      const SizedBox(width: 4),
+                      _StatusChip(
+                        label: '${game.nextRaidWeek - game.currentWeek}w',
+                        color: MFColors.neonOrange,
+                        icon: '⚠️',
+                      ),
+                    ],
+                    if (unreadRadio > 0) ...[
+                      const SizedBox(width: 4),
+                      _StatusChip(label: '$unreadRadio', color: MFColors.neonCyan, icon: '📡'),
+                    ],
                   ],
                 ),
               ),
-            ),
-            _StatusChip(
-              label: '${powerSurplus >= 0 ? '+' : ''}$powerSurplus',
-              color: powerSurplus >= 0 ? MFColors.statusOptimal : MFColors.statusCritical,
-              icon: '⚡',
-            ),
-            const SizedBox(width: 6),
-            _StatusChip(
-              label: '${game.resources.starScrip}',
-              color: MFColors.starScrip,
-              icon: '🎫',
-            ),
-            const SizedBox(width: 6),
-            if (isRaidWeek)
-              _StatusChip(label: 'RAID!', color: MFColors.neonPink, icon: '🚨')
-            else if (raidWarning)
-              _StatusChip(
-                label: '${game.nextRaidWeek - game.currentWeek}w',
-                color: MFColors.neonOrange,
-                icon: '⚠️',
-              ),
-            if (unreadRadio > 0) ...[
-              const SizedBox(width: 4),
-              _StatusChip(label: '$unreadRadio', color: MFColors.neonCyan, icon: '📡'),
             ],
-            const SizedBox(width: 4),
-            PopupMenuButton<String>(
-              color: MFColors.surface,
-              iconColor: MFColors.textSecondary,
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'save',
-                  child: Text('Save Game', style: MFTextStyles.bodyLarge),
-                ),
-                const PopupMenuItem(
-                  value: 'mainmenu',
-                  child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
-                ),
-              ],
-              onSelected: (val) async {
-                if (val == 'save') {
-                  await ref.read(activeGameProvider.notifier).persistCurrentState();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Game saved.')),
-                    );
-                  }
-                } else if (val == 'mainmenu') {
-                  ref.read(activeGameProvider.notifier).clearGame();
-                  if (context.mounted) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-                          (route) => false,
-                    );
-                  }
-                }
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -354,7 +375,7 @@ class _DashboardTab extends ConsumerWidget {
           const SizedBox(height: 16),
         ],
         if (game.siloInventory.isNotEmpty) ...[
-          const _SectionHeader('CROPS IN SILO'),
+          const _SectionHeader('🏚️  CROPS IN SILO'),
           const SizedBox(height: 8),
           _SiloInventoryCard(inventory: game.siloInventory),
           const SizedBox(height: 16),
@@ -365,30 +386,37 @@ class _DashboardTab extends ConsumerWidget {
             .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
             .map((m) => _MilestoneRow(milestone: m, game: game)),
         const SizedBox(height: 16),
-        // Show defend button if raid is active
+        // Raid week: show message directing to Habitat, gray out End Week
         if (isRaidWeek)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MFColors.neonPink,
-                  foregroundColor: MFColors.background,
-                ),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => RaidScreen(game: game),
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: MFColors.neonPink.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: MFColors.neonPink.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                const Text('🚨', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('RAID IN PROGRESS',
+                          style: MFTextStyles.labelLarge.copyWith(
+                              color: MFColors.neonPink)),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Go to Habitat → Wall tab to defend before ending the week.',
+                        style: MFTextStyles.bodySmall.copyWith(
+                            color: MFColors.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text(
-                  '🚨 DEFEND RAID NOW',
-                  style: MFTextStyles.labelLarge.copyWith(
-                    color: MFColors.background, letterSpacing: 1,
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
         _EndWeekButton(
@@ -460,6 +488,8 @@ class _ResourceGrid extends StatelessWidget {
       ('🪨', 'Ore',        '${resources.ore.toInt()}', MFColors.textSecondary),
       ('♻️', 'Compost',    '${resources.compost.toInt()}', MFColors.neonGreen),
       ('🌾', 'Seeds',      '${resources.seeds}', MFColors.neonGreen),
+      ('🥩', 'Meat',       '${resources.meat.toInt()}', const Color(0xFFEF5350)),
+      ('🦴', 'Chitin',     '${resources.chitin.toInt()}', const Color(0xFFBCAAA4)),
     ];
 
     return GridView.builder(
@@ -527,8 +557,7 @@ class _InfraCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       ('🔵', 'Domes',    '${game.domes.length}'),
-      ('🏗️', 'Silos',    '${game.silos.length}'),
-      ('⚡',  'Power',    '${game.totalPowerProduction}'),
+      ('⚡',  'Power',    '+${game.powerSurplus} KWh'),
       ('🔫', 'Sentries', '${game.laserSentries.length}'),
       ('🤖', 'Robots',   '${game.domes.where((d) => d.robot != null).length}'),
     ];
@@ -734,16 +763,19 @@ class _EndWeekButton extends StatelessWidget {
       height: 56,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isRaidWeek ? MFColors.neonPink : MFColors.neonCyan,
+          backgroundColor: isRaidWeek
+              ? MFColors.borderSubtle
+              : MFColors.neonCyan,
           foregroundColor: MFColors.background,
         ),
-        onPressed: isLoading ? null : onPressed,
+        onPressed: (isLoading || isRaidWeek) ? null : onPressed,
         child: isLoading
             ? const CircularProgressIndicator(color: MFColors.background, strokeWidth: 2)
             : Text(
-          isRaidWeek ? '🚨 DEFEND RAID FIRST' : '⏭  END WEEK ${game.currentWeek}',
+          '⏭  END WEEK ${game.currentWeek}',
           style: MFTextStyles.labelLarge.copyWith(
-            color: MFColors.background, letterSpacing: 1,
+            color: isRaidWeek ? MFColors.textMuted : MFColors.background,
+            letterSpacing: 1,
           ),
         ),
       ),

@@ -301,8 +301,10 @@ class Resources {
   final double glass;
   final double components;
   final double ore;
+  final double meat;
+  final double chitin;
   final int starScrip;
-  final int seeds; // seeds are tracked by crop type separately in dome cells
+  final int seeds;
 
   const Resources({
     this.moonDirt = 0,
@@ -315,6 +317,8 @@ class Resources {
     this.glass = 0,
     this.components = 0,
     this.ore = 0,
+    this.meat = 0,
+    this.chitin = 0,
     this.starScrip = 0,
     this.seeds = 0,
   });
@@ -330,6 +334,8 @@ class Resources {
     double? glass,
     double? components,
     double? ore,
+    double? meat,
+    double? chitin,
     int? starScrip,
     int? seeds,
   }) {
@@ -344,6 +350,8 @@ class Resources {
       glass: glass ?? this.glass,
       components: components ?? this.components,
       ore: ore ?? this.ore,
+      meat: meat ?? this.meat,
+      chitin: chitin ?? this.chitin,
       starScrip: starScrip ?? this.starScrip,
       seeds: seeds ?? this.seeds,
     );
@@ -361,6 +369,8 @@ class Resources {
       glass: glass + other.glass,
       components: components + other.components,
       ore: ore + other.ore,
+      meat: meat + other.meat,
+      chitin: chitin + other.chitin,
       starScrip: starScrip + other.starScrip,
       seeds: seeds + other.seeds,
     );

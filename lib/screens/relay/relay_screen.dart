@@ -10,7 +10,6 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/kovacs_engine.dart';
-import '../../data/kovacs_script.dart';
 import '../../utils/game_factory.dart';
 
 // ─── Relay Tab Enum ───────────────────────────────────────────────────────────

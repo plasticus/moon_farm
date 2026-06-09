@@ -300,7 +300,7 @@
         "cost_scrip": 400,
         "cost_metals": 25,
         "power_output_kwh": 45,
-        "emoji": "\ud83c\udf2c\ufe0f"
+        "emoji": "\ud83c\udf00"
       },
       "geothermal_tap": {
         "name": "Geothermal Core Tap",
@@ -1381,7 +1381,8 @@
         "description": "Cheap, reliable daytime power.",
         "cost_metals": 5,
         "cost_glass": 3,
-        "power_output_kwh": 20
+        "power_output_kwh": 20,
+        "cost_scrip": 150
       },
       "wind_turbine": {
         "name": "Wind Turbine",
@@ -1389,7 +1390,8 @@
         "description": "Steady output from lunar surface winds.",
         "cost_metals": 20,
         "cost_components": 3,
-        "power_output_kwh": 45
+        "power_output_kwh": 45,
+        "cost_scrip": 350
       },
       "geothermal_tap": {
         "name": "Geothermal Tap",
@@ -1398,7 +1400,8 @@
         "cost_metals": 80,
         "cost_components": 20,
         "cost_glass": 15,
-        "power_output_kwh": 150
+        "power_output_kwh": 150,
+        "cost_scrip": 2000
       }
     },
     "mining_drone": {
@@ -1620,60 +1623,6 @@
       }
     ]
   },
-  "fauna_types": [
-    {
-      "id": "crawler",
-      "name": "Lunar Crawler",
-      "emoji": "\ud83e\udd8e",
-      "hp": 20,
-      "speed": 1.2,
-      "damage": 8,
-      "hit_interval": 1.0,
-      "is_brute": false,
-      "meat_chance": 0.4,
-      "chitin_chance": 0.05,
-      "score_value": 1
-    },
-    {
-      "id": "swarmer",
-      "name": "Dust Swarmer",
-      "emoji": "\ud83e\udeb2",
-      "hp": 8,
-      "speed": 2.0,
-      "damage": 4,
-      "hit_interval": 0.8,
-      "is_brute": false,
-      "meat_chance": 0.2,
-      "chitin_chance": 0.02,
-      "score_value": 1
-    },
-    {
-      "id": "brute",
-      "name": "Crater Brute",
-      "emoji": "\ud83e\udd8f",
-      "hp": 120,
-      "speed": 0.4,
-      "damage": 25,
-      "hit_interval": 1.5,
-      "is_brute": true,
-      "meat_chance": 0.9,
-      "chitin_chance": 0.8,
-      "score_value": 5
-    },
-    {
-      "id": "armored",
-      "name": "Shell-Back",
-      "emoji": "\ud83d\udc22",
-      "hp": 60,
-      "speed": 0.7,
-      "damage": 15,
-      "hit_interval": 1.2,
-      "is_brute": false,
-      "meat_chance": 0.6,
-      "chitin_chance": 0.5,
-      "score_value": 3
-    }
-  ],
   "grenades": [
     {
       "id": "flashbang",
@@ -1794,23 +1743,6 @@
         "cost_chitin": 20
       }
     ]
-  },
-  "raid_scaling": {
-    "base_fauna_count": 5,
-    "fauna_per_week": 1,
-    "max_fauna_count": 60,
-    "spawn_interval_base": 3.0,
-    "spawn_interval_min": 1.5,
-    "brute_chance_base": 0.02,
-    "brute_chance_per_week": 0.001,
-    "armored_chance_base": 0.05,
-    "swarmer_chance_base": 0.12,
-    "raid_duration_max": 90,
-    "first_raid_week": 10,
-    "raid_interval_easy": 12,
-    "raid_interval_normal": 10,
-    "raid_interval_hard": 6,
-    "fauna_per_week_divisor": 3
   },
   "radio_tips": [
     {

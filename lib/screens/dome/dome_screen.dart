@@ -9,6 +9,15 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 
+/// Mk-level quality color. Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5+=orange
+Color mkColor(int level) => switch (level) {
+  1 => const Color(0xFF9E9E9E),
+  2 => const Color(0xFF66BB6A),
+  3 => const Color(0xFF42A5F5),
+  4 => const Color(0xFFAB47BC),
+  _ => const Color(0xFFFF9800),
+};
+
 // ─── Dome Action Enum ─────────────────────────────────────────────────────────
 
 enum DomeAction { water, fertilize, harvest, plant, clearDead }
@@ -37,72 +46,82 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
     final clampedIndex = domeIndex.clamp(0, game.domes.length - 1);
     final dome = game.domes[clampedIndex];
 
-    return Column(
-      children: [
-        // ── Dome navigator ───────────────────────────────────────────────
-        _DomeNavigator(
-          domes: game.domes,
-          currentIndex: clampedIndex,
-          onPrevious: clampedIndex > 0
-              ? () => ref.read(activeDomeIndexProvider.notifier).state--
-              : null,
-          onNext: clampedIndex < game.domes.length - 1
-              ? () => ref.read(activeDomeIndexProvider.notifier).state++
-              : null,
-        ),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity == null) return;
+        if (details.primaryVelocity! < -300 && clampedIndex < game.domes.length - 1) {
+          ref.read(activeDomeIndexProvider.notifier).state++;
+        } else if (details.primaryVelocity! > 300 && clampedIndex > 0) {
+          ref.read(activeDomeIndexProvider.notifier).state--;
+        }
+      },
+      child: Column(
+        children: [
+          // ── Dome navigator ───────────────────────────────────────────────
+          _DomeNavigator(
+            domes: game.domes,
+            currentIndex: clampedIndex,
+            onPrevious: clampedIndex > 0
+                ? () => ref.read(activeDomeIndexProvider.notifier).state--
+                : null,
+            onNext: clampedIndex < game.domes.length - 1
+                ? () => ref.read(activeDomeIndexProvider.notifier).state++
+                : null,
+          ),
 
-        // ── Action toolbar ───────────────────────────────────────────────
-        _ActionToolbar(
-          selectedAction: _selectedAction,
-          selectedCropId: _selectedCropId,
-          dome: dome,
-          game: game,
-          onActionSelected: (action) {
-            if (action == DomeAction.plant) {
-              if (_selectedAction == DomeAction.plant && _selectedCropId != null) {
-                // Tap Plant again to change crop
-                _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
-              } else if (_selectedAction == DomeAction.plant) {
-                setState(() { _selectedAction = null; _selectedCropId = null; });
+          // ── Action toolbar ───────────────────────────────────────────────
+          _ActionToolbar(
+            selectedAction: _selectedAction,
+            selectedCropId: _selectedCropId,
+            dome: dome,
+            game: game,
+            onActionSelected: (action) {
+              if (action == DomeAction.plant) {
+                if (_selectedAction == DomeAction.plant && _selectedCropId != null) {
+                  // Tap Plant again to change crop
+                  _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
+                } else if (_selectedAction == DomeAction.plant) {
+                  setState(() { _selectedAction = null; _selectedCropId = null; });
+                } else {
+                  // First Plant tap — show picker immediately
+                  _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
+                }
               } else {
-                // First Plant tap — show picker immediately
-                _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
+                setState(() {
+                  _selectedAction = _selectedAction == action ? null : action;
+                  _selectedCropId = null;
+                });
               }
-            } else {
-              setState(() {
-                _selectedAction = _selectedAction == action ? null : action;
-                _selectedCropId = null;
-              });
-            }
-          },
-        ),
+            },
+          ),
 
-        // ── Robot status banner ──────────────────────────────────────────
-        if (dome.robot != null) _RobotBanner(dome: dome),
+          // ── Robot status banner ──────────────────────────────────────────
+          if (dome.robot != null) _RobotBanner(dome: dome),
 
-        // ── 3x3 Grid ────────────────────────────────────────────────────
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: _DomeGrid(
-              dome: dome,
-              game: game,
-              selectedAction: _selectedAction,
-              selectedCropId: _selectedCropId,
-              onCellTap: (position) => _handleCellTap(
-                context, ref, game, dome, position, clampedIndex,
+          // ── 3x3 Grid ────────────────────────────────────────────────────
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _DomeGrid(
+                dome: dome,
+                game: game,
+                selectedAction: _selectedAction,
+                selectedCropId: _selectedCropId,
+                onCellTap: (position) => _handleCellTap(
+                  context, ref, game, dome, position, clampedIndex,
+                ),
+                onCropSelected: (cropId) {
+                  setState(() => _selectedCropId = cropId);
+                },
               ),
-              onCropSelected: (cropId) {
-                setState(() => _selectedCropId = cropId);
-              },
             ),
           ),
-        ),
 
-        // ── Dome info footer ─────────────────────────────────────────────
-        _DomeInfoFooter(dome: dome, game: game),
-      ],
-    );
+          // ── Dome info footer ─────────────────────────────────────────────
+          _DomeInfoFooter(dome: dome, game: game),
+        ],
+      ), // Column
+    ); // GestureDetector
   }
 
   void _handleCellTap(
@@ -770,24 +789,52 @@ class _CropCell extends StatelessWidget {
     required this.onTap,
   });
 
+  // Bot handles a chore → don't flag it as needed
+  bool get _botWaters => dome.domeBot?.canWater == true;
+  bool get _botFertilizes => dome.domeBot?.canFertilize == true;
+
+  bool get _needsWater =>
+      !_botWaters &&
+          cell.state == CropState.growing &&
+          !cell.wateredThisWeek;
+
+  bool get _needsFertilizer =>
+      !_botFertilizes &&
+          cell.state == CropState.growing &&
+          !cell.fertilizedThisWeek;
+
   Color get _borderColor {
     if (selectedAction != null) return MFColors.neonCyan.withValues(alpha: 0.6);
     switch (cell.state) {
-      case CropState.empty: return MFColors.borderSubtle;
+      case CropState.empty:
+        return const Color(0xFF4E342E); // dark brown border
       case CropState.planted:
-      case CropState.growing: return MFColors.neonGreen.withValues(alpha: 0.4);
-      case CropState.ready: return MFColors.neonGreen;
-      case CropState.dead: return MFColors.neonPink.withValues(alpha: 0.5);
+        return MFColors.neonGreen.withValues(alpha: 0.5);
+      case CropState.growing:
+        if (_needsWater) return const Color(0xFFFF8F00); // orange
+        if (_needsFertilizer) return const Color(0xFF78909C); // sickly gray-blue
+        return const Color(0xFF66BB6A); // healthy green
+      case CropState.ready:
+        return const Color(0xFF00BCD4); // cyan — action needed: harvest me!
+      case CropState.dead:
+        return const Color(0xFFE53935); // red
     }
   }
 
   Color get _bgColor {
     switch (cell.state) {
-      case CropState.empty: return MFColors.surface;
+      case CropState.empty:
+        return const Color(0xFF2E1A0E); // dark brown
       case CropState.planted:
-      case CropState.growing: return MFColors.neonGreen.withValues(alpha: 0.05);
-      case CropState.ready: return MFColors.neonGreen.withValues(alpha: 0.12);
-      case CropState.dead: return MFColors.neonPink.withValues(alpha: 0.05);
+        return MFColors.neonGreen.withValues(alpha: 0.05);
+      case CropState.growing:
+        if (_needsWater) return const Color(0xFFFF8F00).withValues(alpha: 0.08);
+        if (_needsFertilizer) return const Color(0xFF78909C).withValues(alpha: 0.08);
+        return const Color(0xFF66BB6A).withValues(alpha: 0.08);
+      case CropState.ready:
+        return const Color(0xFF00BCD4).withValues(alpha: 0.1);
+      case CropState.dead:
+        return const Color(0xFFE53935).withValues(alpha: 0.08);
     }
   }
 
@@ -799,7 +846,7 @@ class _CropCell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: _bgColor,
           borderRadius: BorderRadius.circular(8),
@@ -813,52 +860,49 @@ class _CropCell extends StatelessWidget {
                 Icons.add,
                 color: selectedAction == DomeAction.plant
                     ? MFColors.neonCyan
-                    : MFColors.textMuted,
+                    : const Color(0xFF6D4C41), // muted brown
                 size: 24,
               ),
             ] else ...[
               Text(
                 crop?.emoji ?? '?',
                 style: TextStyle(
-                  fontSize: cell.state == CropState.dead ? 20 : 28,
+                  fontSize: cell.state == CropState.dead ? 18 : 26,
                   color: cell.state == CropState.dead
-                      ? Colors.grey
+                      ? Colors.grey.withValues(alpha: 0.5)
                       : null,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               if (cell.state == CropState.ready)
-                Text(
-                  'READY',
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: MFColors.neonGreen,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
+                Text('READY',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF00BCD4),
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ))
               else if (cell.state == CropState.dead)
-                Text(
-                  'DEAD',
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: MFColors.neonPink,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
-              else if (cell.state == CropState.growing) ...[
+                Text('CLEAR',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFFE53935),
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ))
+              else if (cell.state == CropState.growing ||
+                    cell.state == CropState.planted) ...[
                   Text(
                     '${cell.weeksGrown}/${crop?.growthWeeks ?? '?'}w',
                     style: MFTextStyles.bodySmall.copyWith(fontSize: 9),
                   ),
-                  // Status indicators
+                  // Only show need indicators — not confirmations
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (cell.wateredThisWeek)
-                        Text('💧', style: const TextStyle(fontSize: 8)),
-                      if (cell.fertilizedThisWeek)
-                        Text('♻️', style: const TextStyle(fontSize: 8)),
+                      if (_needsWater)
+                        const Text('💧', style: TextStyle(fontSize: 8)),
+                      if (_needsFertilizer)
+                        const Text('♻️', style: TextStyle(fontSize: 8)),
                     ],
                   ),
                 ],
@@ -872,46 +916,112 @@ class _CropCell extends StatelessWidget {
 
 // ─── Robot Cell (center) ──────────────────────────────────────────────────────
 
-class _RobotCell extends StatelessWidget {
+class _RobotCell extends StatefulWidget {
   final Dome dome;
   final GameState game;
-
   const _RobotCell({required this.dome, required this.game});
 
   @override
-  Widget build(BuildContext context) {
-    final robot = dome.robot;
-    final bot = dome.domeBot;
+  State<_RobotCell> createState() => _RobotCellState();
+}
 
-    // Prefer showing DomeBot if installed (new system)
+class _RobotCellState extends State<_RobotCell>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _animating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() => _animating = false);
+        _controller.reset();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _triggerRainbow() {
+    setState(() => _animating = true);
+    _controller.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bot = widget.dome.domeBot;
+    final robot = widget.dome.robot;
+
     if (bot != null) {
-      return Container(
-        decoration: BoxDecoration(
-          color: MFColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: MFColors.neonCyan.withValues(alpha: 0.5), width: 1.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🤖', style: TextStyle(fontSize: 24)),
-            const SizedBox(height: 2),
-            Text(
-              'MK${bot.level}',
-              style: MFTextStyles.bodySmall.copyWith(
-                fontSize: 8, color: MFColors.neonCyan, fontWeight: FontWeight.bold,
+      final baseColor = mkColor(bot.level);
+
+      return GestureDetector(
+        onTap: _triggerRainbow,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            // Rainbow: cycle hue 0→360 twice over 2 seconds
+            final borderColor = _animating
+                ? HSLColor.fromAHSL(
+              1.0,
+              (_controller.value * 720) % 360,
+              1.0,
+              0.6,
+            ).toColor()
+                : baseColor.withValues(alpha: 0.6);
+
+            final bgColor = _animating
+                ? HSLColor.fromAHSL(
+              0.15,
+              (_controller.value * 720) % 360,
+              1.0,
+              0.6,
+            ).toColor()
+                : baseColor.withValues(alpha: 0.1);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: borderColor,
+                  width: _animating ? 2.5 : 1.5,
+                ),
               ),
-            ),
-            Text(
-              _botActions(bot),
-              style: MFTextStyles.bodySmall.copyWith(fontSize: 7, color: MFColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              child: child,
+            );
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('🤖', style: TextStyle(fontSize: 24)),
+              const SizedBox(height: 2),
+              Text('MK${bot.level}',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    fontSize: 8,
+                    color: MFColors.neonCyan,
+                    fontWeight: FontWeight.bold,
+                  )),
+              Text(_botActions(bot),
+                  style: MFTextStyles.bodySmall.copyWith(
+                      fontSize: 7, color: MFColors.textMuted),
+                  textAlign: TextAlign.center),
+            ],
+          ),
         ),
       );
     }
 
+    // Legacy robot or empty
     return Container(
       decoration: BoxDecoration(
         color: MFColors.surfaceElevated,
@@ -940,13 +1050,11 @@ class _RobotCell extends StatelessWidget {
             ),
           ),
           if (robot != null)
-            Text(
-              '${robot.health}%',
-              style: MFTextStyles.bodySmall.copyWith(
-                fontSize: 8,
-                color: MFStatusColor.forPercent(robot.healthPercent),
-              ),
-            ),
+            Text('${robot.health}%',
+                style: MFTextStyles.bodySmall.copyWith(
+                  fontSize: 8,
+                  color: MFStatusColor.forPercent(robot.healthPercent),
+                )),
         ],
       ),
     );
@@ -955,75 +1063,117 @@ class _RobotCell extends StatelessWidget {
   String _botActions(DomeBot bot) {
     final parts = <String>[];
     if (bot.canWater) parts.add('💧');
-    if (bot.canHarvest) parts.add('⛏');
-    if (bot.canFertilize) parts.add('🌿');
+    if (bot.canHarvest) parts.add('🌾');
+    if (bot.canFertilize) parts.add('♻️');
     if (bot.canPlant) parts.add('🌱');
     return parts.join(' ');
   }
 }
 
-// ─── Dome Info Footer ─────────────────────────────────────────────────────────
+// ─── All-Domes Summary Footer ─────────────────────────────────────────────────
 
 class _DomeInfoFooter extends StatelessWidget {
-  final Dome dome;
+  final Dome dome;   // kept for API compat but we use game now
   final GameState game;
 
   const _DomeInfoFooter({required this.dome, required this.game});
 
   @override
   Widget build(BuildContext context) {
-    final readyCount = dome.readyToHarvestCount;
-    final deadCount = dome.deadCropCount;
-    final growingCount = dome.cells
-        .where((c) => c.state == CropState.growing)
-        .length;
-    final unwateredCount = dome.cells
-        .where((c) => c.state == CropState.growing && !c.wateredThisWeek)
-        .length;
+    int needWater = 0, needFert = 0, readyCount = 0, deadCount = 0, emptyCount = 0;
+
+    for (final d in game.domes) {
+      final botWaters = d.domeBot?.canWater == true;
+      final botFertilizes = d.domeBot?.canFertilize == true;
+      final botPlants = d.domeBot?.canPlant == true;
+
+      for (final cell in d.cells) {
+        switch (cell.state) {
+          case CropState.empty:
+            if (!botPlants) emptyCount++;
+          case CropState.planted:
+          case CropState.growing:
+            if (!botWaters && !cell.wateredThisWeek) needWater++;
+            if (!botFertilizes && !cell.fertilizedThisWeek) needFert++;
+          case CropState.ready:
+            readyCount++;
+          case CropState.dead:
+            deadCount++;
+        }
+      }
+    }
+
+    final allGood = needWater == 0 && needFert == 0 &&
+        readyCount == 0 && deadCount == 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: MFColors.borderSubtle)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: allGood
+          ? const Center(
+        child: Text(
+          '👾 Domes are happy',
+          style: TextStyle(
+            color: Color(0xFF66BB6A),
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      )
+          : Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        alignment: WrapAlignment.center,
         children: [
-          _FooterStat('🌱', '$growingCount growing'),
-          _FooterStat('✅', '$readyCount ready',
-              color: readyCount > 0 ? MFColors.neonGreen : null),
-          _FooterStat('💧', '$unwateredCount need water',
-              color: unwateredCount > 0 ? MFColors.neonYellow : null),
-          _FooterStat('💀', '$deadCount dead',
-              color: deadCount > 0 ? MFColors.neonPink : null),
+          if (emptyCount > 0)
+            _SummaryChip('🌱', emptyCount, const Color(0xFF66BB6A)),
+          if (needWater > 0)
+            _SummaryChip('💧', needWater, const Color(0xFFFF8F00)),
+          if (needFert > 0)
+            _SummaryChip('♻️', needFert, const Color(0xFF78909C)),
+          if (readyCount > 0)
+            _SummaryChip('🌾', readyCount, const Color(0xFF00BCD4)),
+          if (deadCount > 0)
+            _SummaryChip('💀', deadCount, const Color(0xFFE53935)),
         ],
       ),
     );
   }
 }
 
-class _FooterStat extends StatelessWidget {
+class _SummaryChip extends StatelessWidget {
   final String emoji;
-  final String label;
-  final Color? color;
+  final int count;
+  final Color color;
 
-  const _FooterStat(this.emoji, this.label, {this.color});
+  const _SummaryChip(this.emoji, this.count, this.color);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 12)),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: MFTextStyles.bodySmall.copyWith(
-            color: color ?? MFColors.textSecondary,
-            fontSize: 10,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

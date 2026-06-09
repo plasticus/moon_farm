@@ -163,6 +163,18 @@ class _MachineCard extends StatelessWidget {
     required this.ref, required this.refinery,
   });
 
+  Color get _borderColor {
+    return switch (machine.type) {
+      MachineType.composter         => const Color(0xFF66BB6A),
+      MachineType.smelter           => const Color(0xFFFF7043),
+      MachineType.zSoilProcessor    => const Color(0xFF8D6E63),
+      MachineType.glassFurnace      => const Color(0xFFAB47BC),
+      MachineType.componentFabricator => const Color(0xFFEC407A),
+    };
+  }
+
+  Color get _bgColor => _borderColor.withValues(alpha: 0.06);
+
   @override
   Widget build(BuildContext context) {
     final upgrades = UpgradeConfigService.instance;
@@ -183,9 +195,9 @@ class _MachineCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: MFColors.surface,
+        color: _bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: MFColors.neonOrange.withValues(alpha: 0.3)),
+        border: Border.all(color: _borderColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,9 +470,9 @@ class _BuildMachineCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: MFColors.surface.withValues(alpha: 0.5),
+        color: _borderColorForType(type).withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: MFColors.borderSubtle),
+        border: Border.all(color: _borderColorForType(type).withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,6 +545,14 @@ class _BuildMachineCard extends StatelessWidget {
       _ => 0,
     };
   }
+
+  Color _borderColorForType(MachineType t) => switch (t) {
+    MachineType.composter          => const Color(0xFF66BB6A),
+    MachineType.smelter            => const Color(0xFFFF7043),
+    MachineType.zSoilProcessor     => const Color(0xFF8D6E63),
+    MachineType.glassFurnace       => const Color(0xFFAB47BC),
+    MachineType.componentFabricator => const Color(0xFFEC407A),
+  };
 
   void _build(BuildContext context, Map<String, dynamic> cost, int powerDraw) {
     if (!_canAfford(cost) || refinery == null) {

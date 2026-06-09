@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
+import 'upgrade_config_service.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
 /// Edit assets/config/game_config.json to tweak any game balance value.
@@ -317,15 +318,11 @@ class GameConfigService {
         .firstWhere((l) => l['level'] == level, orElse: () => getDefenseWallLevels().first);
   }
 
-  List<Map<String, dynamic>> getFaunaTypes() {
-    final ft = _c['fauna_types'] as List?;
-    if (ft == null) return [];
-    return List<Map<String, dynamic>>.from(ft);
-  }
+  List<Map<String, dynamic>> getFaunaTypes() =>
+      UpgradeConfigService.instance.faunaTypes;
 
-  Map<String, dynamic>? getFaunaType(String id) {
-    return getFaunaTypes().where((f) => f['id'] == id).firstOrNull;
-  }
+  Map<String, dynamic>? getFaunaType(String id) =>
+      UpgradeConfigService.instance.getFaunaType(id);
 
   List<Map<String, dynamic>> getGrenadeTypes() {
     final g = _c['grenades'] as List?;
@@ -338,21 +335,16 @@ class GameConfigService {
   }
 
   Map<String, dynamic> getRaidScaling() {
-    return _c['raid_scaling'] as Map<String, dynamic>? ?? {};
+    final s = UpgradeConfigService.instance.raidScaling;
+    final sch = UpgradeConfigService.instance.raidScheduling;
+    return {...s, ...sch};
   }
 
-  int getFirstRaidWeek() {
-    return getRaidScaling()['first_raid_week'] as int? ?? 10;
-  }
+  int getFirstRaidWeek() =>
+      UpgradeConfigService.instance.firstRaidWeek;
 
-  int getRaidInterval(Difficulty difficulty) {
-    final rs = getRaidScaling();
-    return switch (difficulty) {
-      Difficulty.easy => rs['raid_interval_easy'] as int? ?? 12,
-      Difficulty.normal => rs['raid_interval_normal'] as int? ?? 10,
-      Difficulty.hard => rs['raid_interval_hard'] as int? ?? 6,
-    };
-  }
+  int getRaidInterval(Difficulty difficulty) =>
+      UpgradeConfigService.instance.raidInterval(difficulty.name);
 
   Map<String, dynamic> getGrenadeBenchConfig() {
     return _c['grenade_bench'] as Map<String, dynamic>? ?? {};

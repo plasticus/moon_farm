@@ -20,7 +20,7 @@
 
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
-import '../config/upgrade_config_service.dart';
+import '../config/raid_config_service.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -382,7 +382,13 @@ class EndWeekEngine {
 
       for (int i = 0; i < updatedCells.length; i++) {
         final cell = updatedCells[i];
-        if (cell.state != CropState.growing && cell.state != CropState.ready) continue;
+        if (cell.state != CropState.growing && cell.state != CropState.ready) {
+          // Transition planted → growing
+          if (cell.state == CropState.planted && cell.cropId != null) {
+            updatedCells[i] = cell.copyWith(state: CropState.growing);
+          }
+          continue;
+        }
 
         final crop = _config.getCrop(cell.cropId ?? '');
         if (crop == null) continue;
@@ -530,11 +536,7 @@ class EndWeekEngine {
       events.add('⚠️ Raid was skipped — wall took $wallDamage damage!');
     }
     if (s.currentWeek >= s.nextRaidWeek) {
-      final interval = switch (s.difficulty) {
-        Difficulty.easy   => UpgradeConfigService.instance.raidInterval('easy'),
-        Difficulty.normal => UpgradeConfigService.instance.raidInterval('normal'),
-        Difficulty.hard   => UpgradeConfigService.instance.raidInterval('hard'),
-      };
+      final interval = RaidConfigService.instance.raidInterval(s.difficulty);
       s = s.copyWith(
         nextRaidWeek: s.nextRaidWeek + interval,
         raidDefendedThisWeek: false,

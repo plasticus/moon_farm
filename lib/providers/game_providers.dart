@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_models.dart';
 import '../database/database_helper.dart';
 import '../config/game_config_service.dart';
+import '../config/raid_config_service.dart';
 import '../engine/kovacs_engine.dart';
 
 // ─── Save Slots Provider ──────────────────────────────────────────────────────
@@ -171,8 +172,7 @@ final unlockedTrophyCountProvider = Provider<int>((ref) {
 final raidWarningProvider = Provider<bool>((ref) {
   final game = ref.watch(activeGameProvider).value;
   if (game == null) return false;
-  final config = GameConfigService.instance;
-  final warningWeeks = config.raidWarningWeeksBefore;
+  final warningWeeks = RaidConfigService.instance.raidWarningWeeksBefore;
   return game.nextRaidWeek - game.currentWeek <= warningWeeks &&
       game.nextRaidWeek > game.currentWeek;
 });
