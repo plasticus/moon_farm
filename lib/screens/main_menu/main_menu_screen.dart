@@ -10,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../new_game/new_game_screen.dart';
 import '../save_slots/save_slot_detail_screen.dart';
+import '../../widgets/space_background.dart';
 
 class MainMenuScreen extends ConsumerWidget {
   const MainMenuScreen({super.key});
@@ -21,115 +22,117 @@ class MainMenuScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: MFColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header / Title ──────────────────────────────────────────────
-            const _GameTitle(),
-            const SizedBox(height: 8),
+      body: SpaceBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ── Header / Title ──────────────────────────────────────────────
+              const _GameTitle(),
+              const SizedBox(height: 8),
 
-            // ── Save Slots ──────────────────────────────────────────────────
-            Expanded(
-              child: slotsAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: MFColors.neonCyan,
-                    strokeWidth: 2,
-                  ),
-                ),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Failed to load saves: $e',
-                    style: MFTextStyles.bodyMedium,
-                  ),
-                ),
-                data: (slots) {
-                  // Slots 1-3 are manual saves. Slot 0 is autosave.
-                  final manualSlots = slots.where((s) => s.slotNumber > 0).toList();
-                  final autoSave =
-                      slots.where((s) => s.slotNumber == 0).firstOrNull;
-
-                  return ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+              // ── Save Slots ──────────────────────────────────────────────────
+              Expanded(
+                child: slotsAsync.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(
+                      color: MFColors.neonCyan,
+                      strokeWidth: 2,
                     ),
-                    children: [
-                      Text(
-                        'SAVE SLOTS',
-                        style: MFTextStyles.bodySmall.copyWith(
-                          color: MFColors.textMuted,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...manualSlots.map(
-                            (slot) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _SaveSlotCard(
-                            slot: slot,
-                            onTap: () => _handleSlotTap(context, ref, slot),
-                            onDelete: slot.isEmpty
-                                ? null
-                                : () => _confirmDelete(context, ref, slot),
-                          ),
-                        ),
-                      ),
+                  ),
+                  error: (e, _) => Center(
+                    child: Text(
+                      'Failed to load saves: $e',
+                      style: MFTextStyles.bodyMedium,
+                    ),
+                  ),
+                  data: (slots) {
+                    // Slots 1-3 are manual saves. Slot 0 is autosave.
+                    final manualSlots = slots.where((s) => s.slotNumber > 0).toList();
+                    final autoSave =
+                        slots.where((s) => s.slotNumber == 0).firstOrNull;
 
-                      // Autosave slot
-                      if (autoSave != null && !autoSave.isEmpty) ...[
-                        const SizedBox(height: 8),
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      children: [
                         Text(
-                          'AUTOSAVE',
+                          'SAVE SLOTS',
                           style: MFTextStyles.bodySmall.copyWith(
                             color: MFColors.textMuted,
                             letterSpacing: 2,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _SaveSlotCard(
-                          slot: autoSave,
-                          isAutoSave: true,
-                          onTap: () => _handleSlotTap(context, ref, autoSave),
-                          onDelete: null,
+                        ...manualSlots.map(
+                              (slot) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _SaveSlotCard(
+                              slot: slot,
+                              onTap: () => _handleSlotTap(context, ref, slot),
+                              onDelete: slot.isEmpty
+                                  ? null
+                                  : () => _confirmDelete(context, ref, slot),
+                            ),
+                          ),
                         ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            ),
 
-            // ── Footer ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'v${config.gameVersion}',
-                    style: MFTextStyles.bodySmall,
-                  ),
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: () {
-                      // URL launch handled in Phase 4 polish
-                    },
-                    child: Text(
-                      config.websiteUrl,
-                      style: MFTextStyles.bodySmall.copyWith(
-                        color: MFColors.neonCyan,
-                        decoration: TextDecoration.underline,
-                        decorationColor: MFColors.neonCyan,
+                        // Autosave slot
+                        if (autoSave != null && !autoSave.isEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'AUTOSAVE',
+                            style: MFTextStyles.bodySmall.copyWith(
+                              color: MFColors.textMuted,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _SaveSlotCard(
+                            slot: autoSave,
+                            isAutoSave: true,
+                            onTap: () => _handleSlotTap(context, ref, autoSave),
+                            onDelete: null,
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+              // ── Footer ──────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'v${config.gameVersion}',
+                      style: MFTextStyles.bodySmall,
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        // URL launch handled in Phase 4 polish
+                      },
+                      child: Text(
+                        config.websiteUrl,
+                        style: MFTextStyles.bodySmall.copyWith(
+                          color: MFColors.neonCyan,
+                          decoration: TextDecoration.underline,
+                          decorationColor: MFColors.neonCyan,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ), // Column
+        ), // SafeArea
+      ), // SpaceBackground
     );
   }
 

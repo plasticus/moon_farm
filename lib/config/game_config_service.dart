@@ -6,7 +6,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
-import 'upgrade_config_service.dart';
+//import 'upgrade_config_service.dart';
+import 'raid_config_service.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
 /// Edit assets/config/game_config.json to tweak any game balance value.
@@ -319,10 +320,10 @@ class GameConfigService {
   }
 
   List<Map<String, dynamic>> getFaunaTypes() =>
-      UpgradeConfigService.instance.faunaTypes;
+      RaidConfigService.instance.allFaunaTypes;
 
   Map<String, dynamic>? getFaunaType(String id) =>
-      UpgradeConfigService.instance.getFaunaType(id);
+      RaidConfigService.instance.getFaunaType(id);
 
   List<Map<String, dynamic>> getGrenadeTypes() {
     final g = _c['grenades'] as List?;
@@ -334,17 +335,14 @@ class GameConfigService {
     return getGrenadeTypes().where((g) => g['id'] == id).firstOrNull;
   }
 
-  Map<String, dynamic> getRaidScaling() {
-    final s = UpgradeConfigService.instance.raidScaling;
-    final sch = UpgradeConfigService.instance.raidScheduling;
-    return {...s, ...sch};
-  }
+  Map<String, dynamic> getRaidScaling() =>
+      RaidConfigService.instance.scaling;
 
   int getFirstRaidWeek() =>
-      UpgradeConfigService.instance.firstRaidWeek;
+      RaidConfigService.instance.firstRaidWeek;
 
   int getRaidInterval(Difficulty difficulty) =>
-      UpgradeConfigService.instance.raidInterval(difficulty.name);
+      RaidConfigService.instance.raidInterval(difficulty);
 
   Map<String, dynamic> getGrenadeBenchConfig() {
     return _c['grenade_bench'] as Map<String, dynamic>? ?? {};

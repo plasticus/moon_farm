@@ -479,19 +479,30 @@ class _WallSection extends StatelessWidget {
   void _triggerRaid(BuildContext context) {
     const meatCost = 10;
     const chemCost = 10;
-    // Consume resources and set nextRaidWeek = currentWeek to trigger isRaidWeek
+
+    // 1. Deduct farming costs from the local state immediately
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
-        nextRaidWeek: game.currentWeek, // triggers isRaidWeekProvider
         resources: game.resources.copyWith(
           meat: game.resources.meat - meatCost,
           chemicals: game.resources.chemicals - chemCost,
         ),
       ),
     );
+
+    // 2. Fetch the freshly updated state snapshot
+    final updatedGame = ref.read(activeGameProvider).value ?? game;
+
+    // 3. Sweep the player straight into an isolated farming instance!
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RaidScreen(game: updatedGame, isManualTrigger: true),
+      ),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('🚨 Raid triggered! Defend before ending the week.'),
+        content: Text('🚨 Pheromone bait deployed! Local swarm incoming...'),
         backgroundColor: MFColors.neonPink,
       ),
     );

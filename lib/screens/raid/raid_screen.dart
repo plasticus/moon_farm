@@ -20,8 +20,13 @@ import '../../config/raid_config_service.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
   final GameState game;
+  final bool isManualTrigger;
 
-  const RaidScreen({super.key, required this.game});
+  const RaidScreen({
+    super.key,
+    required this.game,
+    this.isManualTrigger = false,
+  });
 
   @override
   ConsumerState<RaidScreen> createState() => _RaidScreenState();
@@ -46,6 +51,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   int _faunaEscaped = 0;
 
   // Spawn tracking
+  late List<SpawnInstruction> _spawnQueue;
   int _totalSpawned = 0;
   int _maxFauna = 0;
   double _spawnAccumulator = 0;
@@ -53,7 +59,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   // Timer
   Timer? _gameTimer;
-  Timer? _spawnTimer;
   bool _raidOver = false;
 
   final _rng = Random();
@@ -71,7 +76,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   @override
   void dispose() {
     _gameTimer?.cancel();
-    _spawnTimer?.cancel();
     super.dispose();
   }
 
@@ -89,11 +93,16 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     _wallMaxHp = wallConfig['hp'] as int;
     _wallHp = game.defenseWall.currentHp.clamp(0, _wallMaxHp);
 
-    // Fauna count — use RaidConfigService helpers
-    final week = game.currentWeek;
-    _maxFauna = raidConfig.faunaCountForWeek(week);
+    // Track dynamic progression using true Wave Number instead of raw calendar Week
+    final waveNumber = widget.isManualTrigger
+        ? max(1, game.totalRaidsDefended)
+        : game.totalRaidsDefended + 1;
 
-    // Spawn interval
+    // Pre-calculate the exact sequential ticket queue matching your spreadsheet matrix
+    _spawnQueue = raidConfig.generateSpawnQueueForWave(waveNumber);
+    _maxFauna = _spawnQueue.length;
+
+    // Distribute the exact amount of spawns smoothly across your 60-second limit
     final baseInterval = raidConfig.spawnIntervalBase;
     final minInterval = raidConfig.spawnIntervalMin;
     _spawnInterval = (raidConfig.raidDurationMax / _maxFauna)
@@ -121,6 +130,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       _updateGrenades(dt);
       _updateEffects(dt);
       _firesentries(dt);
+
       _spawnAccumulator += dt;
       if (_spawnAccumulator >= _spawnInterval && _totalSpawned < _maxFauna) {
         _spawnFauna();
@@ -128,7 +138,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }
       _checkWallHits();
 
-      // Countdown
+      // Countdown / End state check
       if (_fauna.isEmpty && _totalSpawned >= _maxFauna) {
         _endRaid(wallBroken: false);
       }
@@ -138,26 +148,35 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   // ── Spawn ─────────────────────────────────────────────────────────────────
 
   void _spawnFauna() {
-    // raidNumber = how many raids have been completed + 1 (this one)
-    final raidNumber = widget.game.totalRaidsDefended + 1;
-    final faunaConfig = RaidConfigService.instance
-        .pickFaunaType(_rng, raidNumber: raidNumber);
-    final typeId = faunaConfig['id'] as String;
+    if (_spawnQueue.isEmpty) return;
+
+    final raidConfig = RaidConfigService.instance;
+
+    // Pop the next exact creature ticket off the deterministic deck
+    final instruction = _spawnQueue.removeAt(0);
+
+    // Pull display essentials (emojis, etc.) from YAML baseline profiles
+    final baseConfig = raidConfig.getFaunaType(instruction.baseName);
+    if (baseConfig == null) return;
+
+    // Apply your infinite formula math (+100 HP, +14 DMG per level) dynamically
+    final scaled = raidConfig.getScaledStats(instruction.baseName, instruction.level);
     final x = 0.05 + _rng.nextDouble() * 0.90;
 
     _fauna.add(FaunaUnit(
       id: 'f_${DateTime.now().microsecondsSinceEpoch}_$_totalSpawned',
-      typeId: typeId,
-      emoji: faunaConfig['emoji'] as String,
-      hp: (faunaConfig['hp'] as num).toDouble(),
-      maxHp: (faunaConfig['hp'] as num).toDouble(),
-      speed: (faunaConfig['speed'] as num).toDouble(),
-      damage: faunaConfig['damage'] as int,
-      hitInterval: (faunaConfig['hit_interval'] as num).toDouble(),
-      isBrute: faunaConfig['is_brute'] as bool? ?? false,
+      typeId: instruction.baseName,
+      emoji: baseConfig['emoji'] as String? ?? '🐛',
+      hp: scaled.hp.toDouble(),
+      maxHp: scaled.hp.toDouble(),
+      speed: scaled.speed,
+      damage: scaled.damage,
+      hitInterval: (baseConfig['hit_interval'] as num?)?.toDouble() ?? 1.0,
+      isBrute: baseConfig['is_brute'] as bool? ?? false,
       x: x,
       y: 0.0,
     ));
+
     _totalSpawned++;
   }
 
@@ -177,13 +196,13 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       double newY = f.y;
 
       if (isStunned) {
-        // Frozen
+        // Frozen in place
       } else if (isScattered) {
-        // Random movement
+        // Erratic movement adjustments
         newX = (f.x + (_rng.nextDouble() - 0.5) * f.speed * dt * 2).clamp(0.05, 0.95);
         newY = (f.y + (_rng.nextDouble() - 0.5) * f.speed * dt).clamp(0.0, _wallY - 0.01);
       } else {
-        // Check bait
+        // Check active pheromone bait zones
         ActiveEffect? bait;
         for (final e in _effects) {
           if (e.effectType == 'bait' && e.timeRemaining > 0) {
@@ -193,7 +212,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
         }
 
         if (bait != null) {
-          // Move toward bait
           final dx = bait.x - f.x;
           final dy = bait.y - f.y;
           final dist = sqrt(dx * dx + dy * dy);
@@ -202,14 +220,14 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
             newY = f.y + (dy / dist) * f.speed * dt;
           }
         } else {
-          // Move straight down
-          newY = f.y + f.speed * dt * 0.15; // scale to screen
+          // Direct advance south toward the defense grid
+          newY = f.y + f.speed * dt * 0.15;
         }
         newX = newX.clamp(0.05, 0.95);
         newY = newY.clamp(0.0, _wallY);
       }
 
-      // Apply zone damage
+      // Apply area-of-effect damage over time configurations
       double newHp = f.hp;
       for (final effect in _effects) {
         if (effect.effectType == 'burn_zone' && effect.timeRemaining > 0) {
@@ -233,7 +251,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       ));
     }
 
-    // Check deaths and drops
+    // Process deaths and distribute inventory resource rewards
     for (final f in _fauna) {
       if (f.isDead && !updated.any((u) => u.id == f.id)) {
         _handleFaunaDeath(f);
@@ -246,13 +264,12 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   void _handleFaunaDeath(FaunaUnit f) {
     _faunaKilled++;
     final raidConfig = RaidConfigService.instance;
-    final faunaConfig = raidConfig.getFaunaType(f.typeId);
-    if (faunaConfig == null) return;
 
-    if (_rng.nextDouble() < (faunaConfig['meat_chance'] as num).toDouble()) {
+    // Use safe global drop formulas to completely prevent type errors
+    if (_rng.nextDouble() < raidConfig.meatChance) {
       _meatDropped++;
     }
-    if (_rng.nextDouble() < (faunaConfig['chitin_chance'] as num).toDouble()) {
+    if (_rng.nextDouble() < raidConfig.chitinChanceNonBrute) {
       _chitinDropped++;
     }
   }
@@ -288,7 +305,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
       if (newCooldown > 0) continue;
 
-      // Find nearest fauna
+      // Lock tracking systems onto the closest available unit
       final sx = _sentryXForSentry(sentries.indexOf(sentry), sentries.length);
       FaunaUnit? target;
       double closestDist = double.infinity;
@@ -320,9 +337,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   }
 
   double _sentryXForSentry(int index, int total) {
-    if (total == 0) return 0.5;
-    if (total == 1) return 0.5; // always center the only sentry
-    return 0.1 + (index / (total + 1)) * 0.8;
+    if (total <= 1) return 0.5;
+    return 0.1 + (index / (total - 1)) * 0.8;
   }
 
   // ── Projectiles ───────────────────────────────────────────────────────────
@@ -332,7 +348,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     for (var p in _projectiles) {
       final newProgress = (p.progress + p.speed * dt * 3).clamp(0.0, 1.0);
       if (newProgress >= 1.0) {
-        // Hit target
         final targetIdx = _fauna.indexWhere((f) => f.id == p.targetId);
         if (targetIdx >= 0) {
           final f = _fauna[targetIdx];
@@ -388,6 +403,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
             );
           }
         }
+        break;
 
       case 'stun':
         final duration = (gConfig['effect_duration'] as num).toDouble();
@@ -403,6 +419,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
             );
           }
         }
+        break;
 
       case 'damage':
         final damage = (gConfig['damage'] as num).toDouble();
@@ -417,6 +434,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
           }
         }
         _fauna.removeWhere((f) => f.isDead);
+        break;
 
       case 'burn_zone':
         _effects.add(ActiveEffect(
@@ -428,6 +446,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
           timeRemaining: (gConfig['effect_duration'] as num).toDouble(),
           damagePerSecond: (gConfig['damage_per_second'] as num).toDouble(),
         ));
+        break;
 
       case 'bait':
         _effects.add(ActiveEffect(
@@ -438,6 +457,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
           radius: radius,
           timeRemaining: (gConfig['effect_duration'] as num).toDouble(),
         ));
+        break;
     }
   }
 
@@ -482,10 +502,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     _raidOver = true;
     _gameTimer?.cancel();
 
-    // Count escaped fauna
     _faunaEscaped = _fauna.where((f) => f.isAtWall).length;
 
-    // Calculate crop loss if wall broken
     int cropsLost = 0;
     if (wallBroken) {
       final remaining = _fauna.length;
@@ -504,10 +522,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       wasDefended: !wallBroken,
     );
 
-    // Apply results to game state
     await _applyRaidResults(result);
 
-    // Navigate to results screen
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -518,20 +534,15 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   Future<void> _applyRaidResults(RaidResult result) async {
     final game = widget.game;
-
-    // Update wall HP
     final newWall = game.defenseWall.copyWith(currentHp: _wallHp);
 
-    // Add dropped resources to proper fields
     var resources = game.resources.copyWith(
       meat: game.resources.meat + result.meatDropped,
       chitin: game.resources.chitin + result.chitinDropped,
     );
 
-    // Update grenade inventory
     final newGrenades = game.grenades.copyWith(counts: _grenadeInventory);
 
-    // Lose crops if wall broke
     var domes = game.domes;
     if (result.cropsLost > 0) {
       var lostSoFar = 0;
@@ -549,16 +560,15 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }).toList();
     }
 
-    // Don't advance nextRaidWeek here — the end-week engine owns that.
-    // Just mark the raid as defended so the engine skips the wall damage.
     await ref.read(activeGameProvider.notifier).updateGame(
       game.copyWith(
         defenseWall: newWall,
         grenades: newGrenades,
         resources: resources,
         domes: domes,
-        raidDefendedThisWeek: true,
-        totalRaidsDefended: game.totalRaidsDefended + 1,
+        // ONLY advance campaign history and milestone logs if this is a natural scheduled raid!
+        raidDefendedThisWeek: widget.isManualTrigger ? game.raidDefendedThisWeek : true,
+        totalRaidsDefended: widget.isManualTrigger ? game.totalRaidsDefended : game.totalRaidsDefended + 1,
         totalFaunaKilled: game.totalFaunaKilled + result.faunaKilled,
         totalChitinCollected: game.totalChitinCollected + result.chitinDropped,
       ),
@@ -604,28 +614,23 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
                       color: const Color(0xFF0A0A14),
                       child: Stack(
                         children: [
-                          // Grid lines
                           CustomPaint(
                             painter: _GridPainter(),
                             size: Size(constraints.maxWidth, constraints.maxHeight),
                           ),
 
-                          // Effect zones
                           for (final effect in _effects)
                             _EffectZoneWidget(
                               effect: effect,
                               fieldSize: _fieldSize,
                             ),
 
-                          // Fauna
                           for (final f in _fauna)
                             _FaunaWidget(fauna: f, fieldSize: _fieldSize),
 
-                          // Grenades in flight
                           for (final g in _grenades)
                             _GrenadeInFlightWidget(grenade: g, fieldSize: _fieldSize),
 
-                          // Projectiles
                           for (final p in _projectiles)
                             _ProjectileWidget(
                               proj: p,
@@ -637,7 +642,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
                                   idx, widget.game.laserSentries.length),
                             ),
 
-                          // Sentries
                           for (var i = 0; i < widget.game.laserSentries.length; i++)
                             _SentryWidget(
                               sentry: widget.game.laserSentries[i],
@@ -646,7 +650,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
                               fieldSize: _fieldSize,
                             ),
 
-                          // Defense wall
                           Positioned(
                             bottom: 0,
                             left: 0,
@@ -658,7 +661,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
                             ),
                           ),
 
-                          // Tap hint
                           if (_selectedGrenadeId != null)
                             const Positioned(
                               top: 8,
@@ -742,13 +744,12 @@ class _RaidHUD extends StatelessWidget {
       color: Colors.black87,
       child: Row(
         children: [
-          // Wall HP
           Expanded(
             flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('WALL',
+                const Text('WALL',
                     style: TextStyle(
                         color: Colors.white54, fontSize: 9, letterSpacing: 2)),
                 const SizedBox(height: 3),
@@ -764,7 +765,6 @@ class _RaidHUD extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Timer
           Column(
             children: [
               Text('$timeRemaining',
@@ -775,7 +775,6 @@ class _RaidHUD extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 16),
-          // Fauna remaining
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -784,7 +783,7 @@ class _RaidHUD extends StatelessWidget {
                     style: TextStyle(color: Colors.white54, fontSize: 9, letterSpacing: 2)),
                 const SizedBox(height: 3),
                 LinearProgressIndicator(
-                  value: totalFauna > 0 ? 1 - (faunaRemaining / totalFauna) : 1.0,
+                  value: totalFauna > 0 ? (totalFauna - faunaRemaining) / totalFauna : 1.0,
                   backgroundColor: Colors.white12,
                   valueColor: const AlwaysStoppedAnimation(Colors.white24),
                   minHeight: 8,
@@ -901,7 +900,6 @@ class _FaunaWidget extends StatelessWidget {
       top: y,
       child: Column(
         children: [
-          // HP bar
           if (fauna.maxHp > 20)
             SizedBox(
               width: 24,
@@ -934,14 +932,12 @@ class _FaunaWidget extends StatelessWidget {
   }
 }
 
-/// Returns the item-quality color for a given Mk level.
-/// Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5=orange
 Color mkColor(int level) => switch (level) {
-  1 => const Color(0xFF9E9E9E), // gray
-  2 => const Color(0xFF66BB6A), // green
-  3 => const Color(0xFF42A5F5), // blue
-  4 => const Color(0xFFAB47BC), // purple
-  _ => const Color(0xFFFF9800), // orange (Mk5+)
+  1 => const Color(0xFF9E9E9E),
+  2 => const Color(0xFF66BB6A),
+  3 => const Color(0xFF42A5F5),
+  4 => const Color(0xFFAB47BC),
+  _ => const Color(0xFFFF9800),
 };
 
 class _SentryWidget extends StatelessWidget {
@@ -1014,7 +1010,6 @@ class _GrenadeInFlightWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Arc from right edge to target
     final startX = fieldSize.width;
     final startY = fieldSize.height * 0.5;
     final endX = grenade.targetX * fieldSize.width;
@@ -1050,8 +1045,8 @@ class _EffectZoneWidget extends StatelessWidget {
 
     Color color;
     switch (effect.effectType) {
-      case 'burn_zone': color = Colors.orange;
-      case 'bait': color = Colors.brown;
+      case 'burn_zone': color = Colors.orange; break;
+      case 'bait': color = Colors.brown; break;
       default: color = Colors.yellow;
     }
 
@@ -1158,7 +1153,6 @@ class RaidResultScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -1184,7 +1178,6 @@ class RaidResultScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Stats
                   _ResultSection(title: 'COMBAT', children: [
                     _ResultRow('Fauna killed', '${result.faunaKilled}', MFColors.neonGreen),
                     _ResultRow('Fauna escaped', '${result.faunaEscaped}',
@@ -1194,7 +1187,6 @@ class RaidResultScreen extends ConsumerWidget {
                   ]),
                   const SizedBox(height: 12),
 
-                  // Drops
                   if (result.meatDropped > 0 || result.chitinDropped > 0)
                     _ResultSection(title: 'DROPS', children: [
                       if (result.meatDropped > 0)
@@ -1203,7 +1195,6 @@ class RaidResultScreen extends ConsumerWidget {
                         _ResultRow('🦴 Chitin', '+${result.chitinDropped}', MFColors.neonYellow),
                     ]),
 
-                  // Crops lost
                   if (result.cropsLost > 0) ...[
                     const SizedBox(height: 12),
                     _ResultSection(title: 'LOSSES', children: [
@@ -1242,8 +1233,6 @@ class RaidResultScreen extends ConsumerWidget {
                     foregroundColor: MFColors.background,
                   ),
                   onPressed: () {
-                    // Pop back to the game screen (SaveSlotDetailScreen).
-                    // popUntil(isFirst) goes all the way to MainMenu — wrong.
                     Navigator.of(context).pop();
                   },
                   child: Text(

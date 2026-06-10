@@ -6,7 +6,6 @@
 //   - upgrades_defense.yaml
 //   - upgrades_domebots.yaml
 
-import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 
@@ -18,18 +17,16 @@ class UpgradeConfigService {
   Map<String, dynamic>? _defense;
   Map<String, dynamic>? _domebots;
   Map<String, dynamic>? _domeTiers;
-  Map<String, dynamic>? _raids;
 
   bool get isLoaded =>
       _refinery != null && _defense != null && _domebots != null &&
-          _domeTiers != null && _raids != null;
+          _domeTiers != null;
 
   Future<void> load() async {
     _refinery = await _loadYaml('assets/config/upgrades_refinery.yaml');
     _defense = await _loadYaml('assets/config/upgrades_defense.yaml');
     _domebots = await _loadYaml('assets/config/upgrades_domebots.yaml');
     _domeTiers = await _loadYaml('assets/config/upgrades_dome.yaml');
-    _raids = await _loadYaml('assets/config/raids.yaml');
   }
 
   Future<Map<String, dynamic>> _loadYaml(String path) async {
@@ -164,52 +161,4 @@ class UpgradeConfigService {
   }
 
   int get domeMaxTier => domeTiers.length;
-
-  // ─── RAIDS ─────────────────────────────────────────────────────
-
-  Map<String, dynamic> get raidScheduling =>
-      (_raids?['scheduling'] as Map?)?.cast<String, dynamic>() ?? {};
-
-  Map<String, dynamic> get raidScaling =>
-      (_raids?['scaling'] as Map?)?.cast<String, dynamic>() ?? {};
-
-  Map<String, dynamic> get raidFaunaTypes =>
-      (_raids?['fauna_types'] as Map?)?.cast<String, dynamic>() ?? {};
-
-  Map<String, dynamic> get raidDrops =>
-      (_raids?['drops'] as Map?)?.cast<String, dynamic>() ?? {};
-
-  int get firstRaidWeek => raidScheduling['first_raid_week'] as int? ?? 10;
-
-  int raidInterval(String difficulty) {
-    return switch (difficulty) {
-      'easy' => raidScheduling['raid_interval_easy'] as int? ?? 12,
-      'hard' => raidScheduling['raid_interval_hard'] as int? ?? 6,
-      _ => raidScheduling['raid_interval_normal'] as int? ?? 10,
-    };
-  }
-
-  // ─── FAUNA TYPES ────────────────────────────────────────────────
-
-  List<Map<String, dynamic>> get faunaTypes {
-    final list = _raids?['fauna_types'] as List?;
-    return list?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
-  }
-
-  Map<String, dynamic>? getFaunaType(String id) {
-    for (final f in faunaTypes) {
-      if (f['id'] == id) return f;
-    }
-    return null;
-  }
-
-  /// Pick a fauna type based on spawn_chance ordering.
-  /// Types are checked in list order; first one whose spawn_chance roll passes wins.
-  Map<String, dynamic> pickFaunaType(Random rng) {
-    for (final f in faunaTypes) {
-      final chance = (f['spawn_chance'] as num?)?.toDouble() ?? 1.0;
-      if (rng.nextDouble() < chance) return f;
-    }
-    return faunaTypes.last; // fallback
-  }
 }

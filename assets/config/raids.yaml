@@ -1,166 +1,108 @@
 # ═══════════════════════════════════════════════════════════════
 #  assets/config/raids.yaml
 # ═══════════════════════════════════════════════════════════════
-# Sequential unlock configuration.
-# Wave 1 (Week 10) is 100% locked to the weakest fallback creature.
-# Every subsequent 10 weeks, the next tier unlocks.
 
-scheduling:
+raid_scheduling:
   first_raid_week: 10
-  raid_interval_easy: 12
-  raid_interval_normal: 10
-  raid_interval_hard: 6
   raid_warning_weeks_before: 2
 
-scaling:
-  base_fauna_count: 5
-  fauna_per_week: 2
-  fauna_per_week_divisor: 5      # Week 10 = 8 fauna, Week 20 = 13 fauna (50%+ jump)
-  max_fauna_count: 60
-  raid_duration_max: 90
-  spawn_interval_base: 3.0
-  spawn_interval_min: 1.5
+# Core intervals between raids based on difficulty settings
+raid_intervals:
+  easy: 12
+  normal: 10
+  hard: 8
 
-# ─── FAUNA TYPES ─────────────────────────────────────────────────────────────
-# Sorted strictly by power. High-tier threats are mathematically locked out
-# in early weeks by checking the raid_week threshold.
+# Note: Max counts and scaling parameters are safely handled by
+# the deterministic matrix, but we preserve these for global settings.
+raid_scaling:
+  spawn_interval_base: 1.5    # At lowest levels, this is the time between spawns
+  spawn_interval_min: 0.46875 # 60s/128 creatures, so this is the minimum time between spawns at max rates
+  raid_duration_max: 60       # maximum time for a wave
+
+raid_drops:
+  meat_chance: 0.70
+  chitin_chance_non_brute: 0.15
+
+# ─── CORE FAUNA TYPES ─────────────────────────────────────────
+# Stats here represent Level 1 baselines.
+# Higher levels automatically scale up dynamically (+100 HP, +14 DMG).
 fauna_types:
-  # UNLOCKS AT WAVE 10 (WEEK 100)
-  - id: stalker
-    name: Apex Stalker
-    emoji: 🦂
-    hp: 100
-    speed: 1.4
-    damage: 20
-    hit_interval: 1.0
-    is_brute: true
-    meat_chance: 0.9
-    chitin_chance: 1.0
-    score_value: 6
-    spawn_chance: 0.01
-
-  # UNLOCKS AT WAVE 9 (WEEK 90)
-  - id: goliath
-    name: Ridge Goliath
-    emoji: 🦣
-    hp: 200
-    speed: 0.3
-    damage: 10
-    hit_interval: 1.5
-    is_brute: true
-    meat_chance: 0.9
-    chitin_chance: 1.0
-    score_value: 5
-    spawn_chance: 0.02
-
-  # UNLOCKS AT WAVE 8 (WEEK 80)
-  - id: brute
-    name: Crater Brute
-    emoji: 🦏
-    hp: 120
-    speed: 0.4
-    damage: 25
-    hit_interval: 1.5
-    is_brute: true
-    meat_chance: 0.9
-    chitin_chance: 0.8
-    score_value: 5
-    spawn_chance: 0.03
-
-  # UNLOCKS AT WAVE 7 (WEEK 70)
-  - id: wrecker
-    name: Sledge Wrecker
-    emoji: 🦀
-    hp: 80
-    speed: 0.5
-    damage: 35
-    hit_interval: 2.0
-    is_brute: false
-    meat_chance: 0.7
-    chitin_chance: 0.60
-    score_value: 4
-    spawn_chance: 0.04
-
-  # UNLOCKS AT WAVE 6 (WEEK 60)
-  - id: armored
-    name: Shell-Back
-    emoji: 🐢
-    hp: 60
-    speed: 0.7
-    damage: 15
-    hit_interval: 1.2
-    is_brute: false
-    meat_chance: 0.6
-    chitin_chance: 0.5
-    score_value: 3
-    spawn_chance: 0.05
-
-  # UNLOCKS AT WAVE 5 (WEEK 50)
-  - id: vanguard
-    name: Dune Vanguard
-    emoji: 🐜
-    hp: 45
-    speed: 1.0
-    damage: 12
-    hit_interval: 1.2
-    is_brute: false
-    meat_chance: 0.5
-    chitin_chance: 0.40
-    score_value: 3
-    spawn_chance: 0.06
-
-  # UNLOCKS AT WAVE 4 (WEEK 40)
-  - id: leech
-    name: Chitin Leech
-    emoji: 🪱
-    hp: 30
-    speed: 1.1
-    damage: 5
-    hit_interval: 0.5
-    is_brute: false
-    meat_chance: 0.4
-    chitin_chance: 0.20
-    score_value: 2
-    spawn_chance: 0.08
-
-  # UNLOCKS AT WAVE 3 (WEEK 30)
-  - id: swarmer
-    name: Dust Swarmer
-    emoji: 🪲
-    hp: 8
-    speed: 2.0
-    damage: 4
-    hit_interval: 0.8
-    is_brute: false
-    meat_chance: 0.2
-    chitin_chance: 0.02
-    score_value: 1
-    spawn_chance: 0.12
-
-  # UNLOCKS AT WAVE 2 (WEEK 20)
-  - id: scout
-    name: Lunar Scout
-    emoji: 🕷️
-    hp: 14
-    speed: 1.6
-    damage: 6
-    hit_interval: 0.9
-    is_brute: false
-    meat_chance: 0.3
-    chitin_chance: 0.05
-    score_value: 1
-    spawn_chance: 0.15
-
-  # THE STARTING SQUAD (WEEK 10)
-  - id: crawler
-    name: Lunar Crawler
-    emoji: 🦎
+  Lunar Crawler:
+    display_name: "Lunar Crawler"
     hp: 20
-    speed: 1.2
     damage: 8
-    hit_interval: 1.0
-    is_brute: false
-    meat_chance: 0.4
-    chitin_chance: 0.05
+    speed: 1.5
+    emoji: "🐛"
     score_value: 1
-    spawn_chance: 1.0   # Fallback default — catches everything early on
+
+  Lunar Scout:
+    display_name: "Lunar Scout"
+    hp: 14
+    damage: 6
+    speed: 2.2
+    emoji: "🕷️"
+    score_value: 2
+
+  Dust Swarmer:
+    display_name: "Dust Swarmer"
+    hp: 8
+    damage: 4
+    speed: 2.8
+    emoji: "🐝"
+    score_value: 1
+
+  Chitin Leech:
+    display_name: "Chitin Leech"
+    hp: 30
+    damage: 5
+    speed: 1.2
+    emoji: "🪱"
+    score_value: 3
+
+  Dune Vanguard:
+    display_name: "Dune Vanguard"
+    hp: 45
+    damage: 12
+    speed: 1.8
+    emoji: "🦂"
+    score_value: 4
+
+  Shell-Back:
+    display_name: "Shell-Back"
+    hp: 60
+    damage: 15
+    speed: 1.0
+    emoji: "🐢"
+    score_value: 5
+
+  Sledge Wrecker:
+    display_name: "Sledge Wrecker"
+    hp: 80
+    damage: 35
+    speed: 1.1
+    emoji: "🦀"
+    score_value: 8
+
+  Crater Brute:
+    display_name: "Crater Brute"
+    hp: 120
+    damage: 25
+    speed: 1.3
+    emoji: "🦧"
+    score_value: 10
+
+  Ridge Goliath:
+    display_name: "Ridge Goliath"
+    hp: 200
+    damage: 10
+    speed: 0.8
+    emoji: "🦣"
+    score_value: 15
+
+  Apex Stalker:
+    display_name: "Apex Stalker"
+    hp: 100
+    damage: 20
+    speed: 2.0
+    emoji: "🦖"
+    score_value: 25
