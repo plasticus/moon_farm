@@ -1,0 +1,234 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/milestone_config.yaml
+# ═══════════════════════════════════════════════════════════════
+# All milestone, trophy, and difficulty configuration.
+# Edit this file to rebalance goals, deadlines, and failure messages.
+# Milestones are checked in order — failing any one terminates the contract.
+#
+# MILESTONE FIELDS:
+#   id:                 unique string key
+#   name:               display name
+#   description:        shown in milestone list
+#   target_volume_m3:   cumulative m³ to deliver
+#   by_week:            deadline week (inclusive)
+#   reward_scrip:       scrip paid on completion
+#   failure_message:    shown on score screen if missed
+#   failure_detail:     secondary line (e.g. "delivered {actual}/{target}m³")
+#
+# DIFFICULTY SETTINGS:
+#   wall_strikes:       how many wall breaches before game over (0 = instant)
+#   crop_loss_on_breach: fraction of crops lost when wall breaks (0.0–1.0)
+
+# ─── DIFFICULTY SETTINGS ──────────────────────────────────────────────────────
+
+difficulty:
+  easy:
+    wall_strikes: 2          # 3rd breach = game over
+    crop_loss_on_breach: 0.3 # lose 30% of crops per breach
+    contract_termination_message: >
+      After {strikes} wall breaches, the colony has decided your operation
+      poses too great a risk to their supply chain. Contract nullified.
+
+  normal:
+    wall_strikes: 0          # any wall breach = instant game over
+    crop_loss_on_breach: 0.0
+    contract_termination_message: >
+      Your wall was breached on Week {week}. The colony cannot tolerate
+      an undefended agricultural operation. Contract nullified immediately.
+
+  hard:
+    wall_strikes: 0
+    crop_loss_on_breach: 0.0
+    contract_termination_message: >
+      Wall breach on Week {week}. The colony expected better.
+      Contract nullified. Your equipment will be reassigned.
+
+# ─── MILESTONES ───────────────────────────────────────────────────────────────
+# Each difficulty has its own milestone set with different deadlines.
+# A missed milestone triggers a strike on Normal and terminates on Hard.
+# On Easy, 3 missed milestones terminate the contract.
+
+milestones:
+  easy:
+    - id: m1
+      name: First Shipment
+      description: Deliver 10m³ of cargo to the colony
+      target_volume_m3: 10
+      by_week: 20
+      reward_scrip: 100
+      failure_message: "The colony expected an initial shipment by Week 20."
+      failure_detail: "You delivered {actual}m³ of the required 10m³."
+
+    - id: m2
+      name: Steady Supply
+      description: Deliver 50m³ of cargo to the colony
+      target_volume_m3: 50
+      by_week: 60
+      reward_scrip: 300
+      failure_message: "Your supply rate fell below colony expectations by Week 60."
+      failure_detail: "You delivered {actual}m³ of the required 50m³."
+
+    - id: m3
+      name: Colony Cornerstone
+      description: Deliver 200m³ of cargo to the colony
+      target_volume_m3: 200
+      by_week: 150
+      reward_scrip: 1000
+      failure_message: "The colony's long-term supply contract was not fulfilled."
+      failure_detail: "You delivered {actual}m³ of the required 200m³ by Week 150."
+
+  normal:
+    - id: m1
+      name: First Shipment
+      description: Deliver 10m³ of cargo to the colony
+      target_volume_m3: 10
+      by_week: 12
+      reward_scrip: 100
+      failure_message: "No initial shipment received by Week 12."
+      failure_detail: "You delivered {actual}m³ of the required 10m³."
+
+    - id: m2
+      name: Steady Supply
+      description: Deliver 50m³ of cargo to the colony
+      target_volume_m3: 50
+      by_week: 40
+      reward_scrip: 300
+      failure_message: "Supply quotas were not met by Week 40."
+      failure_detail: "You delivered {actual}m³ of the required 50m³."
+
+    - id: m3
+      name: Colony Cornerstone
+      description: Deliver 100m³ of cargo to the colony
+      target_volume_m3: 100
+      by_week: 100
+      reward_scrip: 1000
+      failure_message: "The colony's primary supply contract was not fulfilled by Week 100."
+      failure_detail: "You delivered {actual}m³ of the required 100m³."
+
+  hard:
+    - id: m1
+      name: First Shipment
+      description: Deliver 10m³ of cargo to the colony
+      target_volume_m3: 10
+      by_week: 8
+      reward_scrip: 100
+      failure_message: "No cargo received within the first 8 weeks. Unacceptable."
+      failure_detail: "You delivered {actual}m³ of the required 10m³."
+
+    - id: m2
+      name: Steady Supply
+      description: Deliver 50m³ of cargo to the colony
+      target_volume_m3: 50
+      by_week: 25
+      reward_scrip: 300
+      failure_message: "Supply targets missed at Week 25. The colony is losing patience."
+      failure_detail: "You delivered {actual}m³ of the required 50m³."
+
+    - id: m3
+      name: Colony Cornerstone
+      description: Deliver 200m³ of cargo to the colony
+      target_volume_m3: 200
+      by_week: 70
+      reward_scrip: 1000
+      failure_message: "The hard contract was not fulfilled. The colony expected more."
+      failure_detail: "You delivered {actual}m³ of the required 200m³ by Week 70."
+
+# ─── TROPHIES ─────────────────────────────────────────────────────────────────
+# Trophies are cross-difficulty achievements unlocked during play.
+# check_type determines what the engine looks at:
+#   volume_delivered, weeks_survived, scrip_earned, crops_harvested,
+#   domes_owned, raids_defended, contracts_completed, compost_generated,
+#   power_capacity, specific_crop, manual (checked in trophy_checker code)
+
+trophies:
+  - id: first_harvest
+    name: First Harvest
+    description: Harvest your first crop
+    emoji: "🏆"
+    category: farming
+    check_type: crops_harvested
+    check_value: 1
+
+  - id: century_farmer
+    name: Century Farmer
+    description: Survive 100 weeks
+    emoji: "📅"
+    category: survival
+    check_type: weeks_survived
+    check_value: 100
+
+  - id: solar_millionaire
+    name: Solar Millionaire
+    description: Accumulate 10,000 Star-Scrip lifetime
+    emoji: "💰"
+    category: economy
+    check_type: scrip_earned
+    check_value: 10000
+
+  - id: raid_survivor
+    name: Raid Survivor
+    description: Successfully defend your first raid
+    emoji: "🛡️"
+    category: combat
+    check_type: raids_defended
+    check_value: 1
+
+  - id: five_domes
+    name: Dome Empire
+    description: Own 5 domes simultaneously
+    emoji: "🔵"
+    category: expansion
+    check_type: domes_owned
+    check_value: 5
+
+  - id: robot_army
+    name: Robot Army
+    description: Have 3 active dome bots
+    emoji: "🤖"
+    category: automation
+    check_type: manual
+
+  - id: relay_friend
+    name: Relay Friend
+    description: Complete 10 contracts
+    emoji: "📡"
+    category: contracts
+    check_type: contracts_completed
+    check_value: 10
+
+  - id: colony_hero
+    name: Colony Hero
+    description: Complete all milestones on Normal or Hard
+    emoji: "🚀"
+    category: milestones
+    check_type: manual
+
+  - id: compost_king
+    name: Compost King
+    description: Generate 1000 units of compost
+    emoji: "♻️"
+    category: farming
+    check_type: compost_generated
+    check_value: 1000
+
+  - id: power_hungry
+    name: Power Hungry
+    description: Generate 500 KWh of power capacity
+    emoji: "⚡"
+    category: expansion
+    check_type: power_capacity
+    check_value: 500
+
+  - id: no_miss_10
+    name: Reliable
+    description: Complete 10 weeks without a crop dying
+    emoji: "✅"
+    category: survival
+    check_type: manual
+
+  - id: speed_harvest
+    name: Speed Farmer
+    description: Harvest 5 crops in a single week
+    emoji: "⚡"
+    category: farming
+    check_type: manual

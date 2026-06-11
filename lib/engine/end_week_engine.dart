@@ -21,6 +21,7 @@
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
 import '../config/raid_config_service.dart';
+import '../config/milestone_config_service.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -155,13 +156,13 @@ class EndWeekEngine {
           );
         }
 
-        // PLANT — bot plants empty cells with configured crop
+        // PLANT — bot plants empty cells with configured crop (consumes seeds)
         if (bot.canPlant && bot.plantCropId != null) {
           final crop = config.getCrop(bot.plantCropId!);
           if (crop != null) {
             for (var i = 0; i < cells.length; i++) {
               final cell = cells[i];
-              if (cell.state == CropState.empty) {
+              if (cell.state == CropState.empty && s.resources.seeds > 0) {
                 cells[i] = CropCell(
                   position: cell.position,
                   cropId: bot.plantCropId,
@@ -171,6 +172,12 @@ class EndWeekEngine {
                   fertilizedThisWeek: false,
                 );
                 botPlanted++;
+                // Deduct seed immediately
+                s = s.copyWith(
+                  resources: s.resources.copyWith(
+                    seeds: s.resources.seeds - 1,
+                  ),
+                );
               }
             }
           }
@@ -476,9 +483,13 @@ class EndWeekEngine {
             milestoneUpdates.add('❌ Strike! Missed: ${milestone.name}');
           case Difficulty.hard:
             updatedMilestones.add(milestone.copyWith(status: MilestoneStatus.failed));
+            final hardMsg = '${milestone.failureMessage}\n${MilestoneConfigService.instance.formatFailureDetail(milestone, s.totalVolumeDeliveredM3)}';
             events.add('❌ Milestone missed: ${milestone.name} — contract terminated!');
             milestoneUpdates.add('❌ Contract terminated! Missed: ${milestone.name}');
-            s = s.copyWith(status: GameStatus.terminated);
+            s = s.copyWith(
+              status: GameStatus.terminated,
+              terminationReason: hardMsg,
+            );
         }
         continue;
       }
@@ -488,8 +499,10 @@ class EndWeekEngine {
 
     var newStrikeCount = s.strikeCount + (pendingStrikeIncrease ? 1 : 0);
     var newStatus = s.status;
+    String? newTermReason = s.terminationReason;
     if (s.difficulty == Difficulty.normal && newStrikeCount >= 3) {
       newStatus = GameStatus.terminated;
+      newTermReason = 'Three contract violations. The colony has terminated your agreement.';
       events.add('❌ Three strikes — the colony has terminated your contract.');
     }
 
@@ -497,6 +510,7 @@ class EndWeekEngine {
       milestones: updatedMilestones,
       strikeCount: newStrikeCount,
       status: newStatus,
+      terminationReason: newTermReason,
     );
 
     // ── Step 8: Trophy checks ─────────────────────────────────────────────

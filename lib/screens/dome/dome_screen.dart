@@ -31,9 +31,53 @@ class DomeScreen extends ConsumerStatefulWidget {
   ConsumerState<DomeScreen> createState() => _DomeScreenState();
 }
 
-class _DomeScreenState extends ConsumerState<DomeScreen> {
+class _DomeScreenState extends ConsumerState<DomeScreen>
+    with TickerProviderStateMixin {
   DomeAction? _selectedAction;
-  String? _selectedCropId; // for planting
+  String? _selectedCropId;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _changeDome(int newIndex, int direction) {
+    // Slide out then switch
+    final outOffset = Offset(direction * -0.3, 0);
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: outOffset,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeIn));
+
+    _slideController.forward(from: 0).then((_) {
+      ref.read(activeDomeIndexProvider.notifier).state = newIndex;
+      // Slide in from other side
+      _slideAnimation = Tween<Offset>(
+        begin: Offset(direction * 0.3, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+      _slideController.forward(from: 0);
+    });
+  } // for planting
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +94,9 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! < -300 && clampedIndex < game.domes.length - 1) {
-          ref.read(activeDomeIndexProvider.notifier).state++;
+          _changeDome(clampedIndex + 1, -1);
         } else if (details.primaryVelocity! > 300 && clampedIndex > 0) {
-          ref.read(activeDomeIndexProvider.notifier).state--;
+          _changeDome(clampedIndex - 1, 1);
         }
       },
       child: Column(
@@ -62,10 +106,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
             domes: game.domes,
             currentIndex: clampedIndex,
             onPrevious: clampedIndex > 0
-                ? () => ref.read(activeDomeIndexProvider.notifier).state--
+                ? () => _changeDome(clampedIndex - 1, 1)
                 : null,
             onNext: clampedIndex < game.domes.length - 1
-                ? () => ref.read(activeDomeIndexProvider.notifier).state++
+                ? () => _changeDome(clampedIndex + 1, -1)
                 : null,
           ),
 
@@ -78,12 +122,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
             onActionSelected: (action) {
               if (action == DomeAction.plant) {
                 if (_selectedAction == DomeAction.plant && _selectedCropId != null) {
-                  // Tap Plant again to change crop
                   _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
                 } else if (_selectedAction == DomeAction.plant) {
                   setState(() { _selectedAction = null; _selectedCropId = null; });
                 } else {
-                  // First Plant tap — show picker immediately
                   _showCropPickerForToolbar(context, ref, game, dome, clampedIndex);
                 }
               } else {
@@ -98,21 +140,24 @@ class _DomeScreenState extends ConsumerState<DomeScreen> {
           // ── Robot status banner ──────────────────────────────────────────
           if (dome.robot != null) _RobotBanner(dome: dome),
 
-          // ── 3x3 Grid ────────────────────────────────────────────────────
+          // ── 3x3 Grid with slide animation ───────────────────────────────
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: _DomeGrid(
-                dome: dome,
-                game: game,
-                selectedAction: _selectedAction,
-                selectedCropId: _selectedCropId,
-                onCellTap: (position) => _handleCellTap(
-                  context, ref, game, dome, position, clampedIndex,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _DomeGrid(
+                  dome: dome,
+                  game: game,
+                  selectedAction: _selectedAction,
+                  selectedCropId: _selectedCropId,
+                  onCellTap: (position) => _handleCellTap(
+                    context, ref, game, dome, position, clampedIndex,
+                  ),
+                  onCropSelected: (cropId) {
+                    setState(() => _selectedCropId = cropId);
+                  },
                 ),
-                onCropSelected: (cropId) {
-                  setState(() => _selectedCropId = cropId);
-                },
               ),
             ),
           ),
@@ -798,10 +843,18 @@ class _CropCell extends StatelessWidget {
           cell.state == CropState.growing &&
           !cell.wateredThisWeek;
 
-  bool get _needsFertilizer =>
-      !_botFertilizes &&
-          cell.state == CropState.growing &&
-          !cell.fertilizedThisWeek;
+  bool get _needsFertilizer {
+    if (_botFertilizes) return false;
+    if (cell.state != CropState.growing) return false;
+    if (cell.fertilizedThisWeek) return false;
+    final config = GameConfigService.instance;
+    final crop = cell.cropId != null ? config.getCrop(cell.cropId!) : null;
+    if (crop == null) return false;
+    if (cell.fertilizeCount >= crop.maxFertilizations) return false;
+    if (cell.lastFertilizeWeek >= 0 &&
+        cell.weeksGrown - cell.lastFertilizeWeek < 3) return false;
+    return true;
+  }
 
   Color get _borderColor {
     if (selectedAction != null) return MFColors.neonCyan.withValues(alpha: 0.6);

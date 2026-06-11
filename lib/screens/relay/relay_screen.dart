@@ -166,6 +166,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     int totalScrip = 0;
     double totalVolume = 0;
     final updatedInventory = Map<String, double>.from(game.siloInventory);
+    double meatSold = 0;
 
     for (final entry in _saleQueue.entries) {
       final crop = config.getCrop(entry.key);
@@ -173,9 +174,15 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       final price = (crop.baseScrip * (1 + discount)).round();
       totalScrip += (price * entry.value).round();
       totalVolume += crop.volumeM3 * entry.value;
-      final remaining = (updatedInventory[entry.key] ?? 0) - entry.value;
-      if (remaining <= 0) updatedInventory.remove(entry.key);
-      else updatedInventory[entry.key] = remaining;
+
+      if (entry.key == 'fauna_meat') {
+        // Meat comes from resources, not silo
+        meatSold = entry.value;
+      } else {
+        final remaining = (updatedInventory[entry.key] ?? 0) - entry.value;
+        if (remaining <= 0) updatedInventory.remove(entry.key);
+        else updatedInventory[entry.key] = remaining;
+      }
     }
 
     var updatedRelay = game.relay;
@@ -195,6 +202,10 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         siloInventory: updatedInventory,
+        resources: meatSold > 0
+            ? game.resources.copyWith(
+            meat: (game.resources.meat - meatSold).clamp(0, double.infinity))
+            : game.resources,
         pendingSales: [...game.pendingSales, sale],
         shipmentsThisWindow: game.shipmentsThisWindow + 1,
         totalVolumeDeliveredM3: game.totalVolumeDeliveredM3 + totalVolume,
@@ -213,6 +224,9 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     setState(() {
       _saleQueue.clear();
       _saleQueue.addAll(Map.from(game.siloInventory));
+      if (game.resources.meat > 0) {
+        _saleQueue['fauna_meat'] = game.resources.meat;
+      }
     });
   }
 
@@ -724,59 +738,87 @@ class _SellTab extends StatelessWidget {
       totalVolume += crop.volumeM3 * entry.value;
     }
 
+    final hasMeat = game.resources.meat > 0;
+    final meatCrop = config.getCrop('fauna_meat');
+    final meatPrice = meatCrop != null
+        ? (meatCrop.baseScrip * (1 + discount)).round()
+        : 75;
+
     return Column(
       children: [
         // Contract sell items pinned at top
         ..._contractSellItems(context, game, config),
 
         Expanded(
-          child: game.siloInventory.isEmpty
+          child: (game.siloInventory.isEmpty && !hasMeat)
               ? _EmptySiloMessage()
               : ListView(
             padding: const EdgeInsets.all(12),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('SILO INVENTORY',
-                        style: MFTextStyles.bodySmall.copyWith(
-                            color: MFColors.textMuted, letterSpacing: 2)),
-                  ),
-                  GestureDetector(
-                    onTap: () => onSellAll(game),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                            color: MFColors.neonCyan.withValues(alpha: 0.5)),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text('SELL ALL',
+              // ── Silo inventory ──────────────────────────────────
+              if (game.siloInventory.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('SILO INVENTORY',
                           style: MFTextStyles.bodySmall.copyWith(
-                              color: MFColors.neonCyan,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10)),
+                              color: MFColors.textMuted, letterSpacing: 2)),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...game.siloInventory.entries.map((entry) {
-                final crop = config.getCrop(entry.key);
-                if (crop == null) return const SizedBox();
-                final price = (crop.baseScrip * (1 + discount)).round();
-                final queued = saleQueue[entry.key] ?? 0;
-                return _SellItem(
-                  crop: crop,
-                  amount: entry.value,
-                  pricePerUnit: price,
-                  queuedAmount: queued,
+                    GestureDetector(
+                      onTap: () => onSellAll(game),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                              color: MFColors.neonCyan.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text('SELL ALL',
+                            style: MFTextStyles.bodySmall.copyWith(
+                                color: MFColors.neonCyan,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...game.siloInventory.entries.map((entry) {
+                  final crop = config.getCrop(entry.key);
+                  if (crop == null) return const SizedBox();
+                  final price = (crop.baseScrip * (1 + discount)).round();
+                  final queued = saleQueue[entry.key] ?? 0;
+                  return _SellItem(
+                    crop: crop,
+                    amount: entry.value,
+                    pricePerUnit: price,
+                    queuedAmount: queued,
+                    isRush: isRush,
+                    onQueue: () => onQueueChanged(entry.key, entry.value),
+                    onDequeue: () => onQueueChanged(entry.key, 0),
+                  );
+                }),
+              ],
+
+              // ── Fauna drops ─────────────────────────────────────
+              if (hasMeat && meatCrop != null) ...[
+                const SizedBox(height: 12),
+                Text('FAUNA DROPS',
+                    style: MFTextStyles.bodySmall.copyWith(
+                        color: MFColors.textMuted, letterSpacing: 2)),
+                const SizedBox(height: 8),
+                _SellItem(
+                  crop: meatCrop,
+                  amount: game.resources.meat,
+                  pricePerUnit: meatPrice,
+                  queuedAmount: saleQueue['fauna_meat'] ?? 0,
                   isRush: isRush,
-                  onQueue: () => onQueueChanged(entry.key, entry.value),
-                  onDequeue: () => onQueueChanged(entry.key, 0),
-                );
-              }),
+                  onQueue: () =>
+                      onQueueChanged('fauna_meat', game.resources.meat),
+                  onDequeue: () => onQueueChanged('fauna_meat', 0),
+                ),
+              ],
             ],
           ),
         ),
@@ -1078,9 +1120,16 @@ class _BuyTab extends StatelessWidget {
         ),
         ...items.map((item) {
           final (id, emoji, name, desc, basePrice, batchSize) = item;
-          // Price shown is for the whole batch, scaled by mood markup.
-          final price = (basePrice * batchSize * markup).round();
-          final canAfford = game.resources.starScrip >= price;
+          final price1 = (basePrice * batchSize * markup).round();
+          final price5 = (basePrice * batchSize * 5 * markup).round();
+          final price10 = (basePrice * batchSize * 10 * markup).round();
+          final canAfford1 = game.resources.starScrip >= price1;
+          final canAfford5 = game.resources.starScrip >= price5;
+          final canAfford10 = game.resources.starScrip >= price10;
+
+          final showX5 = game.currentWeek >= 20;
+          final showX10 = game.currentWeek >= 40;
+
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
@@ -1089,57 +1138,58 @@ class _BuyTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: MFColors.borderSubtle),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: MFTextStyles.bodyLarge),
-                      Text(desc, style: MFTextStyles.bodySmall),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Row(
                   children: [
-                    Text('$price 🎫',
-                        style: MFTextStyles.labelLarge.copyWith(
-                          color: canAfford
-                              ? MFColors.starScrip
-                              : MFColors.neonPink,
-                        )),
-                    const SizedBox(height: 4),
-                    GestureDetector(
-                      onTap: canAfford
-                          ? () => onBuy(id, batchSize, (price / batchSize).ceil(), game)
-                          : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: canAfford
-                              ? MFColors.neonCyan.withValues(alpha: 0.1)
-                              : MFColors.borderSubtle,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: canAfford
-                                ? MFColors.neonCyan.withValues(alpha: 0.5)
-                                : MFColors.borderSubtle,
-                          ),
-                        ),
-                        child: Text('BUY',
-                            style: MFTextStyles.bodySmall.copyWith(
-                              color: canAfford
-                                  ? MFColors.neonCyan
-                                  : MFColors.textMuted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            )),
+                    Text(emoji, style: const TextStyle(fontSize: 22)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name, style: MFTextStyles.bodyLarge),
+                          Text(desc, style: MFTextStyles.bodySmall),
+                        ],
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // Buy x1 batch — medium teal
+                    _BuyButton(
+                      label: 'BUY',
+                      price: price1,
+                      canAfford: canAfford1,
+                      color: const Color(0xFF00838F), // medium teal
+                      onTap: () => onBuy(id, batchSize,
+                          (price1 / batchSize).ceil(), game),
+                    ),
+                    if (showX5) ...[
+                      const SizedBox(width: 6),
+                      _BuyButton(
+                        label: '×5',
+                        price: price5,
+                        canAfford: canAfford5,
+                        color: const Color(0xFF0097A7), // medium-bright teal
+                        onTap: () => onBuy(id, batchSize * 5,
+                            (price5 / (batchSize * 5)).ceil(), game),
+                      ),
+                    ],
+                    if (showX10) ...[
+                      const SizedBox(width: 6),
+                      _BuyButton(
+                        label: '×10',
+                        price: price10,
+                        canAfford: canAfford10,
+                        color: const Color(0xFF00BCD4), // bright teal
+                        onTap: () => onBuy(id, batchSize * 10,
+                            (price10 / (batchSize * 10)).ceil(), game),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -1147,6 +1197,61 @@ class _BuyTab extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+// ─── Buy Button ───────────────────────────────────────────────────────────────
+
+class _BuyButton extends StatelessWidget {
+  final String label;
+  final int price;
+  final bool canAfford;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _BuyButton({
+    required this.label,
+    required this.price,
+    required this.canAfford,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: canAfford ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: canAfford ? color.withValues(alpha: 0.15) : MFColors.borderSubtle,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: canAfford ? color.withValues(alpha: 0.6) : MFColors.borderSubtle,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: MFTextStyles.bodySmall.copyWith(
+                color: canAfford ? color : MFColors.textMuted,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+            Text(
+              '$price 🎫',
+              style: MFTextStyles.bodySmall.copyWith(
+                color: canAfford ? color : MFColors.textMuted,
+                fontSize: 9,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'config/game_config_service.dart';
 import 'config/upgrade_config_service.dart';
 import 'config/raid_config_service.dart';
 import 'config/kovacs_config_service.dart';
+import 'config/milestone_config_service.dart';
 import 'screens/main_menu/main_menu_screen.dart';
 
 void main() async {
@@ -35,6 +36,7 @@ void main() async {
   await UpgradeConfigService.instance.load();
   await RaidConfigService.instance.load();
   await KovacsConfigService.instance.load();
+  await MilestoneConfigService.instance.load();
 
   runApp(
     const ProviderScope(

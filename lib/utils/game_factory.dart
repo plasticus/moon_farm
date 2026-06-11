@@ -8,6 +8,7 @@ import '../models/game_models.dart';
 import '../config/game_config_service.dart';
 import '../config/upgrade_config_service.dart';
 import '../config/raid_config_service.dart';
+import '../config/milestone_config_service.dart';
 
 /// Creates a brand new GameState for a given save slot, farm name, and difficulty.
 class GameFactory {
@@ -60,8 +61,8 @@ class GameFactory {
     );
 
     // Load milestones and trophies from config
-    final milestones = _config.getMilestones(difficulty);
-    final trophies = _config.getAllTrophies();
+    final milestones = MilestoneConfigService.instance.getMilestones(difficulty);
+    final trophies = MilestoneConfigService.instance.getAllTrophies();
 
     // Opening transmission from Kovacs
     final openingMsg = GameConfigService.instance

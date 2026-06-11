@@ -96,6 +96,8 @@ class GameState {
   final int lifetimeScripEarned;
   final int totalCropsHarvested;
   final int totalCompostGenerated;
+  final Map<String, int> cropHarvestCounts; // cropId -> times harvested
+  final String? terminationReason; // set when game ends
   final int nextRaidWeek;
   final bool raidDefendedThisWeek;
   final List<PendingSale> pendingSales;
@@ -137,6 +139,8 @@ class GameState {
     required this.lifetimeScripEarned,
     required this.totalCropsHarvested,
     required this.totalCompostGenerated,
+    this.cropHarvestCounts = const {},
+    this.terminationReason,
     required this.nextRaidWeek,
     required this.raidDefendedThisWeek,
     required this.pendingSales,
@@ -178,6 +182,8 @@ class GameState {
     int? lifetimeScripEarned,
     int? totalCropsHarvested,
     int? totalCompostGenerated,
+    Map<String, int>? cropHarvestCounts,
+    String? terminationReason,
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
     List<PendingSale>? pendingSales,
@@ -221,6 +227,8 @@ class GameState {
       totalCropsHarvested: totalCropsHarvested ?? this.totalCropsHarvested,
       totalCompostGenerated:
       totalCompostGenerated ?? this.totalCompostGenerated,
+      cropHarvestCounts: cropHarvestCounts ?? this.cropHarvestCounts,
+      terminationReason: terminationReason ?? this.terminationReason,
       nextRaidWeek: nextRaidWeek ?? this.nextRaidWeek,
       raidDefendedThisWeek: raidDefendedThisWeek ?? this.raidDefendedThisWeek,
       pendingSales: pendingSales ?? this.pendingSales,
@@ -881,10 +889,12 @@ class Milestone {
   final String id;
   final String name;
   final String description;
-  final double targetVolumeM3; // cubic meters
+  final double targetVolumeM3;
   final int byWeek;
   final int rewardScrip;
   final MilestoneStatus status;
+  final String failureMessage;
+  final String failureDetail;
 
   const Milestone({
     required this.id,
@@ -894,6 +904,8 @@ class Milestone {
     required this.byWeek,
     required this.rewardScrip,
     required this.status,
+    this.failureMessage = '',
+    this.failureDetail = '',
   });
 
   Milestone copyWith({MilestoneStatus? status}) {
@@ -905,6 +917,8 @@ class Milestone {
       byWeek: byWeek,
       rewardScrip: rewardScrip,
       status: status ?? this.status,
+      failureMessage: failureMessage,
+      failureDetail: failureDetail,
     );
   }
 }
@@ -1166,6 +1180,7 @@ class CropConfig {
     'copper_root': '🟤',
     'luna_lentils': '🫘',
     'matrix_moss': '🟩',
+    'fauna_meat': '🥩',
   };
 
   factory CropConfig.fromJson(Map<String, dynamic> json) {

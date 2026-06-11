@@ -413,193 +413,6 @@
       "emoji": "\ud83d\udd2c"
     }
   ],
-  "milestones": {
-    "easy": [
-      {
-        "id": "m1",
-        "name": "First Shipment",
-        "description": "Deliver 10m\u00b3 of cargo to the colony",
-        "target_volume_m3": 10,
-        "by_week": 20,
-        "reward_scrip": 100
-      },
-      {
-        "id": "m2",
-        "name": "Steady Supply",
-        "description": "Deliver 50m\u00b3 of cargo to the colony",
-        "target_volume_m3": 50,
-        "by_week": 60,
-        "reward_scrip": 300
-      },
-      {
-        "id": "m3",
-        "name": "Colony Cornerstone",
-        "description": "Deliver 200m\u00b3 of cargo to the colony",
-        "target_volume_m3": 200,
-        "by_week": 150,
-        "reward_scrip": 1000
-      }
-    ],
-    "normal": [
-      {
-        "id": "m1",
-        "name": "First Shipment",
-        "description": "Deliver 10m\u00b3 of cargo to the colony",
-        "target_volume_m3": 10,
-        "by_week": 12,
-        "reward_scrip": 100
-      },
-      {
-        "id": "m2",
-        "name": "Steady Supply",
-        "description": "Deliver 50m\u00b3 of cargo to the colony",
-        "target_volume_m3": 50,
-        "by_week": 40,
-        "reward_scrip": 300
-      },
-      {
-        "id": "m3",
-        "name": "Colony Cornerstone",
-        "description": "Deliver 200m\u00b3 of cargo to the colony",
-        "target_volume_m3": 200,
-        "by_week": 100,
-        "reward_scrip": 1000
-      }
-    ],
-    "hard": [
-      {
-        "id": "m1",
-        "name": "First Shipment",
-        "description": "Deliver 10m\u00b3 of cargo to the colony",
-        "target_volume_m3": 10,
-        "by_week": 8,
-        "reward_scrip": 100
-      },
-      {
-        "id": "m2",
-        "name": "Steady Supply",
-        "description": "Deliver 50m\u00b3 of cargo to the colony",
-        "target_volume_m3": 50,
-        "by_week": 25,
-        "reward_scrip": 300
-      },
-      {
-        "id": "m3",
-        "name": "Colony Cornerstone",
-        "description": "Deliver 200m\u00b3 of cargo to the colony",
-        "target_volume_m3": 200,
-        "by_week": 70,
-        "reward_scrip": 1000
-      }
-    ]
-  },
-  "trophies": [
-    {
-      "id": "first_harvest",
-      "name": "First Harvest",
-      "description": "Harvest your first crop",
-      "emoji": "\ud83c\udfc6",
-      "category": "farming"
-    },
-    {
-      "id": "century_farmer",
-      "name": "Century Farmer",
-      "description": "Survive 100 weeks",
-      "emoji": "\ud83d\udcc5",
-      "category": "survival"
-    },
-    {
-      "id": "solar_millionaire",
-      "name": "Solar Millionaire",
-      "description": "Accumulate 10,000 Star-Scrip lifetime",
-      "emoji": "\ud83d\udcb0",
-      "category": "economy"
-    },
-    {
-      "id": "raid_survivor",
-      "name": "Raid Survivor",
-      "description": "Successfully defend your first raid",
-      "emoji": "\ud83d\udee1\ufe0f",
-      "category": "combat"
-    },
-    {
-      "id": "all_crops",
-      "name": "Botanist",
-      "description": "Grow all 20 crop types at least once",
-      "emoji": "\ud83c\udf31",
-      "category": "farming"
-    },
-    {
-      "id": "five_domes",
-      "name": "Dome Empire",
-      "description": "Own 5 domes simultaneously",
-      "emoji": "\ud83d\udd35",
-      "category": "expansion"
-    },
-    {
-      "id": "robot_army",
-      "name": "Robot Army",
-      "description": "Have 3 active dome robots",
-      "emoji": "\ud83e\udd16",
-      "category": "automation"
-    },
-    {
-      "id": "max_robot",
-      "name": "Peak Automation",
-      "description": "Upgrade a robot to Mk5",
-      "emoji": "\u2b50",
-      "category": "automation"
-    },
-    {
-      "id": "relay_friend",
-      "name": "Relay Friend",
-      "description": "Complete 10 contracts",
-      "emoji": "\ud83d\udce1",
-      "category": "contracts"
-    },
-    {
-      "id": "colony_hero",
-      "name": "Colony Hero",
-      "description": "Complete all milestones on Normal or Hard",
-      "emoji": "\ud83d\ude80",
-      "category": "milestones"
-    },
-    {
-      "id": "compost_king",
-      "name": "Compost King",
-      "description": "Generate 1000 units of compost",
-      "emoji": "\u267b\ufe0f",
-      "category": "farming"
-    },
-    {
-      "id": "power_hungry",
-      "name": "Power Hungry",
-      "description": "Generate 500 KWh of power capacity",
-      "emoji": "\u26a1",
-      "category": "expansion"
-    },
-    {
-      "id": "matrix_grown",
-      "name": "Matrix Grown",
-      "description": "Harvest your first Matrix Moss",
-      "emoji": "\ud83c\udf11",
-      "category": "farming"
-    },
-    {
-      "id": "no_miss_10",
-      "name": "Reliable",
-      "description": "Complete 10 weeks without a crop dying",
-      "emoji": "\u2705",
-      "category": "survival"
-    },
-    {
-      "id": "speed_harvest",
-      "name": "Speed Farmer",
-      "description": "Harvest 5 crops in a single week",
-      "emoji": "\u26a1",
-      "category": "farming"
-    }
-  ],
   "relay_technician": {
     "name": "Specialist Kovacs",
     "rank": "Communications Technician Class IV",
@@ -881,7 +694,7 @@
         "level": 2,
         "name": "Water Purifier Mk2",
         "cost_metals": 25,
-        "power_draw_kwh": 0,
+        "power_draw_kwh": 3,
         "output_water_per_week": 25,
         "cost_glass": 5
       },
@@ -889,7 +702,7 @@
         "level": 3,
         "name": "Water Purifier Mk3",
         "cost_metals": 50,
-        "power_draw_kwh": 0,
+        "power_draw_kwh": 6,
         "output_water_per_week": 50,
         "cost_glass": 15
       },
@@ -897,7 +710,7 @@
         "level": 4,
         "name": "Water Purifier Mk4",
         "cost_metals": 90,
-        "power_draw_kwh": 0,
+        "power_draw_kwh": 10,
         "output_water_per_week": 100,
         "cost_glass": 30
       },
@@ -905,7 +718,7 @@
         "level": 5,
         "name": "Water Purifier Mk5",
         "cost_metals": 150,
-        "power_draw_kwh": 0,
+        "power_draw_kwh": 15,
         "output_water_per_week": 200,
         "cost_glass": 60
       }

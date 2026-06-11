@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../score/score_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
@@ -74,7 +75,6 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     final powerSurplus = game.powerSurplus;
     final raidWarning = ref.watch(raidWarningProvider);
     final isRaidWeek = ref.watch(isRaidWeekProvider);
-    final unreadRadio = ref.watch(unreadRadioCountProvider);
 
     final topPad = MediaQuery.of(context).padding.top;
     return PreferredSize(
@@ -163,20 +163,24 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                     color: MFColors.neonGreen,
                     icon: '🌱',
                   ),
+                  // Raid beacon — always show countdown when within 2 weeks
                   if (isRaidWeek) ...[
                     const SizedBox(width: 4),
-                    _StatusChip(label: 'RAID!', color: MFColors.neonPink, icon: '🚨'),
+                    _StatusChip(label: 'R-0w', color: MFColors.neonPink, icon: '🚨'),
                   ] else if (raidWarning) ...[
                     const SizedBox(width: 4),
                     _StatusChip(
-                      label: '${game.nextRaidWeek - game.currentWeek}w',
-                      color: MFColors.neonOrange,
-                      icon: '⚠️',
+                      label: 'R-${game.nextRaidWeek - game.currentWeek}w',
+                      color: (game.nextRaidWeek - game.currentWeek) <= 1
+                          ? MFColors.neonPink
+                          : MFColors.neonOrange,
+                      icon: '🚨',
                     ),
                   ],
-                  if (unreadRadio > 0) ...[
+                  // Kovacs pickup — show spaceship when ship window is open
+                  if (game.isShipWindowOpen) ...[
                     const SizedBox(width: 4),
-                    _StatusChip(label: '$unreadRadio', color: MFColors.neonCyan, icon: '📡'),
+                    _StatusChip(label: '', color: MFColors.neonCyan, icon: '🚀'),
                   ],
                 ],
               ),
@@ -283,8 +287,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
         debugPrint('[EndWeek] WeekSummaryScreen closed.');
 
         if (newState.status == GameStatus.terminated && context.mounted) {
-          ref.read(activeGameProvider.notifier).clearGame();
-          Navigator.of(context).pop();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => ScoreScreen(game: newState)),
+                (route) => route.isFirst,
+          );
         }
       }
     } catch (e, st) {

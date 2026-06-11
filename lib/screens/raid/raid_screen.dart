@@ -17,6 +17,8 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../config/raid_config_service.dart';
+import '../../config/milestone_config_service.dart';
+import '../score/score_screen.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
   final GameState game;
@@ -504,14 +506,27 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
     _faunaEscaped = _fauna.where((f) => f.isAtWall).length;
 
+    final game = widget.game;
+    final difficulty = game.difficulty;
     int cropsLost = 0;
     if (wallBroken) {
-      final remaining = _fauna.length;
-      cropsLost = (remaining * 0.3).round().clamp(0, 8);
+      final cropLossFraction =
+      MilestoneConfigService.instance.cropLossOnBreach(difficulty);
+      if (cropLossFraction > 0) {
+        // Count growing/ready crops across all domes
+        int totalCrops = game.domes.fold(
+          0,
+              (sum, d) => sum + d.cells
+              .where((c) =>
+          c.state == CropState.growing || c.state == CropState.ready)
+              .length,
+        );
+        cropsLost = (totalCrops * cropLossFraction).round();
+      }
     }
 
     final result = RaidResult(
-      week: widget.game.currentWeek,
+      week: game.currentWeek,
       faunaKilled: _faunaKilled,
       faunaEscaped: _faunaEscaped,
       wallDamageTaken: _wallMaxHp - _wallHp,
@@ -525,6 +540,17 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     await _applyRaidResults(result);
 
     if (!mounted) return;
+
+    // Check for game over
+    final updatedGame = ref.read(activeGameProvider).value;
+    if (updatedGame != null && updatedGame.status == GameStatus.terminated) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => ScoreScreen(game: updatedGame)),
+            (route) => route.isFirst,
+      );
+      return;
+    }
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => RaidResultScreen(result: result, game: widget.game),
@@ -534,6 +560,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   Future<void> _applyRaidResults(RaidResult result) async {
     final game = widget.game;
+    final difficulty = game.difficulty;
+    final allowedStrikes = MilestoneConfigService.instance.wallStrikes(difficulty);
     final newWall = game.defenseWall.copyWith(currentHp: _wallHp);
 
     var resources = game.resources.copyWith(
@@ -550,7 +578,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
         if (lostSoFar >= result.cropsLost) return dome;
         final updatedCells = dome.cells.map((cell) {
           if (lostSoFar < result.cropsLost &&
-              (cell.state == CropState.growing || cell.state == CropState.ready)) {
+              (cell.state == CropState.growing ||
+                  cell.state == CropState.ready)) {
             lostSoFar++;
             return cell.cleared();
           }
@@ -560,17 +589,46 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
       }).toList();
     }
 
+    // Determine if this wall breach ends the game
+    GameStatus newStatus = game.status;
+    int newStrikeCount = game.strikeCount;
+    String? terminationReason;
+
+    if (result.wallBroken) {
+      if (allowedStrikes == 0) {
+        // Normal/Hard: instant game over
+        newStatus = GameStatus.terminated;
+        terminationReason = MilestoneConfigService.instance
+            .formatTerminationMessage(difficulty, week: game.currentWeek);
+      } else {
+        // Easy: increment strike, check if max reached
+        newStrikeCount = game.strikeCount + 1;
+        if (newStrikeCount > allowedStrikes) {
+          newStatus = GameStatus.terminated;
+          terminationReason = MilestoneConfigService.instance
+              .formatTerminationMessage(difficulty,
+              week: game.currentWeek, strikes: newStrikeCount);
+        }
+      }
+    }
+
     await ref.read(activeGameProvider.notifier).updateGame(
       game.copyWith(
         defenseWall: newWall,
         grenades: newGrenades,
         resources: resources,
         domes: domes,
-        // ONLY advance campaign history and milestone logs if this is a natural scheduled raid!
-        raidDefendedThisWeek: widget.isManualTrigger ? game.raidDefendedThisWeek : true,
-        totalRaidsDefended: widget.isManualTrigger ? game.totalRaidsDefended : game.totalRaidsDefended + 1,
+        status: newStatus,
+        strikeCount: newStrikeCount,
+        terminationReason: terminationReason,
+        raidDefendedThisWeek:
+        widget.isManualTrigger ? game.raidDefendedThisWeek : true,
+        totalRaidsDefended: widget.isManualTrigger
+            ? game.totalRaidsDefended
+            : game.totalRaidsDefended + 1,
         totalFaunaKilled: game.totalFaunaKilled + result.faunaKilled,
-        totalChitinCollected: game.totalChitinCollected + result.chitinDropped,
+        totalChitinCollected:
+        game.totalChitinCollected + result.chitinDropped,
       ),
     );
   }

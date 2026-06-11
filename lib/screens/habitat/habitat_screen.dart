@@ -583,7 +583,7 @@ class _WallSection extends StatelessWidget {
     final metalsCost = cfg['upgrade_cost_metals'] as int? ?? 0;
     final canAfford = game.resources.ore >= oreCost &&
         game.resources.moonDirt >= dirtCost &&
-        game.resources.ore >= chitinCost && // chitin using ore slot for now
+        game.resources.chitin >= chitinCost &&
         game.resources.metals >= metalsCost;
 
     return GestureDetector(
@@ -661,7 +661,7 @@ class _SentriesSection extends StatelessWidget {
             final canAfford = nextCfg != null &&
                 game.resources.metals >= costMetals &&
                 game.resources.components >= costComponents &&
-                game.resources.ore >= costChitin &&
+                game.resources.chitin >= costChitin &&
                 hasPower;
 
             final color = mkColor(s.level);
@@ -782,7 +782,7 @@ class _SentriesSection extends StatelessWidget {
           final hasPower = game.powerSurplus >= powerNeeded;
           final canAfford = game.resources.metals >= costMetals &&
               game.resources.components >= costComponents &&
-              game.resources.ore >= costChitin && // chitin in ore slot
+              game.resources.chitin >= costChitin &&
               hasPower;
 
           return Padding(
@@ -872,7 +872,7 @@ class _SentriesSection extends StatelessWidget {
         resources: game.resources.copyWith(
           metals: game.resources.metals - costMetals,
           components: game.resources.components - costComponents,
-          ore: game.resources.ore - costChitin,
+          chitin: game.resources.chitin - costChitin,
         ),
       ),
     );
@@ -897,7 +897,7 @@ class _SentriesSection extends StatelessWidget {
         resources: game.resources.copyWith(
           metals: game.resources.metals - (cfg['cost_metals'] as int),
           components: game.resources.components - (cfg['cost_components'] as int),
-          ore: game.resources.ore - (cfg['cost_chitin'] as int? ?? 0),
+          chitin: game.resources.chitin - (cfg['cost_chitin'] as int? ?? 0),
         ),
       ),
     );
@@ -1091,7 +1091,7 @@ class _GrenadeSection extends StatelessWidget {
         case 'metals': have = game.resources.metals;
         case 'components': have = game.resources.components;
         case 'ore': have = game.resources.ore;
-        case 'chitin': have = game.resources.ore; // chitin in ore slot
+        case 'chitin': have = game.resources.chitin;
         case 'meat': have = game.resources.compost; // meat in compost slot
       }
       if (have < needed) return false;

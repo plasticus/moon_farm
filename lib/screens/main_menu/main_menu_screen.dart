@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../score/score_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
@@ -156,11 +157,16 @@ class MainMenuScreen extends ConsumerWidget {
       SaveSlot slot,
       ) async {
     await ref.read(activeGameProvider.notifier).loadGame(slot.slotNumber);
-    if (context.mounted) {
+    if (!context.mounted) return;
+
+    final game = ref.read(activeGameProvider).value;
+    if (game != null && game.status == GameStatus.terminated) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ScoreScreen(game: game)),
+      );
+    } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const SaveSlotDetailScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const SaveSlotDetailScreen()),
       );
     }
   }

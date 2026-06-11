@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -324,6 +324,8 @@ class DatabaseHelper {
       'lifetime_solars_earned': state.lifetimeScripEarned,
       'total_crops_harvested': state.totalCropsHarvested,
       'total_compost_generated': state.totalCompostGenerated,
+      'crop_harvest_counts': state.cropHarvestCounts,
+      'termination_reason': state.terminationReason,
       'next_raid_week': state.nextRaidWeek,
       'raid_defended_this_week': state.raidDefendedThisWeek,
       'total_raids_defended': state.totalRaidsDefended,
@@ -365,6 +367,9 @@ class DatabaseHelper {
       lifetimeScripEarned: (json['lifetime_solars_earned'] as num).toInt(),
       totalCropsHarvested: (json['total_crops_harvested'] as num).toInt(),
       totalCompostGenerated: (json['total_compost_generated'] as num).toInt(),
+      cropHarvestCounts: (json['crop_harvest_counts'] as Map?)
+          ?.map((k, v) => MapEntry(k.toString(), (v as num).toInt())) ?? {},
+      terminationReason: json['termination_reason'] as String?,
       nextRaidWeek: (json['next_raid_week'] as num).toInt(),
       raidDefendedThisWeek: json['raid_defended_this_week'] as bool,
       totalRaidsDefended: _i(json['total_raids_defended'] ?? 0),

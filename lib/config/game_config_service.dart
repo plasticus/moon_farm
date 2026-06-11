@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
-//import 'upgrade_config_service.dart';
 import 'raid_config_service.dart';
+import 'milestone_config_service.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
 /// Edit assets/config/game_config.json to tweak any game balance value.
@@ -41,6 +41,25 @@ class GameConfigService {
       final crop = CropConfig.fromJson(Map<String, dynamic>.from(cropMap as Map));
       _cropConfigs![crop.id] = crop;
     }
+
+    // Inject fauna_meat as a sellable product — configured here, not in dome picker.
+    // Price and volume are tunable; tier 99 ensures it never appears in crop pickers.
+    const meatConfig = {
+      'id': 'fauna_meat',
+      'name': 'Fauna Meat',
+      'tier': 99,
+      'dome_tier_required': 99,
+      'growth_weeks': 1,
+      'water_per_week': 0,
+      'base_scrip_per_m3': 75,
+      'compost_yield': 0,
+      'description': 'Processed fauna protein. The colony kitchen pays well.',
+      'note': '',
+      'decay_rate': 0.0,
+      'fertilizer_bonus': 1.0,
+      'volume_m3': 1.0,
+    };
+    _cropConfigs!['fauna_meat'] = CropConfig.fromJson(meatConfig);
   }
 
   // Convert YamlMap/YamlList to plain Dart structures recursively.
@@ -66,10 +85,10 @@ class GameConfigService {
       _cropConfigs!.values.where((c) => c.tier == tier).toList();
 
   // A dome grows ONLY crops of its exact tier (not backward-compatible).
-  // A Tier 4 dome grows only Tier 4 crops.
+  // Tier 99 items (fauna products) are excluded from the dome picker.
   List<CropConfig> getCropsForDomeTier(int domeTier) =>
       _cropConfigs!.values
-          .where((c) => c.domeTierRequired == domeTier)
+          .where((c) => c.domeTierRequired == domeTier && c.tier < 99)
           .toList();
 
   // ─── Difficulty ───────────────────────────────────────────────────────────
@@ -158,38 +177,13 @@ class GameConfigService {
 
   // ─── Milestones ───────────────────────────────────────────────────────────
 
-  List<Milestone> getMilestones(Difficulty difficulty) {
-    final milestoneList =
-    _c['milestones'][difficulty.name] as List;
-    return milestoneList.map((m) {
-      final map = m as Map<String, dynamic>;
-      return Milestone(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        description: map['description'] as String,
-        targetVolumeM3: (map['target_volume_m3'] as num).toDouble(),
-        byWeek: map['by_week'] as int,
-        rewardScrip: map['reward_scrip'] as int,
-        status: MilestoneStatus.pending,
-      );
-    }).toList();
-  }
+  List<Milestone> getMilestones(Difficulty difficulty) =>
+      MilestoneConfigService.instance.getMilestones(difficulty);
 
   // ─── Trophies ─────────────────────────────────────────────────────────────
 
-  List<Trophy> getAllTrophies() {
-    return (_c['trophies'] as List).map((t) {
-      final map = t as Map<String, dynamic>;
-      return Trophy(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        description: map['description'] as String,
-        emoji: map['emoji'] as String,
-        category: map['category'] as String,
-        status: TrophyStatus.locked,
-      );
-    }).toList();
-  }
+  List<Trophy> getAllTrophies() =>
+      MilestoneConfigService.instance.getAllTrophies();
 
   // ─── Relay / Technician ───────────────────────────────────────────────────
 
@@ -354,16 +348,14 @@ class GameConfigService {
 
   /// Computes the scrip cost for the next dome based on how many you already have.
   int getNextDomeScripCost(Difficulty difficulty, int currentDomeCount) {
-    final cfg = getDomeBuildingConfig();
-    final base = cfg['base_scrip_cost'] as int? ?? 500;
-    final step = switch (difficulty) {
-      Difficulty.easy => cfg['scrip_step_easy'] as int? ?? 250,
-      Difficulty.normal => cfg['scrip_step_normal'] as int? ?? 500,
-      Difficulty.hard => cfg['scrip_step_hard'] as int? ?? 750,
-    };
-    // First dome is free (you start with it). Each additional adds step.
-    // currentDomeCount domes already exist, so next costs base + step*(count-1)
-    return base + step * (currentDomeCount - 1);
+    // Dome 2 = 500, doubles each time: 500, 1000, 2000, 4000, 8000...
+    // currentDomeCount = how many you already have (start with 1)
+    if (currentDomeCount <= 1) return 500;
+    int cost = 500;
+    for (int i = 1; i < currentDomeCount; i++) {
+      cost *= 2;
+    }
+    return cost;
   }
 
   List<Map<String, dynamic>> getDomeBotLevels() {

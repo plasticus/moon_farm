@@ -123,7 +123,20 @@ class _PowerSection extends StatelessWidget {
         const SizedBox(height: 8),
         ...powerBuildings.entries.map((entry) {
           final b = entry.value as Map<String, dynamic>;
-          final costScrip = b['cost_scrip'] as int? ?? 0;
+          // Count how many of this type the player already owns
+          final typeKey = entry.key;
+          final ownedCount = game.powerSources.where((p) {
+            return switch (typeKey) {
+              'solar_array'    => p.type == PowerSourceType.solarArray,
+              'wind_turbine'   => p.type == PowerSourceType.windTurbine,
+              'geothermal_tap' => p.type == PowerSourceType.geothermalTap,
+              _ => false,
+            };
+          }).length;
+          // 1.5x multiplier per owned unit of this type
+          final multiplier = ownedCount == 0 ? 1.0 : (1.5 * ownedCount);
+          final baseScrip = b['cost_scrip'] as int? ?? 0;
+          final costScrip = (baseScrip * multiplier).round();
           final costMetals = b['cost_metals'] as int? ?? 0;
           final costGlass = b['cost_glass'] as int? ?? 0;
           final costComponents = b['cost_components'] as int? ?? 0;
@@ -149,18 +162,22 @@ class _PowerSection extends StatelessWidget {
           if (game.resources.components < costComponents)
             missing.add('${costComponents - game.resources.components.toInt()} more comp');
 
+          // Show existing count
+          final existingLabel = ownedCount > 0 ? '  (own $ownedCount)' : '';
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _BuildRow(
               emoji: b['emoji'] as String,
-              name: b['name'] as String,
+              name: '${b['name'] as String}$existingLabel',
               description: b['description'] as String,
               costLine: costParts.join('  ·  '),
               outputLine: '+${b['power_output_kwh']} KWh',
               outputColor: MFColors.neonGreen,
               canAfford: canAfford,
               missingText: missing.isEmpty ? '' : 'Need: ${missing.join(', ')}',
-              onBuild: () => _buildPower(context, entry.key, b, game),
+              onBuild: () => _buildPower(context, entry.key, b, game,
+                  scripCost: costScrip),
             ),
           );
         }),
@@ -169,25 +186,25 @@ class _PowerSection extends StatelessWidget {
   }
 
 
-  void _buildPower(BuildContext context, String key, Map<String, dynamic> b, GameState game) {
+  void _buildPower(BuildContext context, String key, Map<String, dynamic> b,
+      GameState game, {int? scripCost}) {
     final type = switch (key) {
-      'solar_array' => PowerSourceType.solarArray,
-      'wind_turbine' => PowerSourceType.windTurbine,
+      'solar_array'    => PowerSourceType.solarArray,
+      'wind_turbine'   => PowerSourceType.windTurbine,
       'geothermal_tap' => PowerSourceType.geothermalTap,
       _ => PowerSourceType.solarArray,
     };
-
     final newSource = PowerSource(
       id: '${key}_${DateTime.now().millisecondsSinceEpoch}',
       type: type,
       outputKwh: b['power_output_kwh'] as int,
     );
-
+    final actualScripCost = scripCost ?? (b['cost_scrip'] as int? ?? 0);
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         powerSources: [...game.powerSources, newSource],
         resources: game.resources.copyWith(
-          starScrip: game.resources.starScrip - (b['cost_scrip'] as int? ?? 0),
+          starScrip: game.resources.starScrip - actualScripCost,
           metals: game.resources.metals - (b['cost_metals'] as int? ?? 0),
           glass: game.resources.glass - (b['cost_glass'] as int? ?? 0),
           components: game.resources.components - (b['cost_components'] as int? ?? 0),
@@ -961,23 +978,51 @@ class _DomeBotSection extends StatelessWidget {
     final nextLevel = bot.level + 1;
     final nextConfig =
         botLevels.where((l) => l['level'] == nextLevel).firstOrNull;
-    if (nextConfig == null) return const SizedBox();
+    if (nextConfig == null) {
+      // Max level — show MAX badge
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: MFColors.neonOrange.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: MFColors.neonOrange.withValues(alpha: 0.2)),
+        ),
+        child: Center(
+          child: Text('✦ FULLY UPGRADED',
+              style: MFTextStyles.bodySmall.copyWith(
+                  color: MFColors.neonOrange, fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
 
-    final costMetals = nextConfig['cost_metals'] as int;
-    final costComponents = nextConfig['cost_components'] as int? ?? 0;
-    final costChemicals = nextConfig['cost_chemicals'] as int? ?? 0;
+    final costMetals = nextConfig['cost_metals'] as int? ??
+        (nextConfig['upgrade_cost'] as Map?)?['metals'] as int? ?? 0;
+    final costComponents = nextConfig['cost_components'] as int? ??
+        (nextConfig['upgrade_cost'] as Map?)?['components'] as int? ?? 0;
+    final costChemicals = nextConfig['cost_chemicals'] as int? ??
+        (nextConfig['upgrade_cost'] as Map?)?['chemicals'] as int? ?? 0;
+    final costChitin = (nextConfig['upgrade_cost'] as Map?)?['chitin'] as int? ?? 0;
+    final nextUnlockPreview =
+        nextConfig['next_unlock_preview'] as String? ?? '';
+
+    final hasPower = _hasPowerFor(game,
+        (nextConfig['power_draw_kwh'] as int? ?? 0) - bot.powerDraw);
     final canAfford = game.resources.metals >= costMetals &&
         game.resources.components >= costComponents &&
-        game.resources.chemicals >= costChemicals;
+        game.resources.chemicals >= costChemicals &&
+        game.resources.chitin >= costChitin &&
+        hasPower;
 
-    final costParts = ['$costMetals metals'];
+    final costParts = <String>[];
+    if (costMetals > 0) costParts.add('$costMetals metals');
     if (costComponents > 0) costParts.add('$costComponents comp');
     if (costChemicals > 0) costParts.add('$costChemicals chem');
+    if (costChitin > 0) costParts.add('$costChitin chitin');
 
     return GestureDetector(
       onTap: canAfford ? () => _upgradeBot(context, dome, bot, nextConfig) : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: canAfford
               ? MFColors.neonOrange.withValues(alpha: 0.1)
@@ -989,13 +1034,29 @@ class _DomeBotSection extends StatelessWidget {
                 : MFColors.borderSubtle,
           ),
         ),
-        child: Center(
-          child: Text(
-            'UPGRADE TO Mk$nextLevel  ·  ${costParts.join('  ·  ')}',
-            style: MFTextStyles.bodySmall.copyWith(
-              color: canAfford ? MFColors.neonOrange : MFColors.textMuted,
+        child: Column(
+          children: [
+            Text(
+              'UPGRADE TO Mk$nextLevel  ·  ${costParts.join('  ·  ')}',
+              style: MFTextStyles.bodySmall.copyWith(
+                color: canAfford ? MFColors.neonOrange : MFColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
+            if (nextUnlockPreview.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                nextUnlockPreview,
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: canAfford
+                      ? MFColors.neonGreen
+                      : MFColors.textMuted,
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -1047,7 +1108,7 @@ class _DomeBotSection extends StatelessWidget {
           metals: game.resources.metals - costMetals,
           components: game.resources.components - costComponents,
           chemicals: game.resources.chemicals - costChemicals,
-          ore: game.resources.ore - costChitin, // chitin in ore slot
+          chitin: game.resources.chitin - costChitin,
         ),
       ),
     );
@@ -1385,7 +1446,7 @@ class _DomeBuildSection extends StatelessWidget {
       'glass' => r.glass,
       'metals' => r.metals,
       'components' => r.components,
-      'chitin' => r.ore, // proxy
+      'chitin' => r.chitin,
       'ore' => r.ore,
       _ => 0,
     };
@@ -1431,7 +1492,7 @@ class _DomeBuildSection extends StatelessWidget {
         'glass' => r.copyWith(glass: r.glass - amt),
         'metals' => r.copyWith(metals: r.metals - amt),
         'components' => r.copyWith(components: r.components - amt),
-        'chitin' => r.copyWith(ore: r.ore - amt),
+        'chitin' => r.copyWith(chitin: r.chitin - amt),
         'ore' => r.copyWith(ore: r.ore - amt),
         _ => r,
       };
