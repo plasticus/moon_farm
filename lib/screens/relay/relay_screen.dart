@@ -192,6 +192,10 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       );
     }
 
+    // Include any pending contract bonuses in this shipment
+    final contractBonus = game.pendingContractScrip;
+    totalScrip += contractBonus;
+
     final sale = PendingSale(
       resourceId: 'shipment_${game.currentWeek}',
       amount: totalVolume,
@@ -207,6 +211,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
             meat: (game.resources.meat - meatSold).clamp(0, double.infinity))
             : game.resources,
         pendingSales: [...game.pendingSales, sale],
+        pendingContractScrip: 0, // cleared — now in the shipment
         shipmentsThisWindow: game.shipmentsThisWindow + 1,
         totalVolumeDeliveredM3: game.totalVolumeDeliveredM3 + totalVolume,
         relay: updatedRelay,
@@ -279,6 +284,12 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
   }
 
   void _doSubmitToContract(String contractId, double amount, GameState game) {
+    // Contract submissions only accepted during ship windows
+    if (!game.isShipWindowOpen) {
+      _showMsg('"I\'m not here yet. Next pickup is Week ${game.nextShipWindowWeek}."');
+      return;
+    }
+
     final idx = game.activeContracts.indexWhere((c) => c.id == contractId);
     if (idx < 0) return;
     final contract = game.activeContracts[idx];
@@ -296,13 +307,14 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
 
     var active = List<Contract>.from(game.activeContracts);
     var completed = List<Contract>.from(game.completedContracts);
-    int bonus = 0;
+    int pendingBonus = 0;
 
     if (newCurrent >= contract.requiredAmount) {
       completed.add(updatedContract.copyWith(status: ContractStatus.completed));
       active.removeAt(idx);
-      bonus = contract.rewardScrip;
-      _showMsg('"Contract fulfilled. Bonus transferred."');
+      // Queue the reward — pays out with next shipment
+      pendingBonus = contract.rewardScrip;
+      _showMsg('"Contract fulfilled. Bonus of ${contract.rewardScrip}🎫 added to next shipment."');
     } else {
       active[idx] = updatedContract;
       _showMsg('"Logged. $newCurrent/${contract.requiredAmount}. Keep going."');
@@ -313,7 +325,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
         activeContracts: active,
         completedContracts: completed,
         siloInventory: updatedInv,
-        resources: game.resources.copyWith(starScrip: game.resources.starScrip + bonus),
+        pendingContractScrip: game.pendingContractScrip + pendingBonus,
       ),
     );
   }

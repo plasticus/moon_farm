@@ -395,6 +395,31 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
             _PendingSalesCard(sales: game.pendingSales),
             const SizedBox(height: 16),
           ],
+          if (game.pendingContractScrip > 0) ...[
+            const _SectionHeader('CONTRACT BONUS PENDING'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MFColors.starScrip.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: MFColors.starScrip.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Text('🎫', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '+${game.pendingContractScrip} Star-Scrip — paid with next shipment',
+                      style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (game.pendingDeliveries.isNotEmpty) ...[
             const _SectionHeader('INCOMING FROM KOVACS'),
             const SizedBox(height: 8),

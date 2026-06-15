@@ -81,10 +81,62 @@ class EndWeekEngine {
       events.add('💧 Water purifier output: +${waterOutput}m³');
     }
 
-    // ── Step 0a: Dome Bot processing ─────────────────────────────────────────
-    // Order: water → fertilize → (growth happens later) → harvest → plant
+    // ── Step 0a: Bot early harvest (runs FIRST so player can plant this turn) ──
         {
-      int botWatered = 0, botHarvested = 0, botFertilized = 0, botPlanted = 0;
+      int botHarvested = 0;
+      final config = GameConfigService.instance;
+      final updatedDomes = <Dome>[];
+
+      for (final dome in s.domes) {
+        final bot = dome.domeBot;
+        if (bot == null || !bot.canHarvest) {
+          updatedDomes.add(dome);
+          continue;
+        }
+
+        var cells = List<CropCell>.from(dome.cells);
+        final updatedInv = Map<String, double>.from(s.siloInventory);
+        var harvestRes = s.resources;
+        int domeHarvested = 0;
+
+        for (var i = 0; i < cells.length; i++) {
+          final cell = cells[i];
+          if (cell.state != CropState.ready || cell.cropId == null) continue;
+          final crop = config.getCrop(cell.cropId!);
+          if (crop == null) continue;
+          final yieldAmount = _cellYield(cell, crop);
+          if (crop.yieldsResource != null) {
+            harvestRes = _addResource(harvestRes, crop.yieldsResource!,
+                crop.resourceYieldAmount * yieldAmount);
+          } else {
+            updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + yieldAmount;
+          }
+          harvestRes = harvestRes.copyWith(
+            compost: harvestRes.compost + crop.compostYield,
+          );
+          cells[i] = cell.cleared();
+          domeHarvested++;
+          botHarvested++;
+        }
+
+        s = s.copyWith(
+          siloInventory: updatedInv,
+          resources: harvestRes,
+          totalCropsHarvested: s.totalCropsHarvested + domeHarvested,
+        );
+        updatedDomes.add(dome.copyWith(cells: cells));
+      }
+
+      if (botHarvested > 0) {
+        s = s.copyWith(domes: updatedDomes);
+        cropsHarvested += botHarvested;
+        events.add('🤖 Dome bots harvested $botHarvested crop${botHarvested == 1 ? '' : 's'}');
+      }
+    }
+
+    // ── Step 0b: Dome Bot water / fertilize / plant ──────────────────────────
+        {
+      int botWatered = 0, botFertilized = 0, botPlanted = 0;
       final config = GameConfigService.instance;
       final updatedDomes = <Dome>[];
 
@@ -116,8 +168,20 @@ class EndWeekEngine {
           for (var i = 0; i < cells.length; i++) {
             final cell = cells[i];
             if (cell.cropId == null || cell.state == CropState.empty) continue;
-            if (!cell.fertilizedThisWeek && resources.compost >= 2) {
-              cells[i] = cell.copyWith(fertilizedThisWeek: true);
+            final crop = config.getCrop(cell.cropId!);
+            if (crop == null) continue;
+            // Check cooldown and max fertilizations
+            final canFert = !cell.fertilizedThisWeek &&
+                cell.fertilizeCount < crop.maxFertilizations &&
+                (cell.lastFertilizeWeek < 0 ||
+                    cell.weeksGrown - cell.lastFertilizeWeek >= 3) &&
+                resources.compost >= 2;
+            if (canFert) {
+              cells[i] = cell.copyWith(
+                fertilizedThisWeek: true,
+                fertilizeCount: cell.fertilizeCount + 1,
+                lastFertilizeWeek: cell.weeksGrown,
+              );
               resources = resources.copyWith(compost: resources.compost - 2);
               botFertilized++;
             }
@@ -125,36 +189,6 @@ class EndWeekEngine {
         }
 
         s = s.copyWith(resources: resources);
-
-        // HARVEST — bot harvests ready crops into silo
-        if (bot.canHarvest) {
-          final updatedInv = Map<String, double>.from(s.siloInventory);
-          var harvestRes = s.resources;
-          for (var i = 0; i < cells.length; i++) {
-            final cell = cells[i];
-            if (cell.state != CropState.ready || cell.cropId == null) continue;
-            final crop = config.getCrop(cell.cropId!);
-            if (crop == null) continue;
-            final yieldAmount = _cellYield(cell, crop);
-            // Resource crops deposit raw materials; food crops go to silo.
-            if (crop.yieldsResource != null) {
-              harvestRes = _addResource(harvestRes, crop.yieldsResource!,
-                  crop.resourceYieldAmount * yieldAmount);
-            } else {
-              updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + yieldAmount;
-            }
-            harvestRes = harvestRes.copyWith(
-              compost: harvestRes.compost + crop.compostYield,
-            );
-            cells[i] = cell.cleared();
-            botHarvested++;
-          }
-          s = s.copyWith(
-            siloInventory: updatedInv,
-            resources: harvestRes,
-            totalCropsHarvested: s.totalCropsHarvested + botHarvested,
-          );
-        }
 
         // PLANT — bot plants empty cells with configured crop (consumes seeds)
         if (bot.canPlant && bot.plantCropId != null) {
@@ -188,11 +222,10 @@ class EndWeekEngine {
 
       s = s.copyWith(domes: updatedDomes);
 
-      if (botWatered > 0 || botHarvested > 0 || botFertilized > 0 || botPlanted > 0) {
+      if (botWatered > 0 || botFertilized > 0 || botPlanted > 0) {
         final parts = <String>[];
         if (botWatered > 0) parts.add('watered $botWatered cells');
         if (botFertilized > 0) parts.add('fertilized $botFertilized cells');
-        if (botHarvested > 0) parts.add('harvested $botHarvested crops');
         if (botPlanted > 0) parts.add('planted $botPlanted seeds');
         events.add('🤖 Dome Bots: ${parts.join(', ')}');
         robotActions.add('Dome Bots: ${parts.join(', ')}');

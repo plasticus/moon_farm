@@ -94,6 +94,7 @@ class GameState {
   final RelayTechnicianState relay;
   final double totalVolumeDeliveredM3;
   final int lifetimeScripEarned;
+  final int pendingContractScrip; // contract bonuses waiting for next shipment
   final int totalCropsHarvested;
   final int totalCompostGenerated;
   final Map<String, int> cropHarvestCounts; // cropId -> times harvested
@@ -137,6 +138,7 @@ class GameState {
     required this.relay,
     required this.totalVolumeDeliveredM3,
     required this.lifetimeScripEarned,
+    this.pendingContractScrip = 0,
     required this.totalCropsHarvested,
     required this.totalCompostGenerated,
     this.cropHarvestCounts = const {},
@@ -180,6 +182,7 @@ class GameState {
     RelayTechnicianState? relay,
     double? totalVolumeDeliveredM3,
     int? lifetimeScripEarned,
+    int? pendingContractScrip,
     int? totalCropsHarvested,
     int? totalCompostGenerated,
     Map<String, int>? cropHarvestCounts,
@@ -224,6 +227,7 @@ class GameState {
       relay: relay ?? this.relay,
       totalVolumeDeliveredM3: totalVolumeDeliveredM3 ?? this.totalVolumeDeliveredM3,
       lifetimeScripEarned: lifetimeScripEarned ?? this.lifetimeScripEarned,
+      pendingContractScrip: pendingContractScrip ?? this.pendingContractScrip,
       totalCropsHarvested: totalCropsHarvested ?? this.totalCropsHarvested,
       totalCompostGenerated:
       totalCompostGenerated ?? this.totalCompostGenerated,

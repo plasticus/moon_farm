@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -322,6 +322,7 @@ class DatabaseHelper {
       'relay': _relayToJson(state.relay),
       'total_volume_delivered_m3': state.totalVolumeDeliveredM3,
       'lifetime_solars_earned': state.lifetimeScripEarned,
+      'pending_contract_scrip': state.pendingContractScrip,
       'total_crops_harvested': state.totalCropsHarvested,
       'total_compost_generated': state.totalCompostGenerated,
       'crop_harvest_counts': state.cropHarvestCounts,
@@ -365,6 +366,7 @@ class DatabaseHelper {
       relay: _relayFromJson(json['relay'] as Map<String, dynamic>),
       totalVolumeDeliveredM3: (json['total_volume_delivered_m3'] as num).toDouble(),
       lifetimeScripEarned: (json['lifetime_solars_earned'] as num).toInt(),
+      pendingContractScrip: (json['pending_contract_scrip'] as num?)?.toInt() ?? 0,
       totalCropsHarvested: (json['total_crops_harvested'] as num).toInt(),
       totalCompostGenerated: (json['total_compost_generated'] as num).toInt(),
       cropHarvestCounts: (json['crop_harvest_counts'] as Map?)

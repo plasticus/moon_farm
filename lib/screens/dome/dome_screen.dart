@@ -61,8 +61,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
   }
 
   void _changeDome(int newIndex, int direction) {
-    // Slide out then switch
-    final outOffset = Offset(direction * -0.3, 0);
+    // direction: -1 = swiping left (going to next dome), 1 = swiping right (going to prev)
+    final outOffset = Offset(direction * 0.3, 0); // slide out in swipe direction
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: outOffset,
@@ -70,9 +70,9 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
 
     _slideController.forward(from: 0).then((_) {
       ref.read(activeDomeIndexProvider.notifier).state = newIndex;
-      // Slide in from other side
+      // New dome slides in from opposite side
       _slideAnimation = Tween<Offset>(
-        begin: Offset(direction * 0.3, 0),
+        begin: Offset(-direction * 0.3, 0),
         end: Offset.zero,
       ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
       _slideController.forward(from: 0);

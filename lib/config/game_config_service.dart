@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
 import 'raid_config_service.dart';
+import 'upgrade_config_service.dart';
 import 'milestone_config_service.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
@@ -358,11 +359,8 @@ class GameConfigService {
     return cost;
   }
 
-  List<Map<String, dynamic>> getDomeBotLevels() {
-    final bot = _c['dome_bot'] as Map<String, dynamic>?;
-    if (bot == null) return [];
-    return List<Map<String, dynamic>>.from(bot['levels'] as List);
-  }
+  List<Map<String, dynamic>> getDomeBotLevels() =>
+      UpgradeConfigService.instance.domeBotLevels;
 
   List<Map<String, dynamic>> getRadioTips() {
     final tips = _c['radio_tips'] as List?;

@@ -933,7 +933,8 @@ class _DomeBotSection extends StatelessWidget {
       BuildContext context, Dome dome, List<Map<String, dynamic>> botLevels) {
     if (botLevels.isEmpty) return const SizedBox();
     final mk1 = botLevels.first;
-    final costMetals = mk1['cost_metals'] as int;
+    final buildCost = (mk1['build_cost'] as Map?)?.cast<String, dynamic>() ?? {};
+    final costMetals = buildCost['metals'] as int? ?? mk1['cost_metals'] as int? ?? 0;
     final powerNeeded = mk1['power_draw_kwh'] as int? ?? 2;
     final hasPower = _hasPowerFor(game, powerNeeded);
     final canAfford = game.resources.metals >= costMetals && hasPower;
@@ -1064,12 +1065,13 @@ class _DomeBotSection extends StatelessWidget {
 
   void _installBot(BuildContext context, Dome dome,
       Map<String, dynamic> cfg) {
+    final buildCost = (cfg['build_cost'] as Map?)?.cast<String, dynamic>() ?? {};
+    final costMetals = buildCost['metals'] as int? ?? cfg['cost_metals'] as int? ?? 0;
     final newBot = DomeBot(
       level: 1,
       powerDraw: cfg['power_draw_kwh'] as int,
     );
-    _applyBotChange(dome, newBot,
-        cfg['cost_metals'] as int, 0, 0, 0);
+    _applyBotChange(dome, newBot, costMetals, 0, 0, 0);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!')),
     );
@@ -1077,6 +1079,7 @@ class _DomeBotSection extends StatelessWidget {
 
   void _upgradeBot(BuildContext context, Dome dome, DomeBot bot,
       Map<String, dynamic> cfg) {
+    final cost = (cfg['upgrade_cost'] as Map?)?.cast<String, dynamic>() ?? {};
     final upgraded = bot.copyWith(
       level: cfg['level'] as int,
       powerDraw: cfg['power_draw_kwh'] as int,
@@ -1084,10 +1087,10 @@ class _DomeBotSection extends StatelessWidget {
     _applyBotChange(
       dome,
       upgraded,
-      cfg['cost_metals'] as int,
-      cfg['cost_components'] as int? ?? 0,
-      cfg['cost_chemicals'] as int? ?? 0,
-      cfg['cost_chitin'] as int? ?? 0,
+      cost['metals'] as int? ?? cfg['cost_metals'] as int? ?? 0,
+      cost['components'] as int? ?? cfg['cost_components'] as int? ?? 0,
+      cost['chemicals'] as int? ?? cfg['cost_chemicals'] as int? ?? 0,
+      cost['chitin'] as int? ?? cfg['cost_chitin'] as int? ?? 0,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
