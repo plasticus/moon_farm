@@ -112,6 +112,23 @@ class DevToolsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
+          // Kovacs mood (0-100 scale)
+          _DevSection(
+            title: 'KOVACS MOOD (currently ${game.relay.mood})',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _DevButton('-10 Mood', MFColors.neonPink, () => _adjustMood(ref, game, -10)),
+                _DevButton('+10 Mood', MFColors.neonGreen, () => _adjustMood(ref, game, 10)),
+                _DevButton('Set to 0', MFColors.neonPink, () => _setMood(ref, game, 0)),
+                _DevButton('Set to 50', MFColors.textSecondary, () => _setMood(ref, game, 50)),
+                _DevButton('Set to 100', MFColors.neonGreen, () => _setMood(ref, game, 100)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Dome tools
           _DevSection(
             title: 'DOME TOOLS',
@@ -204,6 +221,19 @@ class DevToolsScreen extends ConsumerWidget {
       compost: 50, metals: 100, chemicals: 50, sand: 50,
       glass: 50, components: 50, ore: 50, moonDirt: 100,
       chitin: 50, meat: 20,
+    );
+  }
+
+  void _adjustMood(WidgetRef ref, GameState game, int delta) {
+    final newMood = (game.relay.mood + delta).clamp(0, 100);
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(relay: game.relay.copyWith(mood: newMood)),
+    );
+  }
+
+  void _setMood(WidgetRef ref, GameState game, int value) {
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(relay: game.relay.copyWith(mood: value.clamp(0, 100))),
     );
   }
 

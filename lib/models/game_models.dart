@@ -992,11 +992,15 @@ class RelayTechnicianState {
   }
 
   double get priceDiscount {
-    if (mood >= 85) return 0.20;
-    if (mood >= 65) return 0.10;
-    if (mood >= 40) return 0.00;
-    if (mood >= 20) return -0.10;
-    return -0.25;
+    // Continuous scale from -25% (mood 0) to +20% (mood 100).
+    // mood 50 (neutral midpoint) lands close to 0%.
+    if (mood >= 50) {
+      // 50→100 maps to 0%→+20%
+      return (mood - 50) / 50.0 * 0.20;
+    } else {
+      // 0→50 maps to -25%→0%
+      return (mood - 50) / 50.0 * 0.25;
+    }
   }
 
   RelayTechnicianState copyWith({

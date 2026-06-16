@@ -222,7 +222,11 @@ class KovacsEngine {
       newlyUnlockedTopicId: newlyUnlocked,
       );
     } else {
-      final signOff = _pickSignOff(netChange);
+      // ════════════ FIXED: TURN 2 MOOD CALCULATIONS ════════════
+      final dynamicNewMood = (conv.moodCurrent + picked.moodChange).clamp(0, 100);
+      final dynamicNetChange = conv.netMoodChange + picked.moodChange;
+
+      final signOff = _pickSignOff(dynamicNetChange);
       history.add(ConversationBubble(
         side: SpeakerSide.kovacs,
         text: _substitute(signOff, game),
@@ -233,12 +237,13 @@ class KovacsEngine {
         phase: ConversationPhase.complete,
         history: history,
         currentOptions: [],
-        moodCurrent: newMood,
-        netMoodChange: netChange,
+        moodCurrent: dynamicNewMood,
+        netMoodChange: dynamicNetChange,
       ),
-      newMood: newMood,
+      newMood: dynamicNewMood,
       newlyUnlockedTopicId: null,
       );
+      // ═══════════════════════════════════════════════════════════
     }
   }
 
