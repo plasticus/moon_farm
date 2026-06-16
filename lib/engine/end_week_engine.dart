@@ -22,6 +22,7 @@ import '../models/game_models.dart';
 import '../config/game_config_service.dart';
 import '../config/raid_config_service.dart';
 import '../config/milestone_config_service.dart';
+import '../config/upgrade_config_service.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -81,62 +82,12 @@ class EndWeekEngine {
       events.add('💧 Water purifier output: +${waterOutput}m³');
     }
 
-    // ── Step 0a: Bot early harvest (runs FIRST so player can plant this turn) ──
-        {
-      int botHarvested = 0;
-      final config = GameConfigService.instance;
-      final updatedDomes = <Dome>[];
-
-      for (final dome in s.domes) {
-        final bot = dome.domeBot;
-        if (bot == null || !bot.canHarvest) {
-          updatedDomes.add(dome);
-          continue;
-        }
-
-        var cells = List<CropCell>.from(dome.cells);
-        final updatedInv = Map<String, double>.from(s.siloInventory);
-        var harvestRes = s.resources;
-        int domeHarvested = 0;
-
-        for (var i = 0; i < cells.length; i++) {
-          final cell = cells[i];
-          if (cell.state != CropState.ready || cell.cropId == null) continue;
-          final crop = config.getCrop(cell.cropId!);
-          if (crop == null) continue;
-          final yieldAmount = _cellYield(cell, crop);
-          if (crop.yieldsResource != null) {
-            harvestRes = _addResource(harvestRes, crop.yieldsResource!,
-                crop.resourceYieldAmount * yieldAmount);
-          } else {
-            updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + yieldAmount;
-          }
-          harvestRes = harvestRes.copyWith(
-            compost: harvestRes.compost + crop.compostYield,
-          );
-          cells[i] = cell.cleared();
-          domeHarvested++;
-          botHarvested++;
-        }
-
-        s = s.copyWith(
-          siloInventory: updatedInv,
-          resources: harvestRes,
-          totalCropsHarvested: s.totalCropsHarvested + domeHarvested,
-        );
-        updatedDomes.add(dome.copyWith(cells: cells));
-      }
-
-      if (botHarvested > 0) {
-        s = s.copyWith(domes: updatedDomes);
-        cropsHarvested += botHarvested;
-        events.add('🤖 Dome bots harvested $botHarvested crop${botHarvested == 1 ? '' : 's'}');
-      }
-    }
+    // (Bot harvest now runs AFTER growth tick — see below — so it catches
+    //  crops that just became ready this week, not just leftovers from before.)
 
     // ── Step 0b: Dome Bot water / fertilize / plant ──────────────────────────
         {
-      int botWatered = 0, botFertilized = 0, botPlanted = 0;
+      int botWatered = 0, botFertilized = 0;
       final config = GameConfigService.instance;
       final updatedDomes = <Dome>[];
 
@@ -189,46 +140,100 @@ class EndWeekEngine {
         }
 
         s = s.copyWith(resources: resources);
-
-        // PLANT — bot plants empty cells with configured crop (consumes seeds)
-        if (bot.canPlant && bot.plantCropId != null) {
-          final crop = config.getCrop(bot.plantCropId!);
-          if (crop != null) {
-            for (var i = 0; i < cells.length; i++) {
-              final cell = cells[i];
-              if (cell.state == CropState.empty && s.resources.seeds > 0) {
-                cells[i] = CropCell(
-                  position: cell.position,
-                  cropId: bot.plantCropId,
-                  state: CropState.planted,
-                  weeksGrown: 0,
-                  wateredThisWeek: false,
-                  fertilizedThisWeek: false,
-                );
-                botPlanted++;
-                // Deduct seed immediately
-                s = s.copyWith(
-                  resources: s.resources.copyWith(
-                    seeds: s.resources.seeds - 1,
-                  ),
-                );
-              }
-            }
-          }
-        }
-
         updatedDomes.add(dome.copyWith(cells: cells));
       }
 
       s = s.copyWith(domes: updatedDomes);
 
-      if (botWatered > 0 || botFertilized > 0 || botPlanted > 0) {
+      if (botWatered > 0 || botFertilized > 0) {
         final parts = <String>[];
         if (botWatered > 0) parts.add('watered $botWatered cells');
         if (botFertilized > 0) parts.add('fertilized $botFertilized cells');
-        if (botPlanted > 0) parts.add('planted $botPlanted seeds');
         events.add('🤖 Dome Bots: ${parts.join(', ')}');
         robotActions.add('Dome Bots: ${parts.join(', ')}');
+      }
+    }
+
+    // ── Step 0c: Auto-Refine (Mk10 machines craft max possible automatically) ──
+        {
+      final upgrades = UpgradeConfigService.instance;
+      var resources = s.resources;
+      final autoRefineLog = <String>[];
+
+      Resources subtract(Resources r, String key, double amt) {
+        return switch (key) {
+          'compost' => r.copyWith(compost: r.compost - amt),
+          'ore' => r.copyWith(ore: r.ore - amt),
+          'moon_dirt' => r.copyWith(moonDirt: r.moonDirt - amt),
+          'chemicals' => r.copyWith(chemicals: r.chemicals - amt),
+          'water' => r.copyWith(water: r.water - amt),
+          'sand' => r.copyWith(sand: r.sand - amt),
+          'metals' => r.copyWith(metals: r.metals - amt),
+          'glass' => r.copyWith(glass: r.glass - amt),
+          'components' => r.copyWith(components: r.components - amt),
+          _ => r,
+        };
+      }
+
+      Resources add(Resources r, String key, double amt) {
+        return switch (key) {
+          'z_soil' => r.copyWith(zSoil: r.zSoil + amt),
+          'metals' => r.copyWith(metals: r.metals + amt),
+          'glass' => r.copyWith(glass: r.glass + amt),
+          'components' => r.copyWith(components: r.components + amt),
+          'compost' => r.copyWith(compost: r.compost + amt),
+          _ => r,
+        };
+      }
+
+      double getHave(Resources r, String key) {
+        return switch (key) {
+          'compost' => r.compost,
+          'ore' => r.ore,
+          'moon_dirt' => r.moonDirt,
+          'chemicals' => r.chemicals,
+          'water' => r.water,
+          'sand' => r.sand,
+          'metals' => r.metals,
+          'glass' => r.glass,
+          'components' => r.components,
+          _ => 0,
+        };
+      }
+
+      for (final refinery in s.refineries) {
+        for (final machine in refinery.machines) {
+          if (machine.level < 10 || !machine.autoRefine) continue;
+          final levelCfg = upgrades.getMachineLevel(machine.yamlKey, machine.level);
+          if (levelCfg == null) continue;
+          final recipeIn = Map<String, dynamic>.from(levelCfg['recipe_in'] as Map? ?? {});
+          final recipeOut = Map<String, dynamic>.from(levelCfg['recipe_out'] as Map? ?? {});
+          if (recipeIn.isEmpty) continue;
+
+          int maxN = 999;
+          for (final e in recipeIn.entries) {
+            final needed = (e.value as num).toDouble();
+            if (needed <= 0) continue;
+            final have = getHave(resources, e.key);
+            final n = (have / needed).floor();
+            if (n < maxN) maxN = n;
+          }
+          maxN = maxN.clamp(0, 999);
+          if (maxN <= 0) continue;
+
+          for (final e in recipeIn.entries) {
+            resources = subtract(resources, e.key, (e.value as num).toDouble() * maxN);
+          }
+          for (final e in recipeOut.entries) {
+            resources = add(resources, e.key, (e.value as num).toDouble() * maxN);
+          }
+          autoRefineLog.add('${machine.emoji} ${machine.name} ×$maxN');
+        }
+      }
+
+      if (autoRefineLog.isNotEmpty) {
+        s = s.copyWith(resources: resources);
+        events.add('🔁 Auto-Refine: ${autoRefineLog.join(', ')}');
       }
     }
 
@@ -267,13 +272,19 @@ class EndWeekEngine {
       }
     }
 
-    // ── Step 1: Process pending sales ─────────────────────────────────────
-    if (s.pendingSales.isNotEmpty) {
+    // ── Step 1: Process pending sales (ship window weeks only) ───────────────
+    if (s.pendingSales.isNotEmpty && s.isShipWindowOpen) {
       int earned = 0;
       for (final sale in s.pendingSales) {
         earned += sale.scripValue;
-        volumeToColony += sale.amount;
-        events.add('Shipment delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫');
+        if (sale.amount > 0) {
+          events.add('📦 Shipment delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫');
+        }
+      }
+      // Include any queued contract bonuses
+      if (s.pendingContractScrip > 0) {
+        earned += s.pendingContractScrip;
+        events.add('📋 Contract bonus paid: +${s.pendingContractScrip} 🎫');
       }
       scripReceived = earned;
       s = s.copyWith(
@@ -281,7 +292,7 @@ class EndWeekEngine {
           starScrip: s.resources.starScrip + earned,
         ),
         pendingSales: [],
-        totalVolumeDeliveredM3: s.totalVolumeDeliveredM3 + volumeToColony,
+        pendingContractScrip: 0,
         lifetimeScripEarned: s.lifetimeScripEarned + earned,
       );
       resourceChanges['star_scrip'] = earned.toDouble();
@@ -473,6 +484,148 @@ class EndWeekEngine {
       domes: updatedDomesAfterGrowth,
       totalCropsHarvested: s.totalCropsHarvested + cropsHarvested,
     );
+
+    // ── Step 4b: Bot harvest (runs right after growth tick, so crops that just
+    //    became ready THIS week get harvested immediately — player sees empty
+    //    cells ready to plant when they open the dome) ─────────────────────────
+        {
+      int botHarvested = 0;
+      final config = GameConfigService.instance;
+      final updatedDomes = <Dome>[];
+      final debugLines = <String>[];
+
+      for (final dome in s.domes) {
+        final bot = dome.domeBot;
+        final readyCount = dome.cells.where((c) => c.state == CropState.ready).length;
+
+        if (bot == null) {
+          debugLines.add('${dome.name}: no bot installed ($readyCount ready)');
+          updatedDomes.add(dome);
+          continue;
+        }
+        if (!bot.canHarvest) {
+          debugLines.add('${dome.name}: Mk${bot.level} bot, canHarvest=false ($readyCount ready)');
+          updatedDomes.add(dome);
+          continue;
+        }
+
+        var cells = List<CropCell>.from(dome.cells);
+        final updatedInv = Map<String, double>.from(s.siloInventory);
+        var harvestRes = s.resources;
+        int domeHarvested = 0;
+
+        for (var i = 0; i < cells.length; i++) {
+          final cell = cells[i];
+          if (cell.state != CropState.ready || cell.cropId == null) continue;
+          final crop = config.getCrop(cell.cropId!);
+          if (crop == null) continue;
+          final yieldAmount = _cellYield(cell, crop);
+          if (crop.yieldsResource != null) {
+            harvestRes = _addResource(harvestRes, crop.yieldsResource!,
+                crop.resourceYieldAmount * yieldAmount);
+          } else {
+            updatedInv[cell.cropId!] = (updatedInv[cell.cropId!] ?? 0) + yieldAmount;
+          }
+          harvestRes = harvestRes.copyWith(
+            compost: harvestRes.compost + crop.compostYield,
+          );
+          cells[i] = cell.cleared();
+          domeHarvested++;
+          botHarvested++;
+        }
+
+        debugLines.add('${dome.name}: Mk${bot.level} bot, canHarvest=true, harvested $domeHarvested/$readyCount ready cells');
+
+        s = s.copyWith(
+          siloInventory: updatedInv,
+          resources: harvestRes,
+          totalCropsHarvested: s.totalCropsHarvested + domeHarvested,
+        );
+        updatedDomes.add(dome.copyWith(cells: cells));
+      }
+
+      if (botHarvested > 0) {
+        s = s.copyWith(domes: updatedDomes);
+        events.add('🤖 Dome bots harvested $botHarvested crop${botHarvested == 1 ? '' : 's'}');
+      } else {
+        s = s.copyWith(domes: updatedDomes);
+      }
+
+      // DEBUG: dump per-dome bot status into radio feed every week
+      final debugMsg = '🔧 [BOT DEBUG W${s.currentWeek}]\n${debugLines.join('\n')}';
+      s = s.copyWith(
+        radioFeed: [
+          ...s.radioFeed,
+          RadioTransmission(week: s.currentWeek, message: debugMsg, isRead: false),
+        ],
+      );
+    }
+
+    // ── Step 4c: Bot plant (runs right after harvest, using THIS week's
+    //    freshly emptied cells — not last week's stale state) ─────────────────
+        {
+      final config = GameConfigService.instance;
+      final updatedDomes = <Dome>[];
+      final plantDebugLines = <String>[];
+      int totalPlanted = 0;
+
+      for (final dome in s.domes) {
+        final bot = dome.domeBot;
+        if (bot == null) { updatedDomes.add(dome); continue; }
+
+        var cells = List<CropCell>.from(dome.cells);
+        final emptyCount = cells.where((c) => c.state == CropState.empty).length;
+
+        if (bot.canPlant && bot.plantCropId != null) {
+          final crop = config.getCrop(bot.plantCropId!);
+          if (crop != null) {
+            int domePlanted = 0;
+            for (var i = 0; i < cells.length; i++) {
+              final cell = cells[i];
+              if (cell.state == CropState.empty && s.resources.seeds > 0) {
+                cells[i] = CropCell(
+                  position: cell.position,
+                  cropId: bot.plantCropId,
+                  state: CropState.planted,
+                  weeksGrown: 0,
+                  wateredThisWeek: false,
+                  fertilizedThisWeek: false,
+                );
+                domePlanted++;
+                totalPlanted++;
+                s = s.copyWith(
+                  resources: s.resources.copyWith(seeds: s.resources.seeds - 1),
+                );
+              }
+            }
+            plantDebugLines.add('${dome.name}: Mk${bot.level} bot, plantCropId=${bot.plantCropId}, planted $domePlanted/$emptyCount empty cells (seeds left: ${s.resources.seeds})');
+          }
+        } else if (bot.canPlant && bot.plantCropId == null) {
+          plantDebugLines.add('${dome.name}: Mk${bot.level} bot, canPlant=true but plantCropId=NULL — not configured ($emptyCount empty)');
+        } else if (bot.canPlant) {
+          plantDebugLines.add('${dome.name}: Mk${bot.level} bot, plant disabled (set to None) ($emptyCount empty)');
+        }
+
+        updatedDomes.add(dome.copyWith(cells: cells));
+      }
+
+      s = s.copyWith(domes: updatedDomes);
+
+      if (totalPlanted > 0) {
+        events.add('🤖 Dome bots planted $totalPlanted seed${totalPlanted == 1 ? '' : 's'}');
+        robotActions.add('Dome bots planted $totalPlanted seeds');
+      }
+
+      if (plantDebugLines.isNotEmpty) {
+        final plantDebugMsg = '🔧 [PLANT DEBUG W${s.currentWeek}]\n${plantDebugLines.join('\n')}';
+        s = s.copyWith(
+          radioFeed: [
+            ...s.radioFeed,
+            RadioTransmission(week: s.currentWeek, message: plantDebugMsg, isRead: false),
+          ],
+        );
+      }
+    }
 
     // ── Step 6: Silo overflow → compost ───────────────────────────────────
     // (Full silo handling deferred to Phase 3 when selling is implemented)

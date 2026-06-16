@@ -16,8 +16,8 @@ raid_intervals:
 # the deterministic matrix, but we preserve these for global settings.
 raid_scaling:
   spawn_interval_base: 1.5    # At lowest levels, this is the time between spawns
-  spawn_interval_min: 0.46875 # 60s/128 creatures, so this is the minimum time between spawns at max rates
-  raid_duration_max: 60       # maximum time for a wave
+  spawn_interval_min: 0.234375 # 30s/128 creatures, so this is the minimum time between spawns at max rates
+  raid_duration_max: 30       # maximum time for a wave
 
 raid_drops:
   meat_chance: 0.70

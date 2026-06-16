@@ -63,7 +63,10 @@ class AnimatedActionButtonState extends State<AnimatedActionButton>
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.missingText),
+            content: GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+              child: Text(widget.missingText),
+            ),
             duration: const Duration(seconds: 2),
             backgroundColor: MFColors.surfaceElevated,
           ),

@@ -462,12 +462,20 @@ class _WallSection extends StatelessWidget {
               if (!canAfford)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Need ${(meatCost - game.resources.meat).ceil()} more 🥩'
-                        '${game.resources.chemicals < chemCost ? '  ·  ${(chemCost - game.resources.chemicals).ceil()} more ⚗️' : ''}',
-                    style: MFTextStyles.bodySmall
-                        .copyWith(color: MFColors.neonPink, fontSize: 10),
-                  ),
+                  child: Builder(builder: (context) {
+                    final parts = <String>[];
+                    if (game.resources.meat < meatCost) {
+                      parts.add('${(meatCost - game.resources.meat).ceil()} more 🥩');
+                    }
+                    if (game.resources.chemicals < chemCost) {
+                      parts.add('${(chemCost - game.resources.chemicals).ceil()} more ⚗️');
+                    }
+                    return Text(
+                      'Need ${parts.join('  ·  ')}',
+                      style: MFTextStyles.bodySmall
+                          .copyWith(color: MFColors.neonPink, fontSize: 10),
+                    );
+                  }),
                 ),
             ],
           ),
@@ -500,9 +508,13 @@ class _WallSection extends StatelessWidget {
       ),
     );
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🚨 Pheromone bait deployed! Local swarm incoming...'),
+      SnackBar(
+        content: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          child: Text('🚨 Pheromone bait deployed! Local swarm incoming...'),
+        ),
         backgroundColor: MFColors.neonPink,
       ),
     );
@@ -570,8 +582,12 @@ class _WallSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('🧱 Wall repaired!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🧱 Wall repaired!'),
+      )),
     );
   }
 
@@ -614,8 +630,12 @@ class _WallSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🧱 Defense Wall upgraded to Mk$newLevel!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🧱 Defense Wall upgraded to Mk$newLevel!'),
+      )),
     );
   }
 }
@@ -709,7 +729,10 @@ class _SentriesSection extends StatelessWidget {
                               parts.add('$powerDelta KWh spare');
                             ScaffoldMessenger.of(context).clearSnackBars();
                             ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Need: ${parts.join(', ')}'),
+                                SnackBar(content: GestureDetector(
+                                  onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                                  child: Text('Need: ${parts.join(', ')}'),
+                                ),
                                     duration: const Duration(seconds: 2)));
                           },
                           child: Container(
@@ -828,9 +851,12 @@ class _SentriesSection extends StatelessWidget {
                       if (!hasPower) {
                         ScaffoldMessenger.of(context).clearSnackBars();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(
-                              '⚡ Not enough power. Needs $powerNeeded KWh, '
-                                  'only ${game.powerSurplus} KWh spare.'),
+                          SnackBar(content: GestureDetector(
+                            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                            child: Text(
+                                '⚡ Not enough power. Needs $powerNeeded KWh, '
+                                    'only ${game.powerSurplus} KWh spare.'),
+                          ),
                               duration: const Duration(seconds: 3)),
                         );
                       }
@@ -876,8 +902,12 @@ class _SentriesSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🔫 Sentry upgraded to Mk${cfg['level']}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🔫 Sentry upgraded to Mk${cfg['level']}!'),
+      )),
     );
   }
 
@@ -901,8 +931,12 @@ class _SentriesSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🔫 ${cfg['name']} deployed!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🔫 ${cfg['name']} deployed!'),
+      )),
     );
   }
 }
@@ -1077,8 +1111,12 @@ class _GrenadeSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🏭 Grenade Bench upgraded to Mk${cfg['level']}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🏭 Grenade Bench upgraded to Mk${cfg['level']}!'),
+      )),
     );
   }
 
@@ -1125,8 +1163,12 @@ class _GrenadeSection extends StatelessWidget {
       ),
     );
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Crafted ×$yield_ ${id.replaceAll('_', ' ')}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('Crafted ×$yield_ ${id.replaceAll('_', ' ')}!'),
+      )),
     );
   }
 }

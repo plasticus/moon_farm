@@ -158,10 +158,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     }
 
     final config = GameConfigService.instance;
-    final isRush = game.shipmentsThisWindow > 0;
-    final discount = isRush
-        ? game.relay.priceDiscount - config.rushPriceCut
-        : game.relay.priceDiscount;
+    final discount = game.relay.priceDiscount;
 
     int totalScrip = 0;
     double totalVolume = 0;
@@ -183,13 +180,6 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
         if (remaining <= 0) updatedInventory.remove(entry.key);
         else updatedInventory[entry.key] = remaining;
       }
-    }
-
-    var updatedRelay = game.relay;
-    if (isRush) {
-      updatedRelay = updatedRelay.copyWith(
-        mood: (updatedRelay.mood + config.rushMoodPenalty).clamp(0, 100),
-      );
     }
 
     // Include any pending contract bonuses in this shipment
@@ -214,15 +204,11 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
         pendingContractScrip: 0, // cleared — now in the shipment
         shipmentsThisWindow: game.shipmentsThisWindow + 1,
         totalVolumeDeliveredM3: game.totalVolumeDeliveredM3 + totalVolume,
-        relay: updatedRelay,
       ),
     );
     setState(() => _saleQueue.clear());
 
-    final msg = isRush
-        ? '"Rush shipment processed. ${totalVolume.toStringAsFixed(1)}m³. The surcharge reflects my feelings."'
-        : '"Cargo received. ${totalVolume.toStringAsFixed(1)}m³. Scrip transfers next cycle."';
-    _showMsg(msg);
+    _showMsg('"Cargo received. ${totalVolume.toStringAsFixed(1)}m³. Scrip transfers next cycle."');
   }
 
   void _doSellAll(GameState game) {
@@ -284,12 +270,6 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
   }
 
   void _doSubmitToContract(String contractId, double amount, GameState game) {
-    // Contract submissions only accepted during ship windows
-    if (!game.isShipWindowOpen) {
-      _showMsg('"I\'m not here yet. Next pickup is Week ${game.nextShipWindowWeek}."');
-      return;
-    }
-
     final idx = game.activeContracts.indexWhere((c) => c.id == contractId);
     if (idx < 0) return;
     final contract = game.activeContracts[idx];
@@ -309,12 +289,26 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     var completed = List<Contract>.from(game.completedContracts);
     int pendingBonus = 0;
 
+    // Crops leave silo now, queued as pending shipment paid at next window
+    final config = GameConfigService.instance;
+    final crop = config.getCrop(contract.cropId);
+    final volumeM3 = (crop?.volumeM3 ?? 1.0) * submitAmt;
+    final sale = PendingSale(
+      resourceId: 'contract_${contract.id}_${game.currentWeek}',
+      amount: volumeM3,
+      scripValue: 0, // scrip comes from contract bonus, not per-unit price
+      weekQueued: game.currentWeek,
+    );
+
     if (newCurrent >= contract.requiredAmount) {
       completed.add(updatedContract.copyWith(status: ContractStatus.completed));
       active.removeAt(idx);
-      // Queue the reward — pays out with next shipment
       pendingBonus = contract.rewardScrip;
-      _showMsg('"Contract fulfilled. Bonus of ${contract.rewardScrip}🎫 added to next shipment."');
+      _showMsg(
+        '"Contract fulfilled. ${submitAmt.toInt()} units staged for pickup.'
+            ' Kovacs collects Week ${game.nextShipWindowWeek}.'
+            ' Payment on inspection."',
+      );
     } else {
       active[idx] = updatedContract;
       _showMsg('"Logged. $newCurrent/${contract.requiredAmount}. Keep going."');
@@ -325,7 +319,9 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
         activeContracts: active,
         completedContracts: completed,
         siloInventory: updatedInv,
+        pendingSales: [...game.pendingSales, sale],
         pendingContractScrip: game.pendingContractScrip + pendingBonus,
+        totalVolumeDeliveredM3: game.totalVolumeDeliveredM3 + volumeM3,
       ),
     );
   }
@@ -340,7 +336,10 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: MFTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic)),
+        content: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          child: Text(msg, style: MFTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic)),
+        ),
         duration: const Duration(seconds: 4),
         backgroundColor: MFColors.surfaceElevated,
       ),
@@ -361,8 +360,8 @@ class _KovacsHeader extends StatelessWidget {
     final moodColor = _moodColor(mood);
     final discount = game.relay.priceDiscount;
     final discountText = discount >= 0
-        ? '+${(discount * 100).round()}% prices'
-        : '${(discount * 100).round()}% prices';
+        ? '+${(discount * 100).toStringAsFixed(0)}% prices'
+        : '${(discount * 100).toStringAsFixed(0)}% prices';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -688,7 +687,6 @@ class _ShipWindowStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOpen = game.isShipWindowOpen;
-    final isRush = game.shipmentsThisWindow > 0;
     final color = isOpen ? MFColors.neonGreen : MFColors.textMuted;
 
     return Container(
@@ -704,7 +702,7 @@ class _ShipWindowStatus extends StatelessWidget {
           Expanded(
             child: Text(
               isOpen
-                  ? isRush ? 'Ship window open — rush shipment (mood penalty)' : 'Ship window open'
+                  ? 'Ship window open'
                   : 'Next pickup: Week ${game.nextShipWindowWeek} (${game.weeksToNextShipWindow} weeks)',
               style: MFTextStyles.bodySmall.copyWith(color: color),
             ),
@@ -735,10 +733,7 @@ class _SellTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = GameConfigService.instance;
-    final isRush = game.shipmentsThisWindow > 0;
-    final discount = isRush
-        ? game.relay.priceDiscount - config.rushPriceCut
-        : game.relay.priceDiscount;
+    final discount = game.relay.priceDiscount;
 
     int totalScrip = 0;
     double totalVolume = 0;
@@ -806,7 +801,6 @@ class _SellTab extends StatelessWidget {
                     amount: entry.value,
                     pricePerUnit: price,
                     queuedAmount: queued,
-                    isRush: isRush,
                     onQueue: () => onQueueChanged(entry.key, entry.value),
                     onDequeue: () => onQueueChanged(entry.key, 0),
                   );
@@ -825,7 +819,6 @@ class _SellTab extends StatelessWidget {
                   amount: game.resources.meat,
                   pricePerUnit: meatPrice,
                   queuedAmount: saleQueue['fauna_meat'] ?? 0,
-                  isRush: isRush,
                   onQueue: () =>
                       onQueueChanged('fauna_meat', game.resources.meat),
                   onDequeue: () => onQueueChanged('fauna_meat', 0),
@@ -840,7 +833,6 @@ class _SellTab extends StatelessWidget {
             totalScrip: totalScrip,
             totalVolume: totalVolume,
             isWindowOpen: game.isShipWindowOpen,
-            isRush: isRush,
             onConfirm: () => onConfirmShipment(game),
           ),
       ],
@@ -913,7 +905,6 @@ class _SellItem extends StatelessWidget {
   final double amount;
   final int pricePerUnit;
   final double queuedAmount;
-  final bool isRush;
   final VoidCallback onQueue;
   final VoidCallback onDequeue;
 
@@ -922,7 +913,6 @@ class _SellItem extends StatelessWidget {
     required this.amount,
     required this.pricePerUnit,
     required this.queuedAmount,
-    required this.isRush,
     required this.onQueue,
     required this.onDequeue,
   });
@@ -956,10 +946,8 @@ class _SellItem extends StatelessWidget {
                 Text(
                   '${amount.toInt()} units  ·  '
                       '${crop.volumeM3}m³ each  ·  '
-                      '$pricePerUnit 🎫${isRush ? ' (rush)' : ''}',
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: isRush ? MFColors.neonOrange : null,
-                  ),
+                      '$pricePerUnit 🎫',
+                  style: MFTextStyles.bodySmall,
                 ),
               ],
             ),
@@ -999,14 +987,12 @@ class _ShipmentSummary extends StatelessWidget {
   final int totalScrip;
   final double totalVolume;
   final bool isWindowOpen;
-  final bool isRush;
   final VoidCallback onConfirm;
 
   const _ShipmentSummary({
     required this.totalScrip,
     required this.totalVolume,
     required this.isWindowOpen,
-    required this.isRush,
     required this.onConfirm,
   });
 
@@ -1030,12 +1016,6 @@ class _ShipmentSummary extends StatelessWidget {
                       .copyWith(color: MFColors.starScrip)),
             ],
           ),
-          if (isRush) ...[
-            const SizedBox(height: 4),
-            Text('⚠️ Rush — mood penalty + reduced pricing',
-                style: MFTextStyles.bodySmall
-                    .copyWith(color: MFColors.neonOrange)),
-          ],
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -1047,11 +1027,7 @@ class _ShipmentSummary extends StatelessWidget {
               ),
               onPressed: isWindowOpen ? onConfirm : null,
               child: Text(
-                isWindowOpen
-                    ? isRush
-                    ? '🚀 RUSH SHIPMENT'
-                    : '🚀 CONFIRM SHIPMENT'
-                    : 'WINDOW CLOSED',
+                isWindowOpen ? '🚀 CONFIRM SHIPMENT' : 'WINDOW CLOSED',
                 style: MFTextStyles.labelLarge
                     .copyWith(color: MFColors.background),
               ),
@@ -1301,8 +1277,12 @@ class _ContractsTab extends StatelessWidget {
             contract: c,
             game: game,
             isActive: true,
-            onSubmit: () => onSubmitToContract(
-                c.id, game.siloInventory[c.cropId] ?? 0, game),
+            onSubmit: () {
+              final inSilo = game.siloInventory[c.cropId] ?? 0;
+              final remaining = (c.requiredAmount - c.currentAmount).toDouble();
+              final amt = inSilo.clamp(0, remaining).toDouble();
+              onSubmitToContract(c.id, amt, game);
+            },
           )),
           const SizedBox(height: 16),
         ],
@@ -1427,29 +1407,33 @@ class _ContractCard extends StatelessWidget {
           ],
           if (isActive && !isCompleted && onSubmit != null) ...[
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: inSilo > 0 ? onSubmit : null,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                      color: inSilo > 0
-                          ? MFColors.neonGold
-                          : MFColors.borderSubtle),
-                  foregroundColor: MFColors.neonGold,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: Text(
-                  inSilo > 0
-                      ? 'SUBMIT ${inSilo.toInt()} FROM SILO'
-                      : 'NOTHING IN SILO',
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: inSilo > 0 ? MFColors.neonGold : MFColors.textMuted,
-                    fontWeight: FontWeight.bold,
+            Builder(builder: (context) {
+              final remaining = contract.requiredAmount - contract.currentAmount;
+              final submitAmt = inSilo.clamp(0, remaining.toDouble()).toInt();
+              return SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: submitAmt > 0 ? onSubmit : null,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                        color: submitAmt > 0
+                            ? MFColors.neonGold
+                            : MFColors.borderSubtle),
+                    foregroundColor: MFColors.neonGold,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  child: Text(
+                    submitAmt > 0
+                        ? 'SUBMIT $submitAmt FROM SILO'
+                        : 'NOTHING IN SILO',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: submitAmt > 0 ? MFColors.neonGold : MFColors.textMuted,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
           ],
           if (!isActive && !isCompleted && onAccept != null) ...[
             const SizedBox(height: 8),

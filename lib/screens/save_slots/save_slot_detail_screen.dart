@@ -120,8 +120,12 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                     if (val == 'save') {
                       await ref.read(activeGameProvider.notifier).persistCurrentState();
                       if (context.mounted) {
+                        ScaffoldMessenger.of(context).clearSnackBars();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Game saved.')),
+                          SnackBar(content: GestureDetector(
+                            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                            child: Text('Game saved.'),
+                          )),
                         );
                       }
                     } else if (val == 'mainmenu') {
@@ -229,8 +233,12 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
         'raidDefendedThisWeek=${game.raidDefendedThisWeek})');
     if (isRaidWeek) {
       debugPrint('[EndWeek] BLOCKED — raid must be defended first.');
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ Defend the raid first!')),
+        SnackBar(content: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          child: Text('⚠️ Defend the raid first!'),
+        )),
       );
       return;
     }
@@ -296,8 +304,12 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     } catch (e, st) {
       debugPrint('[EndWeek] ERROR: $e\n$st');
       if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('End week failed: $e')),
+          SnackBar(content: GestureDetector(
+            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            child: Text('End week failed: $e'),
+          )),
         );
       }
     } finally {

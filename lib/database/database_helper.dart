@@ -31,7 +31,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
@@ -502,6 +502,7 @@ class DatabaseHelper {
       'type': m.type.name,
       'level': m.level,
       'power_draw': m.powerDraw,
+      'auto_refine': m.autoRefine,
     }).toList(),
   };
 
@@ -515,6 +516,7 @@ class DatabaseHelper {
         type: MachineType.values.firstWhere((e) => e.name == mm['type']),
         level: (mm['level'] as num).toInt(),
         powerDraw: (mm['power_draw'] as num).toInt(),
+        autoRefine: mm['auto_refine'] as bool? ?? false,
       );
     }).toList() ?? const [],
   );

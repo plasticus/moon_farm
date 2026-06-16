@@ -25,7 +25,10 @@ void _powerSnack(BuildContext context, int needed, int surplus) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text('⚡ Not enough power. Needs $needed KWh, only $surplus KWh spare. Build more power first.'),
+      content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('⚡ Not enough power. Needs $needed KWh, only $surplus KWh spare. Build more power first.'),
+      ),
       duration: const Duration(seconds: 3),
     ),
   );
@@ -211,8 +214,12 @@ class _PowerSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${b['emoji']} ${b['name']} built! +${b['power_output_kwh']} KWh')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('${b['emoji']} ${b['name']} built! +${b['power_output_kwh']} KWh'),
+      )),
     );
   }
 }
@@ -367,8 +374,12 @@ class _DroneSection extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🤖 ${tier['name']} built!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🤖 ${tier['name']} built!'),
+      )),
     );
   }
 
@@ -483,8 +494,12 @@ class _UpgradeDroneButton extends StatelessWidget {
       ),
     );
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🤖 Drone upgraded to Mk${nextConfig['tier']}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🤖 Drone upgraded to Mk${nextConfig['tier']}!'),
+      )),
     );
   }
 }
@@ -809,7 +824,10 @@ class _BuildRow extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(missingText),
+        content: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          child: Text(missingText),
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -1072,8 +1090,12 @@ class _DomeBotSection extends StatelessWidget {
       powerDraw: cfg['power_draw_kwh'] as int,
     );
     _applyBotChange(dome, newBot, costMetals, 0, 0, 0);
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!'),
+      )),
     );
   }
 
@@ -1092,10 +1114,14 @@ class _DomeBotSection extends StatelessWidget {
       cost['chemicals'] as int? ?? cfg['cost_chemicals'] as int? ?? 0,
       cost['chitin'] as int? ?? cfg['cost_chitin'] as int? ?? 0,
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              '🤖 ${dome.name} bot upgraded to Mk${cfg['level']}!')),
+          content: GestureDetector(
+            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            child: Text(
+                '🤖 ${dome.name} bot upgraded to Mk${cfg['level']}!'),
+          )),
     );
   }
 
@@ -1191,49 +1217,105 @@ class _BotConfigSheet extends StatelessWidget {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  children: crops.map((crop) {
-                    final isSelected = bot.plantCropId == crop.id;
-                    return GestureDetector(
-                      onTap: () {
-                        final updatedBot = bot.withCrop(crop.id);
-                        final updatedDomes = game.domes
-                            .map((d) => d.id == dome.id
-                            ? d.copyWith(domeBot: updatedBot)
-                            : d)
-                            .toList();
-                        ref.read(activeGameProvider.notifier).updateGameLocal(
-                          game.copyWith(domes: updatedDomes),
-                        );
-                        Navigator.of(context).pop();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? MFColors.neonGreen.withValues(alpha: 0.1)
-                              : MFColors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isSelected
-                                ? MFColors.neonGreen
-                                : MFColors.borderSubtle,
+                  children: [
+                    // "None" option — bot harvests/waters/fertilizes but won't replant
+                    Builder(builder: (context) {
+                      final isNoneSelected = bot.plantCropId == null;
+                      return GestureDetector(
+                        onTap: () {
+                          final updatedBot = bot.withNoCrop();
+                          final updatedDomes = game.domes
+                              .map((d) => d.id == dome.id
+                              ? d.copyWith(domeBot: updatedBot)
+                              : d)
+                              .toList();
+                          ref.read(activeGameProvider.notifier).updateGameLocal(
+                            game.copyWith(domes: updatedDomes),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isNoneSelected
+                                ? MFColors.neonOrange.withValues(alpha: 0.1)
+                                : MFColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isNoneSelected
+                                  ? MFColors.neonOrange
+                                  : MFColors.borderSubtle,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('🚫', style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('None',
+                                        style: MFTextStyles.bodyLarge),
+                                    Text('Bot won\'t auto-plant this dome',
+                                        style: MFTextStyles.bodySmall
+                                            .copyWith(color: MFColors.textMuted)),
+                                  ],
+                                ),
+                              ),
+                              if (isNoneSelected)
+                                const Text('✓', style: TextStyle(
+                                    color: MFColors.neonOrange, fontSize: 16)),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Text(crop.emoji, style: const TextStyle(fontSize: 18)),
-                            const SizedBox(width: 10),
-                            Expanded(child: Text(crop.name,
-                                style: MFTextStyles.bodyLarge)),
-                            if (isSelected)
-                              const Text('✓', style: TextStyle(
-                                  color: MFColors.neonGreen, fontSize: 16)),
-                          ],
+                      );
+                    }),
+                    ...crops.map((crop) {
+                      final isSelected = bot.plantCropId == crop.id;
+                      return GestureDetector(
+                        onTap: () {
+                          final updatedBot = bot.withCrop(crop.id);
+                          final updatedDomes = game.domes
+                              .map((d) => d.id == dome.id
+                              ? d.copyWith(domeBot: updatedBot)
+                              : d)
+                              .toList();
+                          ref.read(activeGameProvider.notifier).updateGameLocal(
+                            game.copyWith(domes: updatedDomes),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? MFColors.neonGreen.withValues(alpha: 0.1)
+                                : MFColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isSelected
+                                  ? MFColors.neonGreen
+                                  : MFColors.borderSubtle,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(crop.emoji, style: const TextStyle(fontSize: 18)),
+                              const SizedBox(width: 10),
+                              Expanded(child: Text(crop.name,
+                                  style: MFTextStyles.bodyLarge)),
+                              if (isSelected)
+                                const Text('✓', style: TextStyle(
+                                    color: MFColors.neonGreen, fontSize: 16)),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }),
+                  ],
                 ),
               ),
           ],
@@ -1259,11 +1341,13 @@ class _DomeBuildSection extends StatelessWidget {
     final metalsCost = matCost['metals'] as int? ?? 5;
     final componentsCost = matCost['components'] as int? ?? 1;
     final scripCost = config.getNextDomeScripCost(game.difficulty, game.domes.length);
+    final newDomePowerDraw = UpgradeConfigService.instance.domeTierPowerDraw(1);
 
     final canAfford = game.resources.starScrip >= scripCost &&
         game.resources.glass >= glassCost &&
         game.resources.metals >= metalsCost &&
-        game.resources.components >= componentsCost;
+        game.resources.components >= componentsCost &&
+        _hasPowerFor(game, newDomePowerDraw);
 
     final missing = <String>[];
     if (game.resources.starScrip < scripCost)
@@ -1274,6 +1358,8 @@ class _DomeBuildSection extends StatelessWidget {
       missing.add('${metalsCost - game.resources.metals.toInt()} more metals');
     if (game.resources.components < componentsCost)
       missing.add('${componentsCost - game.resources.components.toInt()} more comp');
+    if (!_hasPowerFor(game, newDomePowerDraw))
+      missing.add('${newDomePowerDraw - game.powerSurplus} more KWh spare');
 
     return _OpsCard(
       icon: '🏠',
@@ -1295,7 +1381,7 @@ class _DomeBuildSection extends StatelessWidget {
                   style: MFTextStyles.bodyLarge),
               const SizedBox(height: 4),
               Text(
-                '$scripCost 🎫  ·  $glassCost glass  ·  $metalsCost metals  ·  $componentsCost comp',
+                '$scripCost 🎫  ·  $glassCost glass  ·  $metalsCost metals  ·  $componentsCost comp  ·  $newDomePowerDraw KWh',
                 style: MFTextStyles.bodySmall.copyWith(
                   color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
                 ),
@@ -1312,10 +1398,17 @@ class _DomeBuildSection extends StatelessWidget {
                   onTap: canAfford
                       ? () => _buildDome(context, scripCost, glassCost, metalsCost, componentsCost)
                       : () {
+                    if (!_hasPowerFor(game, newDomePowerDraw)) {
+                      _powerSnack(context, newDomePowerDraw, game.powerSurplus);
+                      return;
+                    }
                     ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Need: ${missing.join(', ')}'),
+                        content: GestureDetector(
+                          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                          child: Text('Need: ${missing.join(', ')}'),
+                        ),
                         duration: const Duration(seconds: 2),
                       ),
                     );
@@ -1409,7 +1502,10 @@ class _DomeBuildSection extends StatelessWidget {
                   : () {
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Need: ${_tierMissing(nextCfg)}'),
+                  SnackBar(content: GestureDetector(
+                    onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                    child: Text('Need: ${_tierMissing(nextCfg)}'),
+                  ),
                       duration: const Duration(seconds: 2)),
                 );
               },
@@ -1510,8 +1606,12 @@ class _DomeBuildSection extends StatelessWidget {
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(domes: updatedDomes, resources: r),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🏠 ${dome.name} upgraded to Tier $newTier! Now grows T$newTier crops.')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🏠 ${dome.name} upgraded to Tier $newTier! Now grows T$newTier crops.'),
+      )),
     );
   }
 
@@ -1534,8 +1634,12 @@ class _DomeBuildSection extends StatelessWidget {
       ),
     );
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('🏠 Dome ${game.domes.length + 1} built!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('🏠 Dome ${game.domes.length + 1} built!'),
+      )),
     );
   }
 }

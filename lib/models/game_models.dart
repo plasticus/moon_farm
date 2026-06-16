@@ -648,11 +648,13 @@ class RefineryMachine {
   final MachineType type;
   final int level; // 1-10
   final int powerDraw;
+  final bool autoRefine; // Mk10 only — auto-crafts max possible each end-week
 
   const RefineryMachine({
     required this.type,
     required this.level,
     required this.powerDraw,
+    this.autoRefine = false,
   });
 
   String get name => switch (type) {
@@ -689,11 +691,12 @@ class RefineryMachine {
     _ => MachineType.composter,
   };
 
-  RefineryMachine copyWith({int? level, int? powerDraw}) {
+  RefineryMachine copyWith({int? level, int? powerDraw, bool? autoRefine}) {
     return RefineryMachine(
       type: type,
       level: level ?? this.level,
       powerDraw: powerDraw ?? this.powerDraw,
+      autoRefine: autoRefine ?? this.autoRefine,
     );
   }
 }
@@ -1266,6 +1269,13 @@ class DomeBot {
   }
 
   DomeBot withCrop(String cropId) => copyWith(plantCropId: cropId);
+
+  /// Explicitly clears the planting crop (sets to null) — "None" option.
+  DomeBot withNoCrop() => DomeBot(
+    level: level,
+    plantCropId: null,
+    powerDraw: powerDraw,
+  );
 }
 
 // ─── Defense Wall ─────────────────────────────────────────────────────────────

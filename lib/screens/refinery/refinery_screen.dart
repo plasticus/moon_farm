@@ -13,6 +13,27 @@ import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../config/upgrade_config_service.dart';
 
+/// Returns true if the game has enough spare power for [additionalDraw] more KWh.
+/// Power never shuts anything off — this only gates NEW construction/upgrades.
+bool _hasPowerFor(GameState game, int additionalDraw) {
+  if (additionalDraw <= 0) return true;
+  return game.powerSurplus >= additionalDraw;
+}
+
+/// Shows a brief "not enough power" snackbar.
+void _powerSnack(BuildContext context, int needed, int surplus) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('⚡ Not enough power. Needs $needed KWh, only $surplus KWh spare. Build more power first.'),
+      ),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
+
 class RefineryScreen extends ConsumerWidget {
   const RefineryScreen({super.key});
 
@@ -65,6 +86,8 @@ class _WaterPurifierCard extends StatelessWidget {
     final level = game.waterPurifierLevel;
     final output = config.getWaterOutputForLevel(level);
     final levels = config.getWaterPurifierLevels();
+    final currentLevelCfg = levels.where((l) => l['level'] == level).firstOrNull;
+    final currentPowerDraw = currentLevelCfg?['power_draw_kwh'] as int? ?? 0;
     final nextLevel = level + 1;
     final nextConfig = levels.where((l) => l['level'] == nextLevel).firstOrNull;
 
@@ -87,8 +110,10 @@ class _WaterPurifierCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Water Purifier Mk$level', style: MFTextStyles.labelLarge),
-                    Text('+${output}m³/wk passive  ·  no power',
-                        style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan)),
+                    Text(
+                      '+${output}m³/wk passive  ·  ${currentPowerDraw == 0 ? '0 KWh' : '$currentPowerDraw KWh'}',
+                      style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan),
+                    ),
                   ],
                 ),
               ),
@@ -106,9 +131,19 @@ class _WaterPurifierCard extends StatelessWidget {
                       Text(
                         '+${nextConfig['output_water_per_week']}m³/wk  ·  '
                             '${nextConfig['cost_metals']} metals'
-                            '${(nextConfig['cost_glass'] as int? ?? 0) > 0 ? '  ·  ${nextConfig['cost_glass']} glass' : ''}',
+                            '${(nextConfig['cost_glass'] as int? ?? 0) > 0 ? '  ·  ${nextConfig['cost_glass']} glass' : ''}'
+                            '  ·  ${nextConfig['power_draw_kwh']} KWh',
                         style: MFTextStyles.bodySmall,
                       ),
+                      if (!_hasPowerFor(game, (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Need ${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw - game.powerSurplus} more KWh spare',
+                            style: MFTextStyles.bodySmall.copyWith(
+                                color: MFColors.neonPink, fontSize: 10),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -116,8 +151,16 @@ class _WaterPurifierCard extends StatelessWidget {
                   label: 'UPGRADE',
                   color: MFColors.neonCyan,
                   canAfford: game.resources.metals >= (nextConfig['cost_metals'] as int? ?? 0) &&
-                      game.resources.glass >= (nextConfig['cost_glass'] as int? ?? 0),
-                  onTap: () => _upgrade(context, nextConfig),
+                      game.resources.glass >= (nextConfig['cost_glass'] as int? ?? 0) &&
+                      _hasPowerFor(game, (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw),
+                  onTap: () {
+                    final powerDelta = (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw;
+                    if (!_hasPowerFor(game, powerDelta)) {
+                      _powerSnack(context, powerDelta, game.powerSurplus);
+                      return;
+                    }
+                    _upgrade(context, nextConfig);
+                  },
                 ),
               ],
             ),
@@ -144,8 +187,12 @@ class _WaterPurifierCard extends StatelessWidget {
         ),
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('💧 Water Purifier upgraded to Mk${game.waterPurifierLevel + 1}!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('💧 Water Purifier upgraded to Mk${game.waterPurifierLevel + 1}!'),
+      )),
     );
   }
 }
@@ -218,13 +265,51 @@ class _MachineCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (machine.level >= 10) ...[
+                GestureDetector(
+                  onTap: () => _toggleAutoRefine(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: machine.autoRefine
+                          ? MFColors.neonGreen.withValues(alpha: 0.15)
+                          : MFColors.borderSubtle,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: machine.autoRefine
+                            ? MFColors.neonGreen
+                            : MFColors.borderSubtle,
+                      ),
+                    ),
+                    child: Text(
+                      machine.autoRefine ? '🔁 AUTO ON' : '🔁 AUTO OFF',
+                      style: MFTextStyles.bodySmall.copyWith(
+                        color: machine.autoRefine
+                            ? MFColors.neonGreen
+                            : MFColors.textMuted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               // Upgrade button
               if (nextCfg != null)
                 _MiniButton(
                   label: 'MK$nextLevel↑',
                   color: MFColors.neonCyan,
-                  canAfford: _canAffordUpgrade(nextCfg),
-                  onTap: () => _upgrade(context, nextCfg, nextLevel),
+                  canAfford: _canAffordUpgrade(nextCfg) &&
+                      _hasPowerFor(game, (nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw),
+                  onTap: () {
+                    final powerDelta = (nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw;
+                    if (!_hasPowerFor(game, powerDelta)) {
+                      _powerSnack(context, powerDelta, game.powerSurplus);
+                      return;
+                    }
+                    _upgrade(context, nextCfg, nextLevel);
+                  },
                 ),
             ],
           ),
@@ -277,7 +362,7 @@ class _MachineCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Craft buttons: 1 / 5 / 10
+          // Craft buttons: 1 / 10 / ALL (ALL unlocks at Mk8+)
           Row(
             children: [
               _CraftButton(
@@ -285,20 +370,19 @@ class _MachineCard extends StatelessWidget {
                 enabled: maxCrafts >= 1,
                 onTap: () => _craft(context, recipeIn, recipeOut, 1),
               ),
-              if (maxCrafts >= 5) ...[
-                const SizedBox(width: 6),
-                _CraftButton(
-                  count: 5,
-                  enabled: true,
-                  onTap: () => _craft(context, recipeIn, recipeOut, 5),
-                ),
-              ],
               if (maxCrafts >= 10) ...[
                 const SizedBox(width: 6),
                 _CraftButton(
                   count: 10,
                   enabled: true,
                   onTap: () => _craft(context, recipeIn, recipeOut, 10),
+                ),
+              ],
+              if (machine.level >= 8 && maxCrafts >= 1) ...[
+                const SizedBox(width: 6),
+                _SmeltAllButton(
+                  maxCrafts: maxCrafts,
+                  onTap: () => _craft(context, recipeIn, recipeOut, maxCrafts),
                 ),
               ],
             ],
@@ -334,6 +418,7 @@ class _MachineCard extends StatelessWidget {
       'metals' => r.metals,
       'glass' => r.glass,
       'components' => r.components,
+      'chitin' => r.chitin,
       _ => 0,
     };
   }
@@ -355,10 +440,33 @@ class _MachineCard extends StatelessWidget {
     for (final e in cost.entries) {
       final needed = (e.value as num).toDouble();
       final key = e.key.toString();
-      double have = key == 'chitin' ? game.resources.ore : _getHave(key);
+      double have = _getHave(key);
       if (have < needed) return false;
     }
     return true;
+  }
+
+  void _toggleAutoRefine(BuildContext context) {
+    final updatedMachine = machine.copyWith(autoRefine: !machine.autoRefine);
+    final updatedMachines = refinery.machines
+        .map((m) => m.type == machine.type ? updatedMachine : m)
+        .toList();
+    final updatedRefineries = game.refineries
+        .map((r) => r.id == refinery.id ? r.copyWith(machines: updatedMachines) : r)
+        .toList();
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(refineries: updatedRefineries),
+    );
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text(updatedMachine.autoRefine
+            ? '🔁 Auto-Refine enabled for ${machine.name}'
+            : '🔁 Auto-Refine disabled for ${machine.name}'),
+      ),
+          duration: const Duration(seconds: 2)),
+    );
   }
 
   void _craft(BuildContext context, Map<String, dynamic> recipeIn,
@@ -379,7 +487,10 @@ class _MachineCard extends StatelessWidget {
         .join(', ');
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${machine.emoji} ×$times → $out'),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('${machine.emoji} ×$times → $out'),
+      ),
           duration: const Duration(seconds: 1)),
     );
   }
@@ -412,8 +523,12 @@ class _MachineCard extends StatelessWidget {
 
   void _upgrade(BuildContext context, Map<String, dynamic> cfg, int newLevel) {
     if (!_canAffordUpgrade(cfg)) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Not enough resources.')));
+          SnackBar(content: GestureDetector(
+            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            child: Text('Not enough resources.'),
+          )));
       return;
     }
     var r = game.resources;
@@ -436,8 +551,12 @@ class _MachineCard extends StatelessWidget {
         resources: r,
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${machine.emoji} ${machine.name} upgraded to Mk$newLevel!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('${machine.emoji} ${machine.name} upgraded to Mk$newLevel!'),
+      )),
     );
   }
 }
@@ -503,7 +622,7 @@ class _BuildMachineCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Build cost: ${_costLine(buildCost)}',
+                  'Build cost: ${_costLine(buildCost)}  ·  ${level1['power_draw_kwh']} KWh',
                   style: MFTextStyles.bodySmall.copyWith(
                     color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
                   ),
@@ -512,8 +631,16 @@ class _BuildMachineCard extends StatelessWidget {
               _MiniButton(
                 label: 'BUILD Mk1',
                 color: MFColors.neonGreen,
-                canAfford: canAfford,
-                onTap: () => _build(context, buildCost, level1['power_draw_kwh'] as int),
+                canAfford: canAfford &&
+                    _hasPowerFor(game, level1['power_draw_kwh'] as int? ?? 0),
+                onTap: () {
+                  final powerNeeded = level1['power_draw_kwh'] as int? ?? 0;
+                  if (!_hasPowerFor(game, powerNeeded)) {
+                    _powerSnack(context, powerNeeded, game.powerSurplus);
+                    return;
+                  }
+                  _build(context, buildCost, powerNeeded);
+                },
               ),
             ],
           ),
@@ -530,7 +657,7 @@ class _BuildMachineCard extends StatelessWidget {
     for (final e in cost.entries) {
       final needed = (e.value as num).toDouble();
       final key = e.key.toString();
-      double have = key == 'chitin' ? game.resources.ore : _getHave(key);
+      double have = _getHave(key);
       if (have < needed) return false;
     }
     return true;
@@ -542,6 +669,7 @@ class _BuildMachineCard extends StatelessWidget {
       'compost' => r.compost, 'ore' => r.ore, 'moon_dirt' => r.moonDirt,
       'chemicals' => r.chemicals, 'water' => r.water, 'sand' => r.sand,
       'metals' => r.metals, 'glass' => r.glass, 'components' => r.components,
+      'chitin' => r.chitin,
       _ => 0,
     };
   }
@@ -556,8 +684,12 @@ class _BuildMachineCard extends StatelessWidget {
 
   void _build(BuildContext context, Map<String, dynamic> cost, int powerDraw) {
     if (!_canAfford(cost) || refinery == null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Not enough resources.')));
+          SnackBar(content: GestureDetector(
+            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            child: Text('Not enough resources.'),
+          )));
       return;
     }
     var r = game.resources;
@@ -586,8 +718,12 @@ class _BuildMachineCard extends StatelessWidget {
         resources: r,
       ),
     );
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${newMachine.emoji} ${newMachine.name} built!')),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('${newMachine.emoji} ${newMachine.name} built!'),
+      )),
     );
   }
 }
@@ -624,6 +760,44 @@ class _CraftButton extends StatelessWidget {
             textAlign: TextAlign.center,
             style: MFTextStyles.labelLarge.copyWith(
               color: enabled ? MFColors.neonOrange : MFColors.textMuted,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmeltAllButton extends StatelessWidget {
+  final int maxCrafts;
+  final VoidCallback onTap;
+
+  const _SmeltAllButton({required this.maxCrafts, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                MFColors.neonOrange.withValues(alpha: 0.3),
+                MFColors.neonOrange.withValues(alpha: 0.5),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: MFColors.neonOrange),
+          ),
+          child: Text(
+            'SMELT ALL ($maxCrafts)',
+            textAlign: TextAlign.center,
+            style: MFTextStyles.labelLarge.copyWith(
+              color: MFColors.neonOrange,
+              fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
           ),

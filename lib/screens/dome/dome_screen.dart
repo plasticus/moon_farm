@@ -37,21 +37,19 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
   String? _selectedCropId;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+  bool _invertSwipe = false; // toggle to test direction
 
   @override
   void initState() {
     super.initState();
     _slideController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 200),
     );
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(_slideController);
   }
 
   @override
@@ -60,24 +58,31 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     super.dispose();
   }
 
-  void _changeDome(int newIndex, int direction) {
-    // direction: -1 = swiping left (going to next dome), 1 = swiping right (going to prev)
-    final outOffset = Offset(direction * 0.3, 0); // slide out in swipe direction
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: outOffset,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeIn));
+  void _changeDome(int newIndex, bool goingForward) {
+    final forward = _invertSwipe ? !goingForward : goingForward;
+    // forward=true: exit LEFT (-x), enter from RIGHT (+x)
+    // forward=false: exit RIGHT (+x), enter from LEFT (-x)
+    final exitX = forward ? -1.0 : 1.0;
+    final enterX = forward ? 1.0 : -1.0;
+
+    setState(() {
+      _slideAnimation = Tween<Offset>(
+        begin: Offset.zero,
+        end: Offset(exitX, 0),
+      ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeIn));
+    });
 
     _slideController.forward(from: 0).then((_) {
       ref.read(activeDomeIndexProvider.notifier).state = newIndex;
-      // New dome slides in from opposite side
-      _slideAnimation = Tween<Offset>(
-        begin: Offset(-direction * 0.3, 0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+      setState(() {
+        _slideAnimation = Tween<Offset>(
+          begin: Offset(enterX, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+      });
       _slideController.forward(from: 0);
     });
-  } // for planting
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +99,9 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! < -300 && clampedIndex < game.domes.length - 1) {
-          _changeDome(clampedIndex + 1, -1);
+          _changeDome(clampedIndex + 1, true);   // swipe left → next dome
         } else if (details.primaryVelocity! > 300 && clampedIndex > 0) {
-          _changeDome(clampedIndex - 1, 1);
+          _changeDome(clampedIndex - 1, false);  // swipe right → prev dome
         }
       },
       child: Column(
@@ -106,10 +111,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
             domes: game.domes,
             currentIndex: clampedIndex,
             onPrevious: clampedIndex > 0
-                ? () => _changeDome(clampedIndex - 1, 1)
+                ? () => _changeDome(clampedIndex - 1, false)
                 : null,
             onNext: clampedIndex < game.domes.length - 1
-                ? () => _changeDome(clampedIndex + 1, -1)
+                ? () => _changeDome(clampedIndex + 1, true)
                 : null,
           ),
 
@@ -551,7 +556,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
   void _snack(BuildContext context, String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text(message),
+      )),
     );
   }
 }
@@ -1147,7 +1155,17 @@ class _DomeInfoFooter extends StatelessWidget {
           case CropState.planted:
           case CropState.growing:
             if (!botWaters && !cell.wateredThisWeek) needWater++;
-            if (!botFertilizes && !cell.fertilizedThisWeek) needFert++;
+            if (!botFertilizes && !cell.fertilizedThisWeek) {
+              // Apply same cooldown logic as _CropCell._needsFertilizer
+              final config = GameConfigService.instance;
+              final crop = cell.cropId != null ? config.getCrop(cell.cropId!) : null;
+              if (crop != null &&
+                  cell.fertilizeCount < crop.maxFertilizations &&
+                  (cell.lastFertilizeWeek < 0 ||
+                      cell.weeksGrown - cell.lastFertilizeWeek >= 3)) {
+                needFert++;
+              }
+            }
           case CropState.ready:
             readyCount++;
           case CropState.dead:

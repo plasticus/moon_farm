@@ -721,6 +721,51 @@
         "power_draw_kwh": 15,
         "output_water_per_week": 200,
         "cost_glass": 60
+      },
+      {
+        "level": 6,
+        "name": "Water Purifier Mk6",
+        "cost_metals": 240,
+        "power_draw_kwh": 22,
+        "output_water_per_week": 350,
+        "cost_glass": 100,
+        "cost_components": 20
+      },
+      {
+        "level": 7,
+        "name": "Water Purifier Mk7",
+        "cost_metals": 380,
+        "power_draw_kwh": 30,
+        "output_water_per_week": 550,
+        "cost_glass": 150,
+        "cost_components": 40
+      },
+      {
+        "level": 8,
+        "name": "Water Purifier Mk8",
+        "cost_metals": 600,
+        "power_draw_kwh": 40,
+        "output_water_per_week": 850,
+        "cost_glass": 220,
+        "cost_components": 70
+      },
+      {
+        "level": 9,
+        "name": "Water Purifier Mk9",
+        "cost_metals": 900,
+        "power_draw_kwh": 52,
+        "output_water_per_week": 1300,
+        "cost_glass": 320,
+        "cost_components": 110
+      },
+      {
+        "level": 10,
+        "name": "Water Purifier Mk10",
+        "cost_metals": 1400,
+        "power_draw_kwh": 65,
+        "output_water_per_week": 2000,
+        "cost_glass": 460,
+        "cost_components": 170
       }
     ],
     "base_passive_output": 0,
