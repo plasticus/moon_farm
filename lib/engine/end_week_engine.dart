@@ -539,6 +539,8 @@ class EndWeekEngine {
       int botHarvested = 0;
       final config = GameConfigService.instance;
       final updatedDomes = <Dome>[];
+      var cropCounts = Map<String, int>.from(s.cropHarvestCounts);
+      var vatJustUnlocked = false;
 
       for (final dome in s.domes) {
         final bot = dome.domeBot;
@@ -572,6 +574,12 @@ class EndWeekEngine {
           harvestRes = harvestRes.copyWith(
             compost: harvestRes.compost + crop.compostYield,
           );
+          cropCounts[cell.cropId!] = (cropCounts[cell.cropId!] ?? 0) + 1;
+          if (cell.cropId == 'hyper_mycelium' &&
+              cropCounts['hyper_mycelium'] == 1 &&
+              !s.unlockedFeatures.contains('mycoculture_vat')) {
+            vatJustUnlocked = true;
+          }
           cells[i] = cell.cleared();
           domeHarvested++;
           botHarvested++;
@@ -585,7 +593,25 @@ class EndWeekEngine {
         updatedDomes.add(dome.copyWith(cells: cells));
       }
 
-      s = s.copyWith(domes: updatedDomes);
+      s = s.copyWith(domes: updatedDomes, cropHarvestCounts: cropCounts);
+
+      if (vatJustUnlocked) {
+        s = s.copyWith(
+          unlockedFeatures: [...s.unlockedFeatures, 'mycoculture_vat'],
+          radioFeed: [
+            ...s.radioFeed,
+            RadioTransmission(
+              week: s.currentWeek,
+              message: "...what did you find there, farmer? That stuff's growing "
+                  "something the colony's never logged before. The Refinery can "
+                  "probably do something with it now.",
+              isRead: false,
+            ),
+          ],
+        );
+        events.add('🧫 Something new growing in the Hyper-Mycelium — Mycoculture Vat unlocked at the Refinery!');
+      }
+
       if (botHarvested > 0) {
         events.add('🤖 Dome bots harvested $botHarvested crop${botHarvested == 1 ? '' : 's'}');
       }

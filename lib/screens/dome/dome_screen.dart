@@ -338,12 +338,39 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       compost: newResources.compost + crop.compostYield,
     );
 
+    // Track per-crop harvest counts (score screen stat + feature-unlock
+    // triggers like the Mycoculture Vat below).
+    final newCropCounts = Map<String, int>.from(game.cropHarvestCounts);
+    newCropCounts[cell.cropId!] = (newCropCounts[cell.cropId!] ?? 0) + 1;
+
     final newHarvestCount = game.totalCropsHarvested + 1;
     var updatedGame = game.copyWith(
       resources: newResources,
       siloInventory: updatedInventory,
       totalCropsHarvested: newHarvestCount,
+      cropHarvestCounts: newCropCounts,
     );
+
+    // First-ever Hyper-Mycelium harvest unlocks the Mycoculture Vat.
+    var vatJustUnlocked = false;
+    if (cell.cropId == 'hyper_mycelium' &&
+        newCropCounts['hyper_mycelium'] == 1 &&
+        !updatedGame.unlockedFeatures.contains('mycoculture_vat')) {
+      vatJustUnlocked = true;
+      updatedGame = updatedGame.copyWith(
+        unlockedFeatures: [...updatedGame.unlockedFeatures, 'mycoculture_vat'],
+        radioFeed: [
+          ...updatedGame.radioFeed,
+          RadioTransmission(
+            week: updatedGame.currentWeek,
+            message: "...what did you find there, farmer? That stuff's growing "
+                "something the colony's never logged before. The Refinery can "
+                "probably do something with it now.",
+            isRead: false,
+          ),
+        ],
+      );
+    }
 
     // Check first harvest trophy
     if (newHarvestCount == 1) {
@@ -358,7 +385,11 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     }
 
     _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
-    _snack(ref.context, '✅ ${crop.name} stored in silo. Sell via Relay.');
+    if (vatJustUnlocked) {
+      _snack(ref.context, "🧫 What did you find there, farmer? Mycoculture Vat unlocked at the Refinery!");
+    } else {
+      _snack(ref.context, '✅ ${crop.name} stored in silo. Sell via Relay.');
+    }
   }
 
   void _doPlant(

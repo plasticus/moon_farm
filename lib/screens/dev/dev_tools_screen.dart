@@ -63,6 +63,7 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevStat('Water', '${game.resources.water.toInt()}'),
                 _DevStat('Compost', '${game.resources.compost.toInt()}'),
                 _DevStat('Moss', '${game.resources.moss.toInt()}'),
+                _DevStat('Mycoculture', '${game.resources.mycoculture.toInt()}'),
                 _DevStat('Metals', '${game.resources.metals.toInt()}'),
                 _DevStat('Volume Delivered', '${game.totalVolumeDeliveredM3.toStringAsFixed(1)}m³'),
               ],
@@ -93,6 +94,7 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevButton('+50 Chitin', MFColors.textPrimary, () => _addResources(ref, game, chitin: 50)),
                 _DevButton('+20 Meat', MFColors.neonPink, () => _addResources(ref, game, meat: 20)),
                 _DevButton('+20 Moss', MFColors.neonGreen, () => _addResources(ref, game, moss: 20)),
+                _DevButton('+20 Mycoculture', MFColors.neonPurple, () => _addResources(ref, game, mycoculture: 20)),
                 _DevButton('FILL ALL', MFColors.neonCyan, () => _fillAll(ref, game)),
               ],
             ),
@@ -109,6 +111,31 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevButton('+1 Week', MFColors.neonYellow, () => _addWeeks(ref, game, 1)),
                 _DevButton('+5 Weeks', MFColors.neonYellow, () => _addWeeks(ref, game, 5)),
                 _DevButton('+10 Weeks', MFColors.neonYellow, () => _addWeeks(ref, game, 10)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Feature unlocks — skips the normal discovery trigger (e.g. growing
+          // an 8-week Hyper-Mycelium crop) for quick testing.
+          _DevSection(
+            title: 'FEATURE UNLOCKS',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _DevButton(
+                  game.unlockedFeatures.contains('mycoculture_vat')
+                      ? '✅ Mycoculture Vat'
+                      : 'Unlock Mycoculture Vat',
+                  MFColors.neonPurple,
+                  () => _unlockFeature(ref, game, 'mycoculture_vat'),
+                ),
+                _DevButton(
+                  '+10 Hyper-Mycelium (silo)',
+                  MFColors.neonPink,
+                  () => _addSilo(ref, game, 'hyper_mycelium', 10),
+                ),
               ],
             ),
           ),
@@ -195,6 +222,7 @@ class DevToolsScreen extends ConsumerWidget {
         double chitin = 0,
         double meat = 0,
         double moss = 0,
+        double mycoculture = 0,
       }) {
     final updated = game.copyWith(
       resources: game.resources.copyWith(
@@ -213,6 +241,7 @@ class DevToolsScreen extends ConsumerWidget {
         chitin: game.resources.chitin + chitin,
         meat: game.resources.meat + meat,
         moss: game.resources.moss + moss,
+        mycoculture: game.resources.mycoculture + mycoculture,
       ),
     );
     ref.read(activeGameProvider.notifier).updateGameLocal(updated);
@@ -224,7 +253,7 @@ class DevToolsScreen extends ConsumerWidget {
       scrip: 10000, seeds: 50, zSoil: 50, water: 200,
       compost: 50, metals: 100, chemicals: 50, sand: 50,
       glass: 50, components: 50, ore: 50, moonDirt: 100,
-      chitin: 50, meat: 20, moss: 50,
+      chitin: 50, meat: 20, moss: 50, mycoculture: 20,
     );
   }
 
@@ -244,6 +273,21 @@ class DevToolsScreen extends ConsumerWidget {
   void _addWeeks(WidgetRef ref, GameState game, int weeks) {
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(currentWeek: game.currentWeek + weeks),
+    );
+  }
+
+  void _unlockFeature(WidgetRef ref, GameState game, String key) {
+    if (game.unlockedFeatures.contains(key)) return;
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(unlockedFeatures: [...game.unlockedFeatures, key]),
+    );
+  }
+
+  void _addSilo(WidgetRef ref, GameState game, String cropId, double amount) {
+    final updated = Map<String, double>.from(game.siloInventory);
+    updated[cropId] = (updated[cropId] ?? 0) + amount;
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(siloInventory: updated),
     );
   }
 

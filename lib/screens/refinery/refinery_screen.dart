@@ -44,7 +44,11 @@ class RefineryScreen extends ConsumerWidget {
 
     final refinery = game.refineries.isEmpty ? null : game.refineries.first;
     final installed = refinery?.machines.map((m) => m.type).toSet() ?? {};
-    final buildable = MachineType.values.where((t) => !installed.contains(t)).toList();
+    final vatUnlocked = game.unlockedFeatures.contains('mycoculture_vat');
+    final buildable = MachineType.values
+        .where((t) => !installed.contains(t))
+        .where((t) => t != MachineType.mycocultureVat || vatUnlocked)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -217,6 +221,7 @@ class _MachineCard extends StatelessWidget {
       MachineType.zSoilProcessor    => const Color(0xFF8D6E63),
       MachineType.glassFurnace      => const Color(0xFFAB47BC),
       MachineType.componentFabricator => const Color(0xFFEC407A),
+      MachineType.mycocultureVat    => const Color(0xFF26A69A),
     };
   }
 
@@ -407,6 +412,10 @@ class _MachineCard extends StatelessWidget {
       .join(', ');
 
   double _getHave(String resource) {
+    // Crop ids (e.g. hyper_mycelium) live in the silo, not Resources.
+    if (GameConfigService.instance.getCrop(resource) != null) {
+      return game.siloInventory[resource] ?? 0;
+    }
     final r = game.resources;
     return switch (resource) {
       'compost' => r.compost,
@@ -419,6 +428,9 @@ class _MachineCard extends StatelessWidget {
       'glass' => r.glass,
       'components' => r.components,
       'chitin' => r.chitin,
+      'meat' => r.meat,
+      'moss' => r.moss,
+      'mycoculture' => r.mycoculture,
       _ => 0,
     };
   }
@@ -472,15 +484,28 @@ class _MachineCard extends StatelessWidget {
   void _craft(BuildContext context, Map<String, dynamic> recipeIn,
       Map<String, dynamic> recipeOut, int times) {
     var r = game.resources;
+    var silo = Map<String, double>.from(game.siloInventory);
+    final config = GameConfigService.instance;
+
     for (final e in recipeIn.entries) {
       final amt = (e.value as num).toDouble() * times;
-      r = _subtract(r, e.key, amt);
+      if (config.getCrop(e.key) != null) {
+        silo[e.key] = (silo[e.key] ?? 0) - amt;
+      } else {
+        r = _subtract(r, e.key, amt);
+      }
     }
     for (final e in recipeOut.entries) {
       final amt = (e.value as num).toDouble() * times;
-      r = _add(r, e.key, amt);
+      if (config.getCrop(e.key) != null) {
+        silo[e.key] = (silo[e.key] ?? 0) + amt;
+      } else {
+        r = _add(r, e.key, amt);
+      }
     }
-    ref.read(activeGameProvider.notifier).updateGameLocal(game.copyWith(resources: r));
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(resources: r, siloInventory: silo),
+    );
 
     final out = recipeOut.entries
         .map((e) => '+${((e.value as num).toDouble() * times).toInt()} ${e.key.replaceAll('_', ' ')}')
@@ -506,6 +531,10 @@ class _MachineCard extends StatelessWidget {
       'metals' => r.copyWith(metals: r.metals - amt),
       'glass' => r.copyWith(glass: r.glass - amt),
       'components' => r.copyWith(components: r.components - amt),
+      'chitin' => r.copyWith(chitin: r.chitin - amt),
+      'meat' => r.copyWith(meat: r.meat - amt),
+      'moss' => r.copyWith(moss: r.moss - amt),
+      'mycoculture' => r.copyWith(mycoculture: r.mycoculture - amt),
       _ => r,
     };
   }
@@ -517,6 +546,10 @@ class _MachineCard extends StatelessWidget {
       'glass' => r.copyWith(glass: r.glass + amt),
       'components' => r.copyWith(components: r.components + amt),
       'compost' => r.copyWith(compost: r.compost + amt),
+      'chitin' => r.copyWith(chitin: r.chitin + amt),
+      'meat' => r.copyWith(meat: r.meat + amt),
+      'moss' => r.copyWith(moss: r.moss + amt),
+      'mycoculture' => r.copyWith(mycoculture: r.mycoculture + amt),
       _ => r,
     };
   }
@@ -536,7 +569,7 @@ class _MachineCard extends StatelessWidget {
     for (final e in cost.entries) {
       final amt = (e.value as num).toDouble();
       final key = e.key.toString();
-      r = key == 'chitin' ? r.copyWith(ore: r.ore - amt) : _subtract(r, key, amt);
+      r = _subtract(r, key, amt);
     }
 
     final updatedMachines = refinery.machines.map((m) {
@@ -664,12 +697,16 @@ class _BuildMachineCard extends StatelessWidget {
   }
 
   double _getHave(String resource) {
+    if (GameConfigService.instance.getCrop(resource) != null) {
+      return game.siloInventory[resource] ?? 0;
+    }
     final r = game.resources;
     return switch (resource) {
       'compost' => r.compost, 'ore' => r.ore, 'moon_dirt' => r.moonDirt,
       'chemicals' => r.chemicals, 'water' => r.water, 'sand' => r.sand,
       'metals' => r.metals, 'glass' => r.glass, 'components' => r.components,
-      'chitin' => r.chitin,
+      'chitin' => r.chitin, 'meat' => r.meat, 'moss' => r.moss,
+      'mycoculture' => r.mycoculture,
       _ => 0,
     };
   }
@@ -680,6 +717,7 @@ class _BuildMachineCard extends StatelessWidget {
     MachineType.zSoilProcessor     => const Color(0xFF8D6E63),
     MachineType.glassFurnace       => const Color(0xFFAB47BC),
     MachineType.componentFabricator => const Color(0xFFEC407A),
+    MachineType.mycocultureVat     => const Color(0xFF26A69A),
   };
 
   void _build(BuildContext context, Map<String, dynamic> cost, int powerDraw) {
@@ -706,7 +744,10 @@ class _BuildMachineCard extends StatelessWidget {
         'metals' => r.copyWith(metals: r.metals - amt),
         'glass' => r.copyWith(glass: r.glass - amt),
         'components' => r.copyWith(components: r.components - amt),
-        'chitin' => r.copyWith(ore: r.ore - amt),
+        'chitin' => r.copyWith(chitin: r.chitin - amt),
+        'meat' => r.copyWith(meat: r.meat - amt),
+        'moss' => r.copyWith(moss: r.moss - amt),
+        'mycoculture' => r.copyWith(mycoculture: r.mycoculture - amt),
         _ => r,
       };
     }

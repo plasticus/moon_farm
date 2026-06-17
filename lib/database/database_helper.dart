@@ -330,6 +330,7 @@ class DatabaseHelper {
       'next_raid_week': state.nextRaidWeek,
       'raid_defended_this_week': state.raidDefendedThisWeek,
       'manual_raid_triggered_this_week': state.manualRaidTriggeredThisWeek,
+      'unlocked_features': state.unlockedFeatures,
       'total_raids_defended': state.totalRaidsDefended,
       'total_fauna_killed': state.totalFaunaKilled,
       'total_chitin_collected': state.totalChitinCollected,
@@ -377,6 +378,8 @@ class DatabaseHelper {
       raidDefendedThisWeek: json['raid_defended_this_week'] as bool,
       manualRaidTriggeredThisWeek:
       json['manual_raid_triggered_this_week'] as bool? ?? false,
+      unlockedFeatures: (json['unlocked_features'] as List?)
+          ?.map((e) => e.toString()).toList() ?? const [],
       totalRaidsDefended: _i(json['total_raids_defended'] ?? 0),
       totalFaunaKilled: _i(json['total_fauna_killed'] ?? 0),
       totalChitinCollected: _i(json['total_chitin_collected'] ?? 0),
@@ -409,6 +412,7 @@ class DatabaseHelper {
     'compost': r.compost, 'z_soil': r.zSoil, 'metals': r.metals,
     'sand': r.sand, 'glass': r.glass, 'components': r.components,
     'ore': r.ore, 'meat': r.meat, 'chitin': r.chitin, 'moss': r.moss,
+    'mycoculture': r.mycoculture,
     'star_scrip': r.starScrip, 'seeds': r.seeds,
   };
 
@@ -426,6 +430,7 @@ class DatabaseHelper {
     meat: (j['meat'] as num?)?.toDouble() ?? 0,
     chitin: (j['chitin'] as num?)?.toDouble() ?? 0,
     moss: (j['moss'] as num?)?.toDouble() ?? 0,
+    mycoculture: (j['mycoculture'] as num?)?.toDouble() ?? 0,
     starScrip: (j['star_scrip'] as num).toInt(),
     seeds: (j['seeds'] as num).toInt(),
   );

@@ -102,6 +102,10 @@ class GameState {
   final int nextRaidWeek;
   final bool raidDefendedThisWeek;
   final bool manualRaidTriggeredThisWeek;
+  // Generic discovery flags for things that unlock via gameplay events
+  // rather than scrip/resources (e.g. 'mycoculture_vat' on first
+  // Hyper-Mycelium harvest, 'mycovault_reactor' on first Mycoculture made).
+  final List<String> unlockedFeatures;
   final List<PendingSale> pendingSales;
   final Map<String, double> siloInventory; // cropId -> units in silo
   final int shipmentsThisWindow;           // resets each ship window
@@ -147,6 +151,7 @@ class GameState {
     required this.nextRaidWeek,
     required this.raidDefendedThisWeek,
     this.manualRaidTriggeredThisWeek = false,
+    this.unlockedFeatures = const [],
     required this.pendingSales,
     required this.siloInventory,
     required this.shipmentsThisWindow,
@@ -192,6 +197,7 @@ class GameState {
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
     bool? manualRaidTriggeredThisWeek,
+    List<String>? unlockedFeatures,
     List<PendingSale>? pendingSales,
     List<PendingDelivery>? pendingDeliveries,
     Map<String, double>? siloInventory,
@@ -240,6 +246,7 @@ class GameState {
       raidDefendedThisWeek: raidDefendedThisWeek ?? this.raidDefendedThisWeek,
       manualRaidTriggeredThisWeek:
       manualRaidTriggeredThisWeek ?? this.manualRaidTriggeredThisWeek,
+      unlockedFeatures: unlockedFeatures ?? this.unlockedFeatures,
       pendingSales: pendingSales ?? this.pendingSales,
       siloInventory: siloInventory ?? this.siloInventory,
       shipmentsThisWindow: shipmentsThisWindow ?? this.shipmentsThisWindow,
@@ -321,6 +328,7 @@ class Resources {
   final double meat;
   final double chitin;
   final double moss;
+  final double mycoculture;
   final int starScrip;
   final int seeds;
 
@@ -338,6 +346,7 @@ class Resources {
     this.meat = 0,
     this.chitin = 0,
     this.moss = 0,
+    this.mycoculture = 0,
     this.starScrip = 0,
     this.seeds = 0,
   });
@@ -356,6 +365,7 @@ class Resources {
     double? meat,
     double? chitin,
     double? moss,
+    double? mycoculture,
     int? starScrip,
     int? seeds,
   }) {
@@ -373,6 +383,7 @@ class Resources {
       meat: meat ?? this.meat,
       chitin: chitin ?? this.chitin,
       moss: moss ?? this.moss,
+      mycoculture: mycoculture ?? this.mycoculture,
       starScrip: starScrip ?? this.starScrip,
       seeds: seeds ?? this.seeds,
     );
@@ -393,6 +404,7 @@ class Resources {
       meat: meat + other.meat,
       chitin: chitin + other.chitin,
       moss: moss + other.moss,
+      mycoculture: mycoculture + other.mycoculture,
       starScrip: starScrip + other.starScrip,
       seeds: seeds + other.seeds,
     );
@@ -652,7 +664,7 @@ class Refinery {
 
 // ─── Refinery Machine ─────────────────────────────────────────────────────────
 
-enum MachineType { composter, smelter, zSoilProcessor, glassFurnace, componentFabricator }
+enum MachineType { composter, smelter, zSoilProcessor, glassFurnace, componentFabricator, mycocultureVat }
 
 class RefineryMachine {
   final MachineType type;
@@ -673,6 +685,7 @@ class RefineryMachine {
     MachineType.zSoilProcessor => 'Z-Soil Processor',
     MachineType.glassFurnace => 'Glass Furnace',
     MachineType.componentFabricator => 'Component Fabricator',
+    MachineType.mycocultureVat => 'Mycoculture Vat',
   };
 
   String get emoji => switch (type) {
@@ -681,6 +694,7 @@ class RefineryMachine {
     MachineType.zSoilProcessor => '🌱',
     MachineType.glassFurnace => '🪟',
     MachineType.componentFabricator => '⚙️',
+    MachineType.mycocultureVat => '🧫',
   };
 
   // Key used to look up this machine in upgrades_refinery.yaml
@@ -690,6 +704,7 @@ class RefineryMachine {
     MachineType.zSoilProcessor => 'z_soil_processor',
     MachineType.glassFurnace => 'glass_furnace',
     MachineType.componentFabricator => 'component_fabricator',
+    MachineType.mycocultureVat => 'mycoculture_vat',
   };
 
   static MachineType typeFromYamlKey(String key) => switch (key) {
@@ -698,6 +713,7 @@ class RefineryMachine {
     'z_soil_processor' => MachineType.zSoilProcessor,
     'glass_furnace' => MachineType.glassFurnace,
     'component_fabricator' => MachineType.componentFabricator,
+    'mycoculture_vat' => MachineType.mycocultureVat,
     _ => MachineType.composter,
   };
 
