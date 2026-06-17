@@ -697,6 +697,7 @@ class _SentriesSection extends StatelessWidget {
             final costMetals = nextCfg?['cost_metals'] as int? ?? 0;
             final costComponents = nextCfg?['cost_components'] as int? ?? 0;
             final costChitin = nextCfg?['cost_chitin'] as int? ?? 0;
+            final costMycoculture = nextCfg?['cost_mycoculture'] as int? ?? 0;
             final powerDelta = nextCfg != null
                 ? (nextCfg['power_draw_kwh'] as int) - s.powerDraw
                 : 0;
@@ -705,6 +706,7 @@ class _SentriesSection extends StatelessWidget {
                 game.resources.metals >= costMetals &&
                 game.resources.components >= costComponents &&
                 game.resources.chitin >= costChitin &&
+                game.resources.mycoculture >= costMycoculture &&
                 hasPower;
 
             final color = mkColor(s.level);
@@ -748,6 +750,10 @@ class _SentriesSection extends StatelessWidget {
                               parts.add('${costMetals - game.resources.metals.toInt()} metals');
                             if (game.resources.components < costComponents)
                               parts.add('$costComponents comp');
+                            if (game.resources.chitin < costChitin)
+                              parts.add('${costChitin - game.resources.chitin.toInt()} chitin');
+                            if (game.resources.mycoculture < costMycoculture)
+                              parts.add('${costMycoculture - game.resources.mycoculture.toInt()} mycoculture');
                             if (!hasPower)
                               parts.add('$powerDelta KWh spare');
                             ScaffoldMessenger.of(context).clearSnackBars();
@@ -801,6 +807,7 @@ class _SentriesSection extends StatelessWidget {
                       '→ Mk$nextLevel: $costMetals metals'
                           '${costComponents > 0 ? '  ·  $costComponents comp' : ''}'
                           '${costChitin > 0 ? '  ·  $costChitin chitin' : ''}'
+                          '${costMycoculture > 0 ? '  ·  $costMycoculture culture' : ''}'
                           '${powerDelta > 0 ? '  ·  +$powerDelta KWh' : ''}',
                       style: MFTextStyles.bodySmall.copyWith(
                         color: canAfford ? MFColors.textMuted : MFColors.neonPink,
@@ -824,11 +831,13 @@ class _SentriesSection extends StatelessWidget {
           final costMetals = cfg['cost_metals'] as int;
           final costComponents = cfg['cost_components'] as int;
           final costChitin = cfg['cost_chitin'] as int? ?? 0;
+          final costMycoculture = cfg['cost_mycoculture'] as int? ?? 0;
           final powerNeeded = cfg['power_draw_kwh'] as int;
           final hasPower = game.powerSurplus >= powerNeeded;
           final canAfford = game.resources.metals >= costMetals &&
               game.resources.components >= costComponents &&
               game.resources.chitin >= costChitin &&
+              game.resources.mycoculture >= costMycoculture &&
               hasPower;
 
           return Padding(
@@ -852,7 +861,8 @@ class _SentriesSection extends StatelessWidget {
                         Text(
                           '$costMetals metals'
                               '${costComponents > 0 ? '  ·  $costComponents comp' : ''}'
-                              '${costChitin > 0 ? '  ·  $costChitin chitin' : ''}',
+                              '${costChitin > 0 ? '  ·  $costChitin chitin' : ''}'
+                              '${costMycoculture > 0 ? '  ·  $costMycoculture culture' : ''}',
                           style: MFTextStyles.bodySmall.copyWith(
                             color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
                           ),
@@ -901,6 +911,7 @@ class _SentriesSection extends StatelessWidget {
     final costMetals = cfg['cost_metals'] as int;
     final costComponents = cfg['cost_components'] as int? ?? 0;
     final costChitin = cfg['cost_chitin'] as int? ?? 0;
+    final costMycoculture = cfg['cost_mycoculture'] as int? ?? 0;
 
     final upgraded = LaserSentry(
       id: sentry.id,
@@ -922,6 +933,7 @@ class _SentriesSection extends StatelessWidget {
           metals: game.resources.metals - costMetals,
           components: game.resources.components - costComponents,
           chitin: game.resources.chitin - costChitin,
+          mycoculture: game.resources.mycoculture - costMycoculture,
         ),
       ),
     );
@@ -951,6 +963,7 @@ class _SentriesSection extends StatelessWidget {
           metals: game.resources.metals - (cfg['cost_metals'] as int),
           components: game.resources.components - (cfg['cost_components'] as int),
           chitin: game.resources.chitin - (cfg['cost_chitin'] as int? ?? 0),
+          mycoculture: game.resources.mycoculture - (cfg['cost_mycoculture'] as int? ?? 0),
         ),
       ),
     );

@@ -1260,6 +1260,15 @@
         "cost_glass": 15,
         "power_output_kwh": 150,
         "cost_scrip": 2000
+      },
+      "mycovault_reactor": {
+        "name": "Mycovault Reactor",
+        "emoji": "\u269b\ufe0f",
+        "description": "A bio-reactor that ferments raw Mycoculture into a sustained power yield. Twice the output of a Geothermal Tap.",
+        "cost_metals": 200,
+        "cost_components": 80,
+        "cost_mycoculture": 25,
+        "power_output_kwh": 300
       }
     },
     "mining_drone": {
@@ -1373,6 +1382,30 @@
           "damage": 150,
           "fire_rate": 5,
           "range": 1200
+        },
+        {
+          "level": 6,
+          "name": "Sentry Mk6",
+          "cost_metals": 380,
+          "cost_components": 155,
+          "cost_chitin": 85,
+          "cost_mycoculture": 10,
+          "power_draw_kwh": 13,
+          "damage": 240,
+          "fire_rate": 6,
+          "range": 1300
+        },
+        {
+          "level": 7,
+          "name": "Sentry Mk7",
+          "cost_metals": 550,
+          "cost_components": 225,
+          "cost_chitin": 130,
+          "cost_mycoculture": 20,
+          "power_draw_kwh": 16,
+          "damage": 360,
+          "fire_rate": 7,
+          "range": 1400
         }
       ]
     }

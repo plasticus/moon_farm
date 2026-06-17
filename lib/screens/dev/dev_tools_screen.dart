@@ -132,6 +132,13 @@ class DevToolsScreen extends ConsumerWidget {
                   () => _unlockFeature(ref, game, 'mycoculture_vat'),
                 ),
                 _DevButton(
+                  game.unlockedFeatures.contains('mycovault_reactor')
+                      ? '✅ Mycovault Reactor'
+                      : 'Unlock Mycovault Reactor',
+                  MFColors.neonCyan,
+                  () => _unlockFeature(ref, game, 'mycovault_reactor'),
+                ),
+                _DevButton(
                   '+10 Hyper-Mycelium (silo)',
                   MFColors.neonPink,
                   () => _addSilo(ref, game, 'hyper_mycelium', 10),

@@ -30,7 +30,7 @@ enum ResourceType {
   ore,
 }
 
-enum PowerSourceType { solarArray, windTurbine, geothermalTap }
+enum PowerSourceType { solarArray, windTurbine, geothermalTap, mycovaultReactor }
 
 enum BuildingType { dome, silo, refinery, laserSentry, powerSource }
 
@@ -790,6 +790,7 @@ class PowerSource {
       case PowerSourceType.solarArray: return 'Solar Array';
       case PowerSourceType.windTurbine: return 'Wind Turbine';
       case PowerSourceType.geothermalTap: return 'Geothermal Core Tap';
+      case PowerSourceType.mycovaultReactor: return 'Mycovault Reactor';
     }
   }
 
@@ -798,6 +799,7 @@ class PowerSource {
       case PowerSourceType.solarArray: return '☀️';
       case PowerSourceType.windTurbine: return '🌬️';
       case PowerSourceType.geothermalTap: return '🌋';
+      case PowerSourceType.mycovaultReactor: return '⚛️';
     }
   }
 }

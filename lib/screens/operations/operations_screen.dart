@@ -69,6 +69,10 @@ class _PowerSection extends StatelessWidget {
     final config = GameConfigService.instance;
     final opsBuildings = config.getOperationsBuildings();
     final powerBuildings = opsBuildings['power'] as Map<String, dynamic>? ?? {};
+    final reactorUnlocked = game.unlockedFeatures.contains('mycovault_reactor');
+    final buildablePower = Map<String, dynamic>.fromEntries(
+      powerBuildings.entries.where((e) => e.key != 'mycovault_reactor' || reactorUnlocked),
+    );
     final surplus = game.powerSurplus;
     final surplusColor = surplus >= 0 ? MFColors.neonGreen : MFColors.neonPink;
 
@@ -124,7 +128,7 @@ class _PowerSection extends StatelessWidget {
             style: MFTextStyles.bodySmall.copyWith(
                 color: MFColors.textMuted, letterSpacing: 2, fontSize: 9)),
         const SizedBox(height: 8),
-        ...powerBuildings.entries.map((entry) {
+        ...buildablePower.entries.map((entry) {
           final b = entry.value as Map<String, dynamic>;
           // Count how many of this type the player already owns
           final typeKey = entry.key;
@@ -133,6 +137,7 @@ class _PowerSection extends StatelessWidget {
               'solar_array'    => p.type == PowerSourceType.solarArray,
               'wind_turbine'   => p.type == PowerSourceType.windTurbine,
               'geothermal_tap' => p.type == PowerSourceType.geothermalTap,
+              'mycovault_reactor' => p.type == PowerSourceType.mycovaultReactor,
               _ => false,
             };
           }).length;
@@ -143,17 +148,20 @@ class _PowerSection extends StatelessWidget {
           final costMetals = b['cost_metals'] as int? ?? 0;
           final costGlass = b['cost_glass'] as int? ?? 0;
           final costComponents = b['cost_components'] as int? ?? 0;
+          final costMycoculture = b['cost_mycoculture'] as int? ?? 0;
 
           final canAfford = game.resources.starScrip >= costScrip &&
               game.resources.metals >= costMetals &&
               game.resources.glass >= costGlass &&
-              game.resources.components >= costComponents;
+              game.resources.components >= costComponents &&
+              game.resources.mycoculture >= costMycoculture;
 
           final costParts = <String>[];
           if (costScrip > 0) costParts.add('$costScrip 🎫');
           if (costMetals > 0) costParts.add('$costMetals metals');
           if (costGlass > 0) costParts.add('$costGlass glass');
           if (costComponents > 0) costParts.add('$costComponents comp');
+          if (costMycoculture > 0) costParts.add('$costMycoculture culture');
 
           final missing = <String>[];
           if (game.resources.starScrip < costScrip)
@@ -164,6 +172,8 @@ class _PowerSection extends StatelessWidget {
             missing.add('${costGlass - game.resources.glass.toInt()} more glass');
           if (game.resources.components < costComponents)
             missing.add('${costComponents - game.resources.components.toInt()} more comp');
+          if (game.resources.mycoculture < costMycoculture)
+            missing.add('${costMycoculture - game.resources.mycoculture.toInt()} more culture');
 
           // Show existing count
           final existingLabel = ownedCount > 0 ? '  (own $ownedCount)' : '';
@@ -195,6 +205,7 @@ class _PowerSection extends StatelessWidget {
       'solar_array'    => PowerSourceType.solarArray,
       'wind_turbine'   => PowerSourceType.windTurbine,
       'geothermal_tap' => PowerSourceType.geothermalTap,
+      'mycovault_reactor' => PowerSourceType.mycovaultReactor,
       _ => PowerSourceType.solarArray,
     };
     final newSource = PowerSource(
@@ -211,6 +222,7 @@ class _PowerSection extends StatelessWidget {
           metals: game.resources.metals - (b['cost_metals'] as int? ?? 0),
           glass: game.resources.glass - (b['cost_glass'] as int? ?? 0),
           components: game.resources.components - (b['cost_components'] as int? ?? 0),
+          mycoculture: game.resources.mycoculture - (b['cost_mycoculture'] as int? ?? 0),
         ),
       ),
     );

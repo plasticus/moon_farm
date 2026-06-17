@@ -236,6 +236,7 @@ class GameFactory {
       PowerSourceType.solarArray => 'solar_array',
       PowerSourceType.windTurbine => 'wind_turbine',
       PowerSourceType.geothermalTap => 'geothermal_tap',
+      PowerSourceType.mycovaultReactor => 'mycovault_reactor',
     };
     final config = _config.getPowerSource(typeKey);
     return PowerSource(

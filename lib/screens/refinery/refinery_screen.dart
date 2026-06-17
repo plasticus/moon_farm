@@ -583,9 +583,40 @@ class _MachineCard extends StatelessWidget {
         r = _add(r, e.key, amt);
       }
     }
-    ref.read(activeGameProvider.notifier).updateGameLocal(
-      game.copyWith(resources: r, siloInventory: silo),
-    );
+
+    // First-ever Mycoculture craft (either recipe) unlocks the Mycovault Reactor.
+    final reactorJustUnlocked = recipeOut.containsKey('mycoculture') &&
+        !game.unlockedFeatures.contains('mycovault_reactor');
+
+    var updatedGame = game.copyWith(resources: r, siloInventory: silo);
+    if (reactorJustUnlocked) {
+      updatedGame = updatedGame.copyWith(
+        unlockedFeatures: [...updatedGame.unlockedFeatures, 'mycovault_reactor'],
+        radioFeed: [
+          ...updatedGame.radioFeed,
+          RadioTransmission(
+            week: updatedGame.currentWeek,
+            message: "That vat of yours just put out something stable. Power "
+                "division wants a look — tell 'em you can build a Mycovault "
+                "Reactor whenever you're ready.",
+            isRead: false,
+          ),
+        ],
+      );
+    }
+    ref.read(activeGameProvider.notifier).updateGameLocal(updatedGame);
+
+    if (reactorJustUnlocked) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          child: const Text('⚛️ Mycoculture stabilized! Mycovault Reactor unlocked at the Power Grid.'),
+        ),
+            duration: const Duration(seconds: 3)),
+      );
+      return;
+    }
 
     final out = recipeOut.entries
         .map((e) => '+${((e.value as num).toDouble() * times).toInt()} ${e.key.replaceAll('_', ' ')}')
