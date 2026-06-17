@@ -235,6 +235,8 @@ class _MachineCard extends StatelessWidget {
 
     final recipeIn = Map<String, dynamic>.from(levelCfg['recipe_in'] as Map? ?? {});
     final recipeOut = Map<String, dynamic>.from(levelCfg['recipe_out'] as Map? ?? {});
+    final recipeInPrime = Map<String, dynamic>.from(levelCfg['recipe_in_prime'] as Map? ?? {});
+    final recipeOutPrime = Map<String, dynamic>.from(levelCfg['recipe_out_prime'] as Map? ?? {});
     final maxLevel = upgrades.machineMaxLevel(machine.yamlKey);
     final nextLevel = machine.level + 1;
     final nextCfg = nextLevel <= maxLevel
@@ -243,6 +245,7 @@ class _MachineCard extends StatelessWidget {
 
     // How many crafts can the player afford? (for showing 5/10 buttons)
     final maxCrafts = _maxAffordableCrafts(recipeIn);
+    final maxCraftsPrime = recipeInPrime.isNotEmpty ? _maxAffordableCrafts(recipeInPrime) : 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -392,6 +395,83 @@ class _MachineCard extends StatelessWidget {
               ],
             ],
           ),
+
+          if (recipeInPrime.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('⚗️ PRIME RECIPE (T5 ingredients, better ratio)',
+                style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.neonPurple, fontSize: 9, letterSpacing: 1)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: MFColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('IN (×1)', style: MFTextStyles.bodySmall.copyWith(
+                            color: MFColors.neonOrange, fontSize: 9, letterSpacing: 1)),
+                        ...recipeInPrime.entries.map((e) {
+                          final needed = (e.value as num).toInt();
+                          final have = _getHave(e.key);
+                          return Text(
+                            '$needed ${e.key.replaceAll('_', ' ')} (have ${have.toInt()})',
+                            style: MFTextStyles.bodySmall.copyWith(
+                              color: have >= needed ? MFColors.textSecondary : MFColors.neonPink,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  Text('→', style: MFTextStyles.labelLarge.copyWith(color: MFColors.neonOrange)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('OUT (×1)', style: MFTextStyles.bodySmall.copyWith(
+                            color: MFColors.neonGreen, fontSize: 9, letterSpacing: 1)),
+                        ...recipeOutPrime.entries.map((e) => Text(
+                          '${(e.value as num).toInt()} ${e.key.replaceAll('_', ' ')}',
+                          style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonGreen),
+                        )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _CraftButton(
+                  count: 1,
+                  enabled: maxCraftsPrime >= 1,
+                  onTap: () => _craft(context, recipeInPrime, recipeOutPrime, 1),
+                ),
+                if (maxCraftsPrime >= 10) ...[
+                  const SizedBox(width: 6),
+                  _CraftButton(
+                    count: 10,
+                    enabled: true,
+                    onTap: () => _craft(context, recipeInPrime, recipeOutPrime, 10),
+                  ),
+                ],
+                if (machine.level >= 8 && maxCraftsPrime >= 1) ...[
+                  const SizedBox(width: 6),
+                  _SmeltAllButton(
+                    maxCrafts: maxCraftsPrime,
+                    onTap: () => _craft(context, recipeInPrime, recipeOutPrime, maxCraftsPrime),
+                  ),
+                ],
+              ],
+            ),
+          ],
 
           // Upgrade cost hint
           if (nextCfg != null)

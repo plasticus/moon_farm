@@ -416,7 +416,7 @@ class Resources {
 class Dome {
   final String id;
   final String name;
-  final int tier; // 1-4
+  final int tier; // 1-5
   final List<CropCell> cells; // always 8 cells (positions 0-7, center reserved)
   final DomeRobot? robot;
   final DomeBot? domeBot;
@@ -1225,6 +1225,12 @@ class CropConfig {
     'gristle_pod': '🥜',
     'tangleberry': '🍇',
     'prism_pepper': '🫑',
+    'mycelium_prime': '🧬',
+    'lattice_moss': '💠',
+    'marrow_bloom': '🌺',
+    'chiton_reed': '🦀',
+    'glutton_vine': '🍒',
+    'halo_fruit': '🍊',
   };
 
   factory CropConfig.fromJson(Map<String, dynamic> json) {

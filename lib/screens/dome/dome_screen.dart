@@ -327,6 +327,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
           newResources = newResources.copyWith(moss: newResources.moss + amt);
         case 'chitin':
           newResources = newResources.copyWith(chitin: newResources.chitin + amt);
+        case 'meat':
+          newResources = newResources.copyWith(meat: newResources.meat + amt);
       }
     } else {
       updatedInventory[cell.cropId!] =
@@ -569,7 +571,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
             _InfoRow('Status', _stateLabel(cell.state)),
             _InfoRow('Growth', '${cell.weeksGrown} / ${crop.growthWeeks} weeks'),
             _InfoRow('Watered', cell.wateredThisWeek ? '✅ Yes' : '❌ No'),
-            _InfoRow('Fertilized', cell.fertilizedThisWeek ? '✅ Yes' : '❌ No'),
+            _InfoRow(crop.feedResource != null ? 'Fed' : 'Fertilized',
+                cell.fertilizedThisWeek ? '✅ Yes' : '❌ No'),
+            if (crop.feedResource != null)
+              _InfoRow('Feed needed', '${crop.feedResource} every 3 weeks'),
             if (crop.yieldsResource != null)
               _InfoRow('Yields', '${crop.resourceYieldAmount} ${crop.yieldsResource} / unit')
             else
@@ -648,8 +653,8 @@ class _DomeNavigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dome = domes[currentIndex];
-    final tierEmojis = ['', '🔵', '🟢', '🟡', '🟠'];
-    final tierEmoji = tierEmojis[dome.tier.clamp(1, 4)];
+    final tierEmojis = ['', '🔵', '🟢', '🟡', '🟠', '🧫'];
+    final tierEmoji = tierEmojis[dome.tier.clamp(1, 5)];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1335,6 +1340,7 @@ class _CropPickerSheet extends StatelessWidget {
       2: MFColors.tier2,
       3: MFColors.tier3,
       4: MFColors.tier4,
+      5: MFColors.tier5,
     };
 
     return Column(
@@ -1390,6 +1396,14 @@ class _CropPickerSheet extends StatelessWidget {
                         fontSize: 10,
                       ),
                     ),
+                    if (crop.feedResource != null)
+                      Text(
+                        '🍖 Must be fed ${crop.feedResource} every 3 weeks (handled automatically with a Dome Bot)',
+                        style: MFTextStyles.bodySmall.copyWith(
+                          color: MFColors.neonPink,
+                          fontSize: 10,
+                        ),
+                      ),
                     const SizedBox(height: 2),
                     Text(
                       crop.description,

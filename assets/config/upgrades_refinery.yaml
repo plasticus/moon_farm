@@ -604,6 +604,12 @@ mycoculture_vat:
         moss: 3
       recipe_out:
         mycoculture: 1
+      recipe_in_prime:
+        chemicals: 4
+        mycelium_prime: 2
+        lattice_moss: 2
+      recipe_out_prime:
+        mycoculture: 1
 
     - level: 2
       upgrade_cost:
@@ -615,6 +621,12 @@ mycoculture_vat:
         hyper_mycelium: 3
         moss: 3
       recipe_out:
+        mycoculture: 1
+      recipe_in_prime:
+        chemicals: 4
+        mycelium_prime: 2
+        lattice_moss: 2
+      recipe_out_prime:
         mycoculture: 1
 
     - level: 3
@@ -629,6 +641,12 @@ mycoculture_vat:
         moss: 3
       recipe_out:
         mycoculture: 1
+      recipe_in_prime:
+        chemicals: 3
+        mycelium_prime: 2
+        lattice_moss: 2
+      recipe_out_prime:
+        mycoculture: 1
 
     - level: 4
       upgrade_cost:
@@ -641,6 +659,12 @@ mycoculture_vat:
         hyper_mycelium: 2
         moss: 2
       recipe_out:
+        mycoculture: 1
+      recipe_in_prime:
+        chemicals: 3
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
         mycoculture: 1
 
     - level: 5
@@ -655,6 +679,12 @@ mycoculture_vat:
         moss: 2
       recipe_out:
         mycoculture: 1
+      recipe_in_prime:
+        chemicals: 3
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
+        mycoculture: 1
 
     - level: 6
       upgrade_cost:
@@ -667,6 +697,12 @@ mycoculture_vat:
         hyper_mycelium: 2
         moss: 2
       recipe_out:
+        mycoculture: 2
+      recipe_in_prime:
+        chemicals: 2
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
         mycoculture: 2
 
     - level: 7
@@ -681,6 +717,12 @@ mycoculture_vat:
         moss: 2
       recipe_out:
         mycoculture: 2
+      recipe_in_prime:
+        chemicals: 2
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
+        mycoculture: 2
 
     - level: 8
       upgrade_cost:
@@ -694,6 +736,12 @@ mycoculture_vat:
         moss: 1
       recipe_out:
         mycoculture: 2
+      recipe_in_prime:
+        chemicals: 2
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
+        mycoculture: 3
 
     - level: 9
       upgrade_cost:
@@ -707,6 +755,12 @@ mycoculture_vat:
         moss: 1
       recipe_out:
         mycoculture: 2
+      recipe_in_prime:
+        chemicals: 1
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
+        mycoculture: 3
 
     - level: 10
       upgrade_cost:
@@ -720,3 +774,9 @@ mycoculture_vat:
         moss: 1
       recipe_out:
         mycoculture: 3
+      recipe_in_prime:
+        chemicals: 1
+        mycelium_prime: 1
+        lattice_moss: 1
+      recipe_out_prime:
+        mycoculture: 4

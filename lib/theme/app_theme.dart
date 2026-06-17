@@ -47,6 +47,7 @@ class MFColors {
   static const Color tier2 = Color(0xFF39FF14);    // green - compost giants
   static const Color tier3 = Color(0xFFBF5FFF);    // purple - exotic
   static const Color tier4 = Color(0xFFFF8C00);    // orange - cyber-organic
+  static const Color tier5 = Color(0xFF00FFC8);    // teal - biolab / mycoculture
 
   // Solars currency
   static const Color starScrip = Color(0xFFFFD700);

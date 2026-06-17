@@ -12,6 +12,7 @@
 #   Tier 2 dome  → Tier 2 crops only
 #   Tier 3 dome  → Tier 3 crops only
 #   Tier 4 dome  → Tier 4 crops only
+#   Tier 5 dome  → Tier 5 crops only
 #   NOT backward-compatible — a Tier 4 dome grows only Tier 4 crops.
 #
 # POWER:
@@ -61,3 +62,12 @@ dome_tiers:
       metals: 40
       components: 20
       chitin: 20
+
+  - tier: 5
+    power_draw_kwh: 400
+    upgrade_cost:
+      glass: 15
+      metals: 80
+      components: 40
+      chitin: 30
+      mycoculture: 15

@@ -1547,6 +1547,7 @@ class _DomeBuildSection extends StatelessWidget {
       'components' => r.components,
       'chitin' => r.chitin,
       'ore' => r.ore,
+      'mycoculture' => r.mycoculture,
       _ => 0,
     };
   }
@@ -1593,6 +1594,7 @@ class _DomeBuildSection extends StatelessWidget {
         'components' => r.copyWith(components: r.components - amt),
         'chitin' => r.copyWith(chitin: r.chitin - amt),
         'ore' => r.copyWith(ore: r.ore - amt),
+        'mycoculture' => r.copyWith(mycoculture: r.mycoculture - amt),
         _ => r,
       };
     }

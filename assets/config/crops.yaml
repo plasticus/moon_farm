@@ -321,3 +321,103 @@ crops:
     fertilizer_bonus: 1.4
     volume_m3: 0.5
     resource_yield_amount: 0
+
+  - id: mycelium_prime
+    name: Mycelium Prime
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 4
+    water_per_week: 5
+    calories_per_unit: 120
+    base_scrip_per_m3: 800
+    compost_yield: 2
+    decay_rate: 0.5
+    description: A lab-refined mycelium strain that matures in half the time without sacrificing yield.
+    note: Same calorie density as Hyper-Mycelium at double the growth speed. Premium Mycoculture Vat ingredient.
+    fertilizer_bonus: 1.7
+    volume_m3: 0.4
+    resource_yield_amount: 0
+
+  - id: lattice_moss
+    name: Lattice Moss
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 4
+    water_per_week: 1
+    calories_per_unit: 0
+    base_scrip_per_m3: 0
+    compost_yield: 0
+    decay_rate: 0.4
+    description: An engineered moss lattice that propagates in a fraction of the time Matrix Moss needs.
+    note: Yields Moss much faster than Matrix Moss. Pairs 1:1 with Mycelium Prime for Vat throughput.
+    fertilizer_bonus: 1.1
+    volume_m3: 0.8
+    yields_resource: moss
+    resource_yield_amount: 15
+
+  - id: marrow_bloom
+    name: Marrow Bloom
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 8
+    water_per_week: 6
+    calories_per_unit: 0
+    base_scrip_per_m3: 0
+    compost_yield: 0
+    decay_rate: 0.5
+    description: A fleshy, vein-laced bloom that grows real muscle tissue from mineral-rich soil — no fauna required.
+    note: Yields Meat on harvest. A farmed alternative to raiding.
+    fertilizer_bonus: 1.2
+    volume_m3: 0.6
+    yields_resource: meat
+    resource_yield_amount: 6
+
+  - id: chiton_reed
+    name: Chiton Reed
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 7
+    water_per_week: 3
+    calories_per_unit: 0
+    base_scrip_per_m3: 0
+    compost_yield: 0
+    decay_rate: 0.5
+    description: A hardened reed that converts fed meat into dense chitin plating far more efficiently than Gristle Pod.
+    note: Must be fed meat every 3 weeks or it decays like an unwatered crop. Much higher chitin yield than Gristle Pod.
+    fertilizer_bonus: 1.0
+    volume_m3: 0.5
+    feed_resource: meat
+    yields_resource: chitin
+    resource_yield_amount: 5
+
+  - id: glutton_vine
+    name: Glutton Vine
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 3
+    water_per_week: 3
+    calories_per_unit: 10
+    base_scrip_per_m3: 40
+    compost_yield: 30
+    decay_rate: 0.3
+    description: A voracious cherry-bearing vine that devours its bed even faster than Tangleberry, leaving mountains of mulch behind.
+    note: Extreme compost yield. Fastest growth of any Tier 5 crop. Low food value.
+    fertilizer_bonus: 1.2
+    volume_m3: 0.6
+    resource_yield_amount: 0
+
+  - id: halo_fruit
+    name: Halo Fruit
+    tier: 5
+    dome_tier_required: 5
+    growth_weeks: 10
+    water_per_week: 6
+    calories_per_unit: 100
+    base_scrip_per_m3: 1900
+    compost_yield: 2
+    decay_rate: 0.4
+    description: A radiant orb-fruit that seems to glow faintly under grow-lamps. The colony's most sought-after delicacy.
+    note: Highest-value crop in the game. Slow growth, massive payoff.
+    fertilizer_bonus: 1.5
+    volume_m3: 0.5
+    resource_yield_amount: 0
