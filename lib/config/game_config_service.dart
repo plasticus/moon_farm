@@ -52,7 +52,7 @@ class GameConfigService {
       'dome_tier_required': 99,
       'growth_weeks': 1,
       'water_per_week': 0,
-      'base_scrip_per_m3': 75,
+      'base_scrip_per_m3': 50,
       'compost_yield': 0,
       'description': 'Processed fauna protein. The colony kitchen pays well.',
       'note': '',

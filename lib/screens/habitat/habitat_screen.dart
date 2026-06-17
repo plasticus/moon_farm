@@ -19,7 +19,7 @@ class HabitatScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitatScreenState extends ConsumerState<HabitatScreen> {
-  int _section = 0; // 0=radio, 1=wall, 2=sentries, 3=grenades, 4=stats
+  int _section = 0; // 0=wall, 1=sentries, 2=grenades, 3=radio, 4=stats
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +40,10 @@ class _HabitatScreenState extends ConsumerState<HabitatScreen> {
 
   Widget _buildSection(GameState game) {
     switch (_section) {
-      case 0: return _RadioSection(game: game);
-      case 1: return _WallSection(game: game, ref: ref);
-      case 2: return _SentriesSection(game: game, ref: ref);
-      case 3: return _GrenadeSection(game: game, ref: ref);
+      case 0: return _WallSection(game: game, ref: ref);
+      case 1: return _SentriesSection(game: game, ref: ref);
+      case 2: return _GrenadeSection(game: game, ref: ref);
+      case 3: return _RadioSection(game: game);
       case 4: return _StatsSection(game: game);
       default: return const SizedBox();
     }
@@ -59,10 +59,10 @@ class _HabitatTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      ('📻', 'RADIO'),
       ('🧱', 'WALL'),
       ('🔫', 'SENTRIES'),
       ('💥', 'GRENADES'),
+      ('📻', 'RADIO'),
       ('📊', 'STATS'),
     ];
 
@@ -338,6 +338,12 @@ class _WallSection extends StatelessWidget {
               ],
             ),
           ),
+          if (wall.needsRepair) ...[
+            const SizedBox(height: 6),
+            Text('Wall must be fully repaired before upgrading.',
+                style: MFTextStyles.bodySmall
+                    .copyWith(color: MFColors.neonPink, fontSize: 11)),
+          ],
         ] else ...[
           Text('Maximum wall level reached.',
               style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonGreen)),
@@ -374,7 +380,8 @@ class _WallSection extends StatelessWidget {
     const meatCost = 10;
     const chemCost = 10;
     final canAfford = game.resources.meat >= meatCost &&
-        game.resources.chemicals >= chemCost;
+        game.resources.chemicals >= chemCost &&
+        !game.manualRaidTriggeredThisWeek;
     final isRaidActive = game.currentWeek >= game.nextRaidWeek;
 
     return Column(
@@ -429,6 +436,19 @@ class _WallSection extends StatelessWidget {
                           style: MFTextStyles.bodySmall
                               .copyWith(color: MFColors.neonPink)),
                     )
+                  else if (game.manualRaidTriggeredThisWeek)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: MFColors.borderSubtle,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: MFColors.borderSubtle),
+                      ),
+                      child: Text('USED THIS TURN',
+                          style: MFTextStyles.bodySmall
+                              .copyWith(color: MFColors.textMuted)),
+                    )
                   else
                     GestureDetector(
                       onTap: canAfford ? () => _triggerRaid(context) : null,
@@ -459,7 +479,7 @@ class _WallSection extends StatelessWidget {
                     ),
                 ],
               ),
-              if (!canAfford)
+              if (!canAfford && !game.manualRaidTriggeredThisWeek)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Builder(builder: (context) {
@@ -488,13 +508,15 @@ class _WallSection extends StatelessWidget {
     const meatCost = 10;
     const chemCost = 10;
 
-    // 1. Deduct farming costs from the local state immediately
+    // 1. Deduct farming costs from the local state immediately, and lock
+    //    out further manual triggers until the week advances.
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         resources: game.resources.copyWith(
           meat: game.resources.meat - meatCost,
           chemicals: game.resources.chemicals - chemCost,
         ),
+        manualRaidTriggeredThisWeek: true,
       ),
     );
 
@@ -600,7 +622,8 @@ class _WallSection extends StatelessWidget {
     final canAfford = game.resources.ore >= oreCost &&
         game.resources.moonDirt >= dirtCost &&
         game.resources.chitin >= chitinCost &&
-        game.resources.metals >= metalsCost;
+        game.resources.metals >= metalsCost &&
+        !wall.needsRepair;
 
     return GestureDetector(
       onTap: canAfford ? () => _doUpgrade(context, cfg) : null,
@@ -1130,7 +1153,8 @@ class _GrenadeSection extends StatelessWidget {
         case 'components': have = game.resources.components;
         case 'ore': have = game.resources.ore;
         case 'chitin': have = game.resources.chitin;
-        case 'meat': have = game.resources.compost; // meat in compost slot
+        case 'meat': have = game.resources.meat;
+        case 'moss': have = game.resources.moss;
       }
       if (have < needed) return false;
     }
@@ -1151,8 +1175,9 @@ class _GrenadeSection extends StatelessWidget {
         case 'metals': r = r.copyWith(metals: r.metals - amount);
         case 'components': r = r.copyWith(components: r.components - amount);
         case 'ore': r = r.copyWith(ore: r.ore - amount);
-        case 'chitin': r = r.copyWith(ore: r.ore - amount);
-        case 'meat': r = r.copyWith(compost: r.compost - amount);
+        case 'chitin': r = r.copyWith(chitin: r.chitin - amount);
+        case 'meat': r = r.copyWith(meat: r.meat - amount);
+        case 'moss': r = r.copyWith(moss: r.moss - amount);
       }
     }
 

@@ -258,6 +258,25 @@ class GameFactory {
     );
   }
 
+  /// Target cargo volume (m³) for a contract, by crop tier.
+  /// Higher-tier crops are worth more per m³, so contracts ask for more
+  /// volume rather than a flat unit count — keeps later tiers meaningful.
+  static const Map<int, double> _contractTierTargetM3 = {
+    1: 10,
+    2: 25,
+    3: 50,
+    4: 100,
+  };
+
+  static double _targetM3ForTier(int tier) {
+    if (_contractTierTargetM3.containsKey(tier)) return _contractTierTargetM3[tier]!;
+    // Future tiers (5+) keep doubling from the tier 4 baseline.
+    final highestKnown = _contractTierTargetM3.keys.reduce((a, b) => a > b ? a : b);
+    final highestValue = _contractTierTargetM3[highestKnown]!;
+    if (tier > highestKnown) return highestValue * (1 << (tier - highestKnown));
+    return _contractTierTargetM3[1]!;
+  }
+
   /// Generate 3 contract options based on what crops the player could plausibly have.
   static List<Contract> generateContractOptions({
     required List<Dome> domes,
@@ -279,11 +298,12 @@ class GameFactory {
     final picked = shuffled.take(3).toList();
 
     return picked.map((crop) {
-      // Quantity scaled to crop value — cheaper crops need bigger orders
-      final baseQty = (80 / (crop.baseScrip * 0.1).clamp(1, 10)).round().clamp(8, 60);
+      // Required cargo volume is fixed by crop tier (10/25/50/100m³...).
+      final targetM3 = _targetM3ForTier(crop.tier);
+      final baseQty = (targetM3 / crop.volumeM3).round().clamp(1, 999);
 
-      // Market value = baseScrip * qty (what relay would pay at neutral mood)
-      final marketValue = crop.baseScrip * baseQty;
+      // Market value = base price-per-m³ * the m³ actually being delivered.
+      final marketValue = crop.baseScrip * targetM3;
 
       // Contracts pay 15-25% above market as a bonus for committing early
       final bonusPct = 0.15 + (_rng.nextDouble() * 0.10); // 15-25%
@@ -294,8 +314,9 @@ class GameFactory {
         id: _uuid.v4(),
         title: '${crop.name} Order',
         description:
-        'The colony requests $baseQty units of ${crop.name}. '
-            'Pays $bonusDisplay. Deliver before next ship window.',
+        'The colony requests $baseQty units of ${crop.name} '
+            '(~${targetM3.round()}m³). Pays $bonusDisplay. '
+            'Deliver before next ship window.',
         cropId: crop.id,
         requiredAmount: baseQty,
         currentAmount: 0,

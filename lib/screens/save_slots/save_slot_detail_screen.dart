@@ -555,6 +555,7 @@ class _ResourceGrid extends StatelessWidget {
       ('🌾', 'Seeds',      '${resources.seeds}', MFColors.neonGreen),
       ('🥩', 'Meat',       '${resources.meat.toInt()}', const Color(0xFFEF5350)),
       ('🦴', 'Chitin',     '${resources.chitin.toInt()}', const Color(0xFFBCAAA4)),
+      ('🟩', 'Moss',       '${resources.moss.toInt()}', MFColors.neonGreen),
     ];
 
     return GridView.builder(

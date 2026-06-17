@@ -62,6 +62,7 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevStat('Z Soil', '${game.resources.zSoil.toInt()}'),
                 _DevStat('Water', '${game.resources.water.toInt()}'),
                 _DevStat('Compost', '${game.resources.compost.toInt()}'),
+                _DevStat('Moss', '${game.resources.moss.toInt()}'),
                 _DevStat('Metals', '${game.resources.metals.toInt()}'),
                 _DevStat('Volume Delivered', '${game.totalVolumeDeliveredM3.toStringAsFixed(1)}m³'),
               ],
@@ -91,6 +92,7 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevButton('+20 Moon Dirt', MFColors.textSecondary, () => _addResources(ref, game, moonDirt: 20)),
                 _DevButton('+50 Chitin', MFColors.textPrimary, () => _addResources(ref, game, chitin: 50)),
                 _DevButton('+20 Meat', MFColors.neonPink, () => _addResources(ref, game, meat: 20)),
+                _DevButton('+20 Moss', MFColors.neonGreen, () => _addResources(ref, game, moss: 20)),
                 _DevButton('FILL ALL', MFColors.neonCyan, () => _fillAll(ref, game)),
               ],
             ),
@@ -192,6 +194,7 @@ class DevToolsScreen extends ConsumerWidget {
         double moonDirt = 0,
         double chitin = 0,
         double meat = 0,
+        double moss = 0,
       }) {
     final updated = game.copyWith(
       resources: game.resources.copyWith(
@@ -209,6 +212,7 @@ class DevToolsScreen extends ConsumerWidget {
         moonDirt: game.resources.moonDirt + moonDirt,
         chitin: game.resources.chitin + chitin,
         meat: game.resources.meat + meat,
+        moss: game.resources.moss + moss,
       ),
     );
     ref.read(activeGameProvider.notifier).updateGameLocal(updated);
@@ -220,7 +224,7 @@ class DevToolsScreen extends ConsumerWidget {
       scrip: 10000, seeds: 50, zSoil: 50, water: 200,
       compost: 50, metals: 100, chemicals: 50, sand: 50,
       glass: 50, components: 50, ore: 50, moonDirt: 100,
-      chitin: 50, meat: 20,
+      chitin: 50, meat: 20, moss: 50,
     );
   }
 

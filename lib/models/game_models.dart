@@ -101,6 +101,7 @@ class GameState {
   final String? terminationReason; // set when game ends
   final int nextRaidWeek;
   final bool raidDefendedThisWeek;
+  final bool manualRaidTriggeredThisWeek;
   final List<PendingSale> pendingSales;
   final Map<String, double> siloInventory; // cropId -> units in silo
   final int shipmentsThisWindow;           // resets each ship window
@@ -145,6 +146,7 @@ class GameState {
     this.terminationReason,
     required this.nextRaidWeek,
     required this.raidDefendedThisWeek,
+    this.manualRaidTriggeredThisWeek = false,
     required this.pendingSales,
     required this.siloInventory,
     required this.shipmentsThisWindow,
@@ -189,6 +191,7 @@ class GameState {
     String? terminationReason,
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
+    bool? manualRaidTriggeredThisWeek,
     List<PendingSale>? pendingSales,
     List<PendingDelivery>? pendingDeliveries,
     Map<String, double>? siloInventory,
@@ -235,6 +238,8 @@ class GameState {
       terminationReason: terminationReason ?? this.terminationReason,
       nextRaidWeek: nextRaidWeek ?? this.nextRaidWeek,
       raidDefendedThisWeek: raidDefendedThisWeek ?? this.raidDefendedThisWeek,
+      manualRaidTriggeredThisWeek:
+      manualRaidTriggeredThisWeek ?? this.manualRaidTriggeredThisWeek,
       pendingSales: pendingSales ?? this.pendingSales,
       siloInventory: siloInventory ?? this.siloInventory,
       shipmentsThisWindow: shipmentsThisWindow ?? this.shipmentsThisWindow,
@@ -315,6 +320,7 @@ class Resources {
   final double ore;
   final double meat;
   final double chitin;
+  final double moss;
   final int starScrip;
   final int seeds;
 
@@ -331,6 +337,7 @@ class Resources {
     this.ore = 0,
     this.meat = 0,
     this.chitin = 0,
+    this.moss = 0,
     this.starScrip = 0,
     this.seeds = 0,
   });
@@ -348,6 +355,7 @@ class Resources {
     double? ore,
     double? meat,
     double? chitin,
+    double? moss,
     int? starScrip,
     int? seeds,
   }) {
@@ -364,6 +372,7 @@ class Resources {
       ore: ore ?? this.ore,
       meat: meat ?? this.meat,
       chitin: chitin ?? this.chitin,
+      moss: moss ?? this.moss,
       starScrip: starScrip ?? this.starScrip,
       seeds: seeds ?? this.seeds,
     );
@@ -383,6 +392,7 @@ class Resources {
       ore: ore + other.ore,
       meat: meat + other.meat,
       chitin: chitin + other.chitin,
+      moss: moss + other.moss,
       starScrip: starScrip + other.starScrip,
       seeds: seeds + other.seeds,
     );
@@ -1140,6 +1150,11 @@ class CropConfig {
   final double volumeM3; // cubic meters per cell per harvest
   final String? yieldsResource;
   final int resourceYieldAmount;
+  // If set, this crop must be FED this resource on a schedule (handled
+  // through the same fertilize action/cooldown as compost-fertilizing,
+  // but mandatory — missing a due feeding window decays yield exactly
+  // like missing a watering, rather than just forgoing a bonus).
+  final String? feedResource;
 
   const CropConfig({
     required this.id,
@@ -1159,6 +1174,7 @@ class CropConfig {
     required this.volumeM3,
     this.yieldsResource,
     required this.resourceYieldAmount,
+    this.feedResource,
   });
 
   // Convenience accessors for older call sites
@@ -1187,11 +1203,12 @@ class CropConfig {
     'nebula_melons': '🍈',
     'crystalline_beans': '💎',
     'hyper_mycelium': '🍄',
-    'silicon_shoots': '🔷',
-    'copper_root': '🟤',
     'luna_lentils': '🫘',
     'matrix_moss': '🟩',
     'fauna_meat': '🥩',
+    'gristle_pod': '🥜',
+    'tangleberry': '🍇',
+    'prism_pepper': '🫑',
   };
 
   factory CropConfig.fromJson(Map<String, dynamic> json) {
@@ -1215,6 +1232,7 @@ class CropConfig {
       volumeM3: (json['volume_m3'] as num?)?.toDouble() ?? 0.5,
       yieldsResource: json['yields_resource'] as String?,
       resourceYieldAmount: (json['resource_yield_amount'] as num?)?.toInt() ?? 0,
+      feedResource: json['feed_resource'] as String?,
     );
   }
 }

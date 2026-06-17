@@ -238,31 +238,37 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
   }
 
   void _doFertilize(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) {
+    final crop = GameConfigService.instance.getCrop(cell.cropId ?? '');
+    final feedKey = crop?.feedResource; // null = normal compost fertilizing
+    final verb = feedKey == null ? 'fertilizing' : 'feeding';
+    final pastVerb = feedKey == null ? 'fertilized' : 'fed';
+    final resourceLabel = feedKey ?? 'compost';
+
     if (dome.domeBot != null && dome.domeBot!.canFertilize) {
-      _snack(ref.context, '🤖 Dome Bot handles fertilizing automatically.');
+      _snack(ref.context, '🤖 Dome Bot handles $verb automatically.');
       return;
     }
     if (cell.state != CropState.growing) {
-      _snack(ref.context, 'Nothing to fertilize here.');
+      _snack(ref.context, 'Nothing to $verb here.');
       return;
     }
     if (cell.fertilizedThisWeek) {
-      _snack(ref.context, 'Already fertilized this week.');
+      _snack(ref.context, 'Already $pastVerb this week.');
       return;
     }
-    final crop = GameConfigService.instance.getCrop(cell.cropId ?? '');
     if (crop == null) return;
     // Max once per 3 growth-weeks
     if (cell.fertilizeCount >= crop.maxFertilizations) {
-      _snack(ref.context, 'This crop can\'t be fertilized any more times.');
+      _snack(ref.context, 'This crop can\'t be $pastVerb any more times.');
       return;
     }
     if (cell.weeksGrown - cell.lastFertilizeWeek < 3 && cell.lastFertilizeWeek >= 0) {
-      _snack(ref.context, 'Must wait 3 weeks between fertilizing.');
+      _snack(ref.context, 'Must wait 3 weeks between $verb.');
       return;
     }
-    if (game.resources.compost < 1) {
-      _snack(ref.context, 'No compost available.');
+    final available = feedKey == null ? game.resources.compost : _resourceFor(game.resources, feedKey);
+    if (available < 1) {
+      _snack(ref.context, 'No $resourceLabel available.');
       return;
     }
 
@@ -273,7 +279,9 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
         fertilizeCount: cell.fertilizeCount + 1,
         lastFertilizeWeek: cell.weeksGrown,
       ),
-      game.resources.copyWith(compost: game.resources.compost - 1),
+      feedKey == null
+          ? game.resources.copyWith(compost: game.resources.compost - 1)
+          : _deductResource(game.resources, feedKey, 1),
     );
   }
 
@@ -315,6 +323,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
           newResources = newResources.copyWith(chemicals: newResources.chemicals + amt);
         case 'glass':
           newResources = newResources.copyWith(glass: newResources.glass + amt);
+        case 'moss':
+          newResources = newResources.copyWith(moss: newResources.moss + amt);
+        case 'chitin':
+          newResources = newResources.copyWith(chitin: newResources.chitin + amt);
       }
     } else {
       updatedInventory[cell.cropId!] =
@@ -527,7 +539,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
             _InfoRow('Growth', '${cell.weeksGrown} / ${crop.growthWeeks} weeks'),
             _InfoRow('Watered', cell.wateredThisWeek ? '✅ Yes' : '❌ No'),
             _InfoRow('Fertilized', cell.fertilizedThisWeek ? '✅ Yes' : '❌ No'),
-            _InfoRow('Value', '${crop.baseScrip} 🎫 / unit'),
+            if (crop.yieldsResource != null)
+              _InfoRow('Yields', '${crop.resourceYieldAmount} ${crop.yieldsResource} / unit')
+            else
+              _InfoRow('Value', '${crop.baseScrip} 🎫 / unit'),
             _InfoRow('Volume', '${crop.volumeM3}m³'),
             const SizedBox(height: 8),
             Text(crop.description, style: MFTextStyles.bodySmall),
@@ -561,6 +576,26 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
         child: Text(message),
       )),
     );
+  }
+
+  // Generic getters/setters for crops whose feedResource isn't compost
+  // (e.g. Gristle Pod, fed 'meat'). Extend as more feed resources show up.
+  double _resourceFor(Resources r, String key) {
+    return switch (key) {
+      'meat' => r.meat,
+      'chitin' => r.chitin,
+      'moss' => r.moss,
+      _ => 0,
+    };
+  }
+
+  Resources _deductResource(Resources r, String key, double amt) {
+    return switch (key) {
+      'meat' => r.copyWith(meat: r.meat - amt),
+      'chitin' => r.copyWith(chitin: r.chitin - amt),
+      'moss' => r.copyWith(moss: r.moss - amt),
+      _ => r,
+    };
   }
 }
 
@@ -1310,14 +1345,27 @@ class _CropPickerSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${crop.growthWeeks}w  ·  ${crop.waterPerWeek}💧/wk  ·  ${crop.baseScrip}🎫',
+                      '${crop.growthWeeks}w  ·  ${crop.waterPerWeek}💧/wk  ·  '
+                          '${crop.yieldsResource != null ? "—" : "${crop.baseScrip}🎫"}',
                       style: MFTextStyles.bodySmall,
                     ),
                     Text(
-                      '📦 ${crop.volumeM3}m³ cargo  ·  ♻️ ${crop.compostYield} compost',
+                      crop.yieldsResource != null
+                          ? '⚙️ Yields ${crop.resourceYieldAmount} ${crop.yieldsResource} per unit  ·  '
+                              '📦 ${crop.volumeM3}m³'
+                          : '📦 ${crop.volumeM3}m³ cargo  ·  ♻️ ${crop.compostYield} compost',
                       style: MFTextStyles.bodySmall.copyWith(
                         color: MFColors.textMuted,
                         fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      crop.description,
+                      style: MFTextStyles.bodySmall.copyWith(
+                        color: MFColors.textMuted,
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],

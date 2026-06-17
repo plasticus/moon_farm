@@ -246,78 +246,78 @@ crops:
     growth_weeks: 8
     water_per_week: 5
     calories_per_unit: 120
-    base_scrip_per_m3: 1000
+    base_scrip_per_m3: 650
     compost_yield: 2
     decay_rate: 0.6
     description: Dense fungal protein clusters. Colony nutritionists report the flavor as indistinguishable from Earth beef.
-    note: Extreme calorie density. Very high fertilizer response. Highly fragile.
+    note: High calorie density. Very high fertilizer response. Highly fragile. Key Mycoculture Vat ingredient.
     fertilizer_bonus: 1.7
     volume_m3: 0.4
     resource_yield_amount: 0
-
-  - id: silicon_shoots
-    name: Silicon Shoots
-    tier: 4
-    dome_tier_required: 4
-    growth_weeks: 9
-    water_per_week: 4
-    calories_per_unit: 0
-    base_scrip_per_m3: 0
-    compost_yield: 2
-    decay_rate: 0.4
-    description: Processes moon sand into glass matrices.
-    note: Quick growth for tier. Low water draw.
-    fertilizer_bonus: 1.1
-    volume_m3: 0.5
-    yields_resource: sand
-    resource_yield_amount: 8
-
-  - id: copper_root
-    name: Copper-Root
-    tier: 4
-    dome_tier_required: 4
-    growth_weeks: 10
-    water_per_week: 5
-    calories_per_unit: 0
-    base_scrip_per_m3: 0
-    compost_yield: 12
-    decay_rate: 0.4
-    description: Concentrates raw Ore into dense root nodules.
-    note: Medium-high compost yield. Yields ore on harvest.
-    fertilizer_bonus: 1.2
-    volume_m3: 0.7
-    yields_resource: ore
-    resource_yield_amount: 5
-
-  - id: battery_bulbs
-    name: Battery-Bulbs
-    tier: 4
-    dome_tier_required: 4
-    growth_weeks: 11
-    water_per_week: 6
-    calories_per_unit: 0
-    base_scrip_per_m3: 0
-    compost_yield: 2
-    decay_rate: 0.4
-    description: Provide instant power spikes upon harvest.
-    note: High water draw. High power yield on harvest.
-    fertilizer_bonus: 1.1
-    volume_m3: 0.6
-    yields_resource: power_kwh
-    resource_yield_amount: 10
 
   - id: matrix_moss
     name: Matrix Moss
     tier: 4
     dome_tier_required: 4
-    growth_weeks: 12
+    growth_weeks: 10
     water_per_week: 1
     calories_per_unit: 0
     base_scrip_per_m3: 0
-    compost_yield: 22
+    compost_yield: 0
     decay_rate: 0.4
-    description: A slow-spreading moss that breaks down surrounding matter into dense fertilizer.
-    note: Extreme compost yield. Very slow growth. Very low water draw.
+    description: A slow-spreading moss that breaks down surrounding matter into raw culture stock.
+    note: Yields Moss for the Mycoculture Vat. Very low water draw.
     fertilizer_bonus: 1.1
     volume_m3: 0.8
+    yields_resource: moss
+    resource_yield_amount: 15
+
+  - id: gristle_pod
+    name: Gristle Pod
+    tier: 4
+    dome_tier_required: 4
+    growth_weeks: 9
+    water_per_week: 3
+    calories_per_unit: 0
+    base_scrip_per_m3: 0
+    compost_yield: 0
+    decay_rate: 0.5
+    description: Fed scraps of fauna meat, this knobby pod hardens its rind into plates of raw chitin.
+    note: Must be fed meat every 3 weeks or it decays like an unwatered crop. Modest chitin yield.
+    fertilizer_bonus: 1.0
+    volume_m3: 0.5
+    feed_resource: meat
+    yields_resource: chitin
+    resource_yield_amount: 2
+
+  - id: tangleberry
+    name: Tangleberry
+    tier: 4
+    dome_tier_required: 4
+    growth_weeks: 4
+    water_per_week: 3
+    calories_per_unit: 8
+    base_scrip_per_m3: 35
+    compost_yield: 16
+    decay_rate: 0.3
+    description: A sprawling vine that overruns its bed within weeks, leaving rich mulch in its wake.
+    note: Fast growth. High compost yield. Low food value.
+    fertilizer_bonus: 1.2
+    volume_m3: 0.6
+    resource_yield_amount: 0
+
+  - id: prism_pepper
+    name: Prism Pepper
+    tier: 4
+    dome_tier_required: 4
+    growth_weeks: 9
+    water_per_week: 5
+    calories_per_unit: 90
+    base_scrip_per_m3: 1150
+    compost_yield: 2
+    decay_rate: 0.4
+    description: Each pod refracts grow-lamp spectra into a flavor that shifts with every bite. Corporate buyers pay well for the novelty.
+    note: Highest-value Tier 4 crop. Slow growth, big payoff.
+    fertilizer_bonus: 1.4
+    volume_m3: 0.5
     resource_yield_amount: 0

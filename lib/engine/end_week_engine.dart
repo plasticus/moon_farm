@@ -52,7 +52,29 @@ class EndWeekEngine {
       'glass' => r.copyWith(glass: r.glass + amt),
       'components' => r.copyWith(components: r.components + amt),
       'water' => r.copyWith(water: r.water + amt),
+      'moss' => r.copyWith(moss: r.moss + amt),
+      'chitin' => r.copyWith(chitin: r.chitin + amt),
+      'meat' => r.copyWith(meat: r.meat + amt),
       _ => r, // power_kwh and unknowns ignored (no battery bulbs anymore)
+    };
+  }
+
+  /// Reads a named resource's current amount (for feed/fertilize checks).
+  double _resourceAmount(Resources r, String key) {
+    return switch (key) {
+      'sand' => r.sand,
+      'ore' => r.ore,
+      'moon_dirt' => r.moonDirt,
+      'chemicals' => r.chemicals,
+      'metals' => r.metals,
+      'glass' => r.glass,
+      'components' => r.components,
+      'water' => r.water,
+      'moss' => r.moss,
+      'chitin' => r.chitin,
+      'meat' => r.meat,
+      'compost' => r.compost,
+      _ => 0,
     };
   }
 
@@ -114,26 +136,31 @@ class EndWeekEngine {
           }
         }
 
-        // FERTILIZE — bot fertilizes unwatered growing cells using compost
+        // FERTILIZE / FEED — bot fertilizes with compost, or for crops that
+        // require feeding (e.g. Gristle Pod, fed meat), feeds that instead.
         if (bot.canFertilize) {
           for (var i = 0; i < cells.length; i++) {
             final cell = cells[i];
             if (cell.cropId == null || cell.state == CropState.empty) continue;
             final crop = config.getCrop(cell.cropId!);
             if (crop == null) continue;
+            final feedKey = crop.feedResource; // null = compost
+            final available = feedKey == null ? resources.compost : _resourceAmount(resources, feedKey);
             // Check cooldown and max fertilizations
             final canFert = !cell.fertilizedThisWeek &&
                 cell.fertilizeCount < crop.maxFertilizations &&
                 (cell.lastFertilizeWeek < 0 ||
                     cell.weeksGrown - cell.lastFertilizeWeek >= 3) &&
-                resources.compost >= 2;
+                available >= 2;
             if (canFert) {
               cells[i] = cell.copyWith(
                 fertilizedThisWeek: true,
                 fertilizeCount: cell.fertilizeCount + 1,
                 lastFertilizeWeek: cell.weeksGrown,
               );
-              resources = resources.copyWith(compost: resources.compost - 2);
+              resources = feedKey == null
+                  ? resources.copyWith(compost: resources.compost - 2)
+                  : _addResource(resources, feedKey, -2);
               botFertilized++;
             }
           }
@@ -454,6 +481,26 @@ class EndWeekEngine {
           // fall through to growth tick using the updated cell
         }
 
+        // Step 4b: Feed decay — crops that must be FED (e.g. Gristle Pod, fed
+        // meat instead of fertilized with compost) take the same yield hit as
+        // a missed watering if a scheduled feeding window passes unfed. Same
+        // 3-week cadence as the optional fertilize cooldown, just mandatory.
+        if (cell.state == CropState.growing && crop.feedResource != null) {
+          final feedDue = cell.lastFertilizeWeek < 0
+              ? cell.weeksGrown >= 3
+              : cell.weeksGrown - cell.lastFertilizeWeek >= 3;
+          if (feedDue && !cell.fertilizedThisWeek) {
+            final lossPct = (crop.decayRate * 100).round();
+            final base = updatedCells[i];
+            final newHealth = (base.healthPercent - lossPct).clamp(0, 100);
+            updatedCells[i] = base.copyWith(
+              healthPercent: newHealth,
+              lastFertilizeWeek: cell.weeksGrown, // resets the due-clock
+            );
+            events.add('🍂 ${crop.name} in ${dome.name} lost $lossPct% yield — not fed.');
+          }
+        }
+
         final workingCell = updatedCells[i];
 
         // Step 3: Growth tick. Fertilizer adds growth speed (multiplicative on progress).
@@ -492,19 +539,15 @@ class EndWeekEngine {
       int botHarvested = 0;
       final config = GameConfigService.instance;
       final updatedDomes = <Dome>[];
-      final debugLines = <String>[];
 
       for (final dome in s.domes) {
         final bot = dome.domeBot;
-        final readyCount = dome.cells.where((c) => c.state == CropState.ready).length;
 
         if (bot == null) {
-          debugLines.add('${dome.name}: no bot installed ($readyCount ready)');
           updatedDomes.add(dome);
           continue;
         }
         if (!bot.canHarvest) {
-          debugLines.add('${dome.name}: Mk${bot.level} bot, canHarvest=false ($readyCount ready)');
           updatedDomes.add(dome);
           continue;
         }
@@ -534,8 +577,6 @@ class EndWeekEngine {
           botHarvested++;
         }
 
-        debugLines.add('${dome.name}: Mk${bot.level} bot, canHarvest=true, harvested $domeHarvested/$readyCount ready cells');
-
         s = s.copyWith(
           siloInventory: updatedInv,
           resources: harvestRes,
@@ -544,21 +585,10 @@ class EndWeekEngine {
         updatedDomes.add(dome.copyWith(cells: cells));
       }
 
+      s = s.copyWith(domes: updatedDomes);
       if (botHarvested > 0) {
-        s = s.copyWith(domes: updatedDomes);
         events.add('🤖 Dome bots harvested $botHarvested crop${botHarvested == 1 ? '' : 's'}');
-      } else {
-        s = s.copyWith(domes: updatedDomes);
       }
-
-      // DEBUG: dump per-dome bot status into radio feed every week
-      final debugMsg = '🔧 [BOT DEBUG W${s.currentWeek}]\n${debugLines.join('\n')}';
-      s = s.copyWith(
-        radioFeed: [
-          ...s.radioFeed,
-          RadioTransmission(week: s.currentWeek, message: debugMsg, isRead: false),
-        ],
-      );
     }
 
     // ── Step 4c: Bot plant (runs right after harvest, using THIS week's
@@ -566,7 +596,6 @@ class EndWeekEngine {
         {
       final config = GameConfigService.instance;
       final updatedDomes = <Dome>[];
-      final plantDebugLines = <String>[];
       int totalPlanted = 0;
 
       for (final dome in s.domes) {
@@ -574,12 +603,10 @@ class EndWeekEngine {
         if (bot == null) { updatedDomes.add(dome); continue; }
 
         var cells = List<CropCell>.from(dome.cells);
-        final emptyCount = cells.where((c) => c.state == CropState.empty).length;
 
         if (bot.canPlant && bot.plantCropId != null) {
           final crop = config.getCrop(bot.plantCropId!);
           if (crop != null) {
-            int domePlanted = 0;
             for (var i = 0; i < cells.length; i++) {
               final cell = cells[i];
               if (cell.state == CropState.empty && s.resources.seeds > 0) {
@@ -591,19 +618,13 @@ class EndWeekEngine {
                   wateredThisWeek: false,
                   fertilizedThisWeek: false,
                 );
-                domePlanted++;
                 totalPlanted++;
                 s = s.copyWith(
                   resources: s.resources.copyWith(seeds: s.resources.seeds - 1),
                 );
               }
             }
-            plantDebugLines.add('${dome.name}: Mk${bot.level} bot, plantCropId=${bot.plantCropId}, planted $domePlanted/$emptyCount empty cells (seeds left: ${s.resources.seeds})');
           }
-        } else if (bot.canPlant && bot.plantCropId == null) {
-          plantDebugLines.add('${dome.name}: Mk${bot.level} bot, canPlant=true but plantCropId=NULL — not configured ($emptyCount empty)');
-        } else if (bot.canPlant) {
-          plantDebugLines.add('${dome.name}: Mk${bot.level} bot, plant disabled (set to None) ($emptyCount empty)');
         }
 
         updatedDomes.add(dome.copyWith(cells: cells));
@@ -614,16 +635,6 @@ class EndWeekEngine {
       if (totalPlanted > 0) {
         events.add('🤖 Dome bots planted $totalPlanted seed${totalPlanted == 1 ? '' : 's'}');
         robotActions.add('Dome bots planted $totalPlanted seeds');
-      }
-
-      if (plantDebugLines.isNotEmpty) {
-        final plantDebugMsg = '🔧 [PLANT DEBUG W${s.currentWeek}]\n${plantDebugLines.join('\n')}';
-        s = s.copyWith(
-          radioFeed: [
-            ...s.radioFeed,
-            RadioTransmission(week: s.currentWeek, message: plantDebugMsg, isRead: false),
-          ],
-        );
       }
     }
 
@@ -745,7 +756,7 @@ class EndWeekEngine {
 
     // ── Step 11: Advance week ─────────────────────────────────────────────
     final nextWeek = s.currentWeek + 1;
-    s = s.copyWith(currentWeek: nextWeek);
+    s = s.copyWith(currentWeek: nextWeek, manualRaidTriggeredThisWeek: false);
 
     // ── Step 11b: Pending deliveries that arrive this new week ─────────────
     if (s.pendingDeliveries.isNotEmpty) {
