@@ -287,23 +287,17 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
 
     var active = List<Contract>.from(game.activeContracts);
     var completed = List<Contract>.from(game.completedContracts);
-    int pendingBonus = 0;
+    int rewardScrip = 0;
 
     // Crops leave silo now, queued as pending shipment paid at next window
     final config = GameConfigService.instance;
     final crop = config.getCrop(contract.cropId);
     final volumeM3 = (crop?.volumeM3 ?? 1.0) * submitAmt;
-    final sale = PendingSale(
-      resourceId: 'contract_${contract.id}_${game.currentWeek}',
-      amount: volumeM3,
-      scripValue: 0, // scrip comes from contract bonus, not per-unit price
-      weekQueued: game.currentWeek,
-    );
 
     if (newCurrent >= contract.requiredAmount) {
       completed.add(updatedContract.copyWith(status: ContractStatus.completed));
       active.removeAt(idx);
-      pendingBonus = contract.rewardScrip;
+      rewardScrip = contract.rewardScrip;
       _showMsg(
         '"Contract fulfilled. ${submitAmt.toInt()} units staged for pickup.'
             ' Kovacs collects Week ${game.nextShipWindowWeek}.'
@@ -314,13 +308,22 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       _showMsg('"Logged. $newCurrent/${contract.requiredAmount}. Keep going."');
     }
 
+    // The reward (if this submission completes the contract) rides along
+    // with this exact shipment, so the week-end log and dashboard can show
+    // it as one connected line instead of a separate, disconnected bonus.
+    final sale = PendingSale(
+      resourceId: 'contract_${contract.id}_${game.currentWeek}',
+      amount: volumeM3,
+      scripValue: rewardScrip,
+      weekQueued: game.currentWeek,
+    );
+
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(
         activeContracts: active,
         completedContracts: completed,
         siloInventory: updatedInv,
         pendingSales: [...game.pendingSales, sale],
-        pendingContractScrip: game.pendingContractScrip + pendingBonus,
         totalVolumeDeliveredM3: game.totalVolumeDeliveredM3 + volumeM3,
       ),
     );
@@ -802,6 +805,7 @@ class _SellTab extends StatelessWidget {
                     pricePerUnit: price,
                     queuedAmount: queued,
                     onQueue: () => onQueueChanged(entry.key, entry.value),
+                    onQueueHalf: () => onQueueChanged(entry.key, entry.value / 2),
                     onDequeue: () => onQueueChanged(entry.key, 0),
                   );
                 }),
@@ -821,6 +825,8 @@ class _SellTab extends StatelessWidget {
                   queuedAmount: saleQueue['fauna_meat'] ?? 0,
                   onQueue: () =>
                       onQueueChanged('fauna_meat', game.resources.meat),
+                  onQueueHalf: () =>
+                      onQueueChanged('fauna_meat', game.resources.meat / 2),
                   onDequeue: () => onQueueChanged('fauna_meat', 0),
                 ),
               ],
@@ -906,6 +912,7 @@ class _SellItem extends StatelessWidget {
   final int pricePerUnit;
   final double queuedAmount;
   final VoidCallback onQueue;
+  final VoidCallback onQueueHalf;
   final VoidCallback onDequeue;
 
   const _SellItem({
@@ -914,6 +921,7 @@ class _SellItem extends StatelessWidget {
     required this.pricePerUnit,
     required this.queuedAmount,
     required this.onQueue,
+    required this.onQueueHalf,
     required this.onDequeue,
   });
 
@@ -952,31 +960,76 @@ class _SellItem extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: isQueued ? onDequeue : onQueue,
-            child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isQueued
-                    ? MFColors.neonPink.withValues(alpha: 0.1)
-                    : MFColors.neonGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: isQueued
-                      ? MFColors.neonPink.withValues(alpha: 0.5)
-                      : MFColors.neonGreen.withValues(alpha: 0.5),
+          if (isQueued)
+            GestureDetector(
+              onTap: onDequeue,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: MFColors.neonPink.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: MFColors.neonPink.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Text(
+                  'REMOVE',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.neonPink,
+                    fontSize: 10,
+                  ),
                 ),
               ),
-              child: Text(
-                isQueued ? 'REMOVE' : 'SELL ALL',
-                style: MFTextStyles.bodySmall.copyWith(
-                  color: isQueued ? MFColors.neonPink : MFColors.neonGreen,
-                  fontSize: 10,
+            )
+          else
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: onQueueHalf,
+                  child: Container(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: MFColors.neonCyan.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: MFColors.neonCyan.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      '1/2',
+                      style: MFTextStyles.bodySmall.copyWith(
+                        color: MFColors.neonCyan,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onQueue,
+                  child: Container(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: MFColors.neonGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: MFColors.neonGreen.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      'SELL ALL',
+                      style: MFTextStyles.bodySmall.copyWith(
+                        color: MFColors.neonGreen,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
         ],
       ),
     );

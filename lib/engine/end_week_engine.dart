@@ -304,11 +304,19 @@ class EndWeekEngine {
       int earned = 0;
       for (final sale in s.pendingSales) {
         earned += sale.scripValue;
-        if (sale.amount > 0) {
+        if (sale.amount <= 0) continue;
+        final isContract = sale.resourceId.startsWith('contract_');
+        if (isContract) {
+          events.add(sale.scripValue > 0
+              ? '📦 Contract delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫'
+              : '📦 Contract cargo staged: ${sale.amount.toStringAsFixed(1)}m³ (bonus pays on completion)');
+        } else {
           events.add('📦 Shipment delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫');
         }
       }
-      // Include any queued contract bonuses
+      // Migration safety net: older saves may still be carrying a
+      // pre-existing pendingContractScrip balance from before contract
+      // rewards were attached directly to their completing shipment.
       if (s.pendingContractScrip > 0) {
         earned += s.pendingContractScrip;
         events.add('📋 Contract bonus paid: +${s.pendingContractScrip} 🎫');

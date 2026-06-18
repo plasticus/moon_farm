@@ -379,9 +379,11 @@ class _WallSection extends StatelessWidget {
   Widget _buildTriggerRaidSection(BuildContext context) {
     const meatCost = 10;
     const chemCost = 10;
+    final raidIncoming = game.currentWeek >= game.nextRaidWeek - 1;
     final canAfford = game.resources.meat >= meatCost &&
         game.resources.chemicals >= chemCost &&
-        !game.manualRaidTriggeredThisWeek;
+        !game.manualRaidTriggeredThisWeek &&
+        !raidIncoming;
     final isRaidActive = game.currentWeek >= game.nextRaidWeek;
 
     return Column(
@@ -436,6 +438,20 @@ class _WallSection extends StatelessWidget {
                           style: MFTextStyles.bodySmall
                               .copyWith(color: MFColors.neonPink)),
                     )
+                  else if (raidIncoming)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: MFColors.neonOrange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: MFColors.neonOrange.withValues(alpha: 0.4)),
+                      ),
+                      child: Text('RAID INCOMING',
+                          style: MFTextStyles.bodySmall
+                              .copyWith(color: MFColors.neonOrange)),
+                    )
                   else if (game.manualRaidTriggeredThisWeek)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -479,7 +495,7 @@ class _WallSection extends StatelessWidget {
                     ),
                 ],
               ),
-              if (!canAfford && !game.manualRaidTriggeredThisWeek)
+              if (!canAfford && !game.manualRaidTriggeredThisWeek && !raidIncoming)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Builder(builder: (context) {
@@ -490,6 +506,7 @@ class _WallSection extends StatelessWidget {
                     if (game.resources.chemicals < chemCost) {
                       parts.add('${(chemCost - game.resources.chemicals).ceil()} more ⚗️');
                     }
+                    if (parts.isEmpty) return const SizedBox();
                     return Text(
                       'Need ${parts.join('  ·  ')}',
                       style: MFTextStyles.bodySmall

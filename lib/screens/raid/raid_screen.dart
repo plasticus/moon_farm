@@ -271,7 +271,14 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     if (_rng.nextDouble() < raidConfig.meatChance) {
       _meatDropped++;
     }
-    if (_rng.nextDouble() < raidConfig.chitinChanceNonBrute) {
+    // Chitin chance = this creature type's own base + a climb based on how
+    // many fauna have died so far this raid (the kill that just happened
+    // doesn't count toward its own roll, so the very first kill of the
+    // raid always rolls at the type's plain base chance).
+    final climb = (_faunaKilled - 1) * raidConfig.chitinChanceClimbPerKill;
+    final chitinChance =
+        (raidConfig.chitinChanceFor(f.typeId) + climb).clamp(0.0, 1.0);
+    if (_rng.nextDouble() < chitinChance) {
       _chitinDropped++;
     }
   }

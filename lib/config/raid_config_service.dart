@@ -272,6 +272,12 @@ class RaidConfigService {
   double get meatChance =>
       (_drops['meat_chance'] as num?)?.toDouble() ?? 0.7;
 
-  double get chitinChanceNonBrute =>
-      (_drops['chitin_chance_non_brute'] as num?)?.toDouble() ?? 0.15;
+  double get chitinChanceClimbPerKill =>
+      (_drops['chitin_chance_climb_per_kill'] as num?)?.toDouble() ?? 0.02;
+
+  /// Base chitin drop chance for a given fauna type, before the per-kill
+  /// climb is added on top. Falls back to a modest default if a type is
+  /// missing the field (e.g. a fauna type added without updating the yaml).
+  double chitinChanceFor(String faunaTypeId) =>
+      (getFaunaType(faunaTypeId)?['chitin_chance'] as num?)?.toDouble() ?? 0.1;
 }

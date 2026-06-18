@@ -1497,7 +1497,8 @@ class _DomeBuildSection extends StatelessWidget {
                 ),
                 if (nextCfg != null)
                   Text(
-                    '→ T$nextTier: ${_tierCostLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  ${nextCfg['power_draw_kwh']} KWh',
+                    '→ T$nextTier: ${_tierCostLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  '
+                        '+${(nextCfg['power_draw_kwh'] as int) - currentDraw} KWh',
                     style: MFTextStyles.bodySmall.copyWith(
                       color: _canAffordTier(nextCfg) ? MFColors.textSecondary : MFColors.neonPink,
                       fontSize: 10,
