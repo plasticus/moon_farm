@@ -267,6 +267,17 @@ class GameConfigService {
     return buy[itemId] as int? ?? 0;
   }
 
+  /// Bulk-only scrap dealer prices — separate buyer from Kovacs/the Space
+  /// Colony, takes raw metals/chemicals/components off your hands at a
+  /// deliberately bad rate, but only by the truckload.
+  Map<String, dynamic> get scrapDealer =>
+      marketPrices['scrap_dealer'] as Map<String, dynamic>? ?? {};
+
+  int get scrapDealerBulkAmount => scrapDealer['bulk_amount'] as int? ?? 1000;
+
+  int scrapDealerPrice(String resourceKey) =>
+      scrapDealer['${resourceKey}_price'] as int? ?? 0;
+
   double get sellModifier {
     return (marketPrices['sell_modifier'] as num).toDouble();
   }

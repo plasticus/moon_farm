@@ -650,7 +650,13 @@
       "components": 50,
       "ore": 15
     },
-    "sell_modifier": 0.6
+    "sell_modifier": 0.6,
+    "scrap_dealer": {
+      "bulk_amount": 1000,
+      "metals_price": 150,
+      "chemicals_price": 150,
+      "components_price": 400
+    }
   },
   "farm_name_suggestions": [
     "The Ceres-II Breadbasket",

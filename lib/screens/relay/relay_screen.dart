@@ -82,6 +82,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
           },
           onConfirmShipment: _doConfirmShipment,
           onSellAll: _doSellAll,
+          onScrapSell: _doScrapSell,
         );
       case RelayTab.buy:
         return _BuyTab(game: game, onBuy: _doBuy);
@@ -219,6 +220,42 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
         _saleQueue['fauna_meat'] = game.resources.meat;
       }
     });
+  }
+
+  // ── Scrap Dealer ────────────────────────────────────────────────────────
+  // A separate buyer from Kovacs/the Space Colony — pays cash on the spot
+  // for raw metals/chemicals/components, bulk only, at a deliberately bad
+  // rate. No shipping delay, no contract paperwork, just a flat dump.
+  void _doScrapSell(GameState game, String resourceKey) {
+    final config = GameConfigService.instance;
+    final bulk = config.scrapDealerBulkAmount;
+    final price = config.scrapDealerPrice(resourceKey);
+
+    final have = switch (resourceKey) {
+      'metals' => game.resources.metals,
+      'chemicals' => game.resources.chemicals,
+      'components' => game.resources.components,
+      _ => 0.0,
+    };
+    if (have < bulk) return;
+
+    final updatedResources = switch (resourceKey) {
+      'metals' => game.resources.copyWith(
+          metals: game.resources.metals - bulk,
+          starScrip: game.resources.starScrip + price),
+      'chemicals' => game.resources.copyWith(
+          chemicals: game.resources.chemicals - bulk,
+          starScrip: game.resources.starScrip + price),
+      'components' => game.resources.copyWith(
+          components: game.resources.components - bulk,
+          starScrip: game.resources.starScrip + price),
+      _ => game.resources,
+    };
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(resources: updatedResources),
+    );
+    _showMsg('Scrap hauler weighs the load, pays cash, and rolls out. +$price 🎫');
   }
 
   void _doBuy(String itemId, int quantity, int costPerUnit, GameState game) {
@@ -724,6 +761,7 @@ class _SellTab extends StatelessWidget {
   final Function(String, double) onQueueChanged;
   final Function(GameState) onConfirmShipment;
   final Function(GameState) onSellAll;
+  final Function(GameState, String) onScrapSell;
 
   const _SellTab({
     required this.game,
@@ -731,6 +769,7 @@ class _SellTab extends StatelessWidget {
     required this.onQueueChanged,
     required this.onConfirmShipment,
     required this.onSellAll,
+    required this.onScrapSell,
   });
 
   @override
@@ -834,6 +873,11 @@ class _SellTab extends StatelessWidget {
           ),
         ),
 
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: _ScrapDealerSection(game: game, onScrapSell: onScrapSell),
+        ),
+
         if (saleQueue.isNotEmpty)
           _ShipmentSummary(
             totalScrip: totalScrip,
@@ -903,6 +947,106 @@ class _SellTab extends StatelessWidget {
         ),
       ),
     ];
+  }
+}
+
+// ─── Scrap Dealer ───────────────────────────────────────────────────────────
+// A separate, bulk-only buyer from Kovacs/the Space Colony — pays cash on
+// the spot for raw metals/chemicals/components at a deliberately bad rate.
+
+class _ScrapDealerSection extends StatelessWidget {
+  final GameState game;
+  final Function(GameState, String) onScrapSell;
+
+  const _ScrapDealerSection({required this.game, required this.onScrapSell});
+
+  @override
+  Widget build(BuildContext context) {
+    final config = GameConfigService.instance;
+    final bulk = config.scrapDealerBulkAmount;
+
+    final rows = [
+      ('metals', '🔩', 'Metals', game.resources.metals),
+      ('chemicals', '⚗️', 'Chemicals', game.resources.chemicals),
+      ('components', '⚙️', 'Components', game.resources.components),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MFColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SCRAP DEALER',
+              style: MFTextStyles.bodySmall.copyWith(
+                  color: MFColors.textMuted, letterSpacing: 2)),
+          const SizedBox(height: 4),
+          Text(
+            'Not Kovacs, not the Colony — a separate scrap contact. '
+                'Bulk only, by the truckload, at a junkyard rate.',
+            style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted, fontSize: 11),
+          ),
+          const SizedBox(height: 10),
+          ...rows.map((row) {
+            final (key, emoji, label, have) = row;
+            final price = config.scrapDealerPrice(key);
+            final canSell = have >= bulk;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label, style: MFTextStyles.bodyLarge),
+                        Text(
+                          '${have.toInt()} on hand  ·  $bulk → $price 🎫',
+                          style: MFTextStyles.bodySmall.copyWith(
+                            color: canSell ? MFColors.textSecondary : MFColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: canSell ? () => onScrapSell(game, key) : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: canSell
+                            ? MFColors.neonOrange.withValues(alpha: 0.12)
+                            : MFColors.borderSubtle,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: canSell
+                              ? MFColors.neonOrange.withValues(alpha: 0.5)
+                              : MFColors.borderSubtle,
+                        ),
+                      ),
+                      child: Text(
+                        'SELL $bulk',
+                        style: MFTextStyles.bodySmall.copyWith(
+                          color: canSell ? MFColors.neonOrange : MFColors.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
 }
 
