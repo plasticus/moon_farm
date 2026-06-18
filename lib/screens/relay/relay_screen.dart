@@ -229,7 +229,8 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
   void _doScrapSell(GameState game, String resourceKey) {
     final config = GameConfigService.instance;
     final bulk = config.scrapDealerBulkAmount;
-    final price = config.scrapDealerPrice(resourceKey);
+    final basePrice = config.scrapDealerPrice(resourceKey);
+    final price = (basePrice * (1 + game.relay.priceDiscount)).round();
 
     final have = switch (resourceKey) {
       'metals' => game.resources.metals,
@@ -793,18 +794,29 @@ class _SellTab extends StatelessWidget {
         ? (meatCrop.baseScrip * (1 + discount)).round()
         : 75;
 
+    final scrapBulk = config.scrapDealerBulkAmount;
+    final scrapEligible = game.resources.metals >= scrapBulk ||
+        game.resources.chemicals >= scrapBulk ||
+        game.resources.components >= scrapBulk;
+
     return Column(
       children: [
         // Contract sell items pinned at top
         ..._contractSellItems(context, game, config),
 
         Expanded(
-          child: (game.siloInventory.isEmpty && !hasMeat)
+          child: (game.siloInventory.isEmpty && !hasMeat && !scrapEligible)
               ? _EmptySiloMessage()
               : ListView(
             padding: const EdgeInsets.all(12),
             children: [
               // ── Silo inventory ──────────────────────────────────
+              if (game.siloInventory.isEmpty && !hasMeat) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: _EmptySiloMessage(),
+                ),
+              ],
               if (game.siloInventory.isNotEmpty) ...[
                 Row(
                   children: [
@@ -869,13 +881,16 @@ class _SellTab extends StatelessWidget {
                   onDequeue: () => onQueueChanged('fauna_meat', 0),
                 ),
               ],
+
+              // ── Scrap dealer ─────────────────────────────────────
+              // Only ever shown once eligible (enough of at least one
+              // resource for a bulk sale) — otherwise stays hidden entirely.
+              if (scrapEligible) ...[
+                const SizedBox(height: 16),
+                _ScrapDealerSection(game: game, onScrapSell: onScrapSell),
+              ],
             ],
           ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: _ScrapDealerSection(game: game, onScrapSell: onScrapSell),
         ),
 
         if (saleQueue.isNotEmpty)
@@ -964,6 +979,7 @@ class _ScrapDealerSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = GameConfigService.instance;
     final bulk = config.scrapDealerBulkAmount;
+    final discount = game.relay.priceDiscount;
 
     final rows = [
       ('metals', '🔩', 'Metals', game.resources.metals),
@@ -981,19 +997,29 @@ class _ScrapDealerSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SCRAP DEALER',
-              style: MFTextStyles.bodySmall.copyWith(
-                  color: MFColors.textMuted, letterSpacing: 2)),
+          Row(
+            children: [
+              Text('SCRAP DEALER',
+                  style: MFTextStyles.bodySmall.copyWith(
+                      color: MFColors.textMuted, letterSpacing: 2)),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => _showInfo(context),
+                child: Icon(Icons.info_outline, size: 14, color: MFColors.textMuted),
+              ),
+            ],
+          ),
           const SizedBox(height: 4),
           Text(
-            'Not Kovacs, not the Colony — a separate scrap contact. '
-                'Bulk only, by the truckload, at a junkyard rate.',
+            'A separate buyer, not Kovacs or the Colony. Bulk only — '
+                'rate moves with his mood.',
             style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted, fontSize: 11),
           ),
           const SizedBox(height: 10),
           ...rows.map((row) {
             final (key, emoji, label, have) = row;
-            final price = config.scrapDealerPrice(key);
+            final basePrice = config.scrapDealerPrice(key);
+            final price = (basePrice * (1 + discount)).round();
             final canSell = have >= bulk;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -1044,6 +1070,33 @@ class _ScrapDealerSection extends StatelessWidget {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  void _showInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: MFColors.surfaceElevated,
+        title: const Text('Scrap Dealer'),
+        content: Text(
+          "Kovacs doesn't deal in raw scrap himself, but he knows someone "
+              "who does. This contact buys metals, chemicals, and components "
+              "by the truckload only — never a partial load — at "
+              "deliberately rough junkyard rates.\n\n"
+              "Since Kovacs brokers the deal on your behalf, the price you "
+              "get reflects how he currently feels about you: stay on his "
+              "good side for a better cut, or eat the worst of it when "
+              "he's sour.",
+          style: MFTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('GOT IT'),
+          ),
         ],
       ),
     );

@@ -814,6 +814,31 @@ class EndWeekEngine {
       }
     }
 
+    // ── Step 11c: Scrap Dealer eligibility (one-time unlock) ───────────────
+    if (!s.unlockedFeatures.contains('scrap_dealer')) {
+      final bulk = _config.scrapDealerBulkAmount;
+      final eligible = s.resources.metals >= bulk ||
+          s.resources.chemicals >= bulk ||
+          s.resources.components >= bulk;
+      if (eligible) {
+        s = s.copyWith(
+          unlockedFeatures: [...s.unlockedFeatures, 'scrap_dealer'],
+          radioFeed: [
+            ...s.radioFeed,
+            RadioTransmission(
+              week: s.currentWeek,
+              message: "Kovacs radioed ahead — he's got a scrap contact who'll "
+                  "take metals, chemicals, and components off your hands. "
+                  "Truckloads only, and the rate depends on how he's feeling "
+                  "about you. Check the Sell screen.",
+              isRead: false,
+            ),
+          ],
+        );
+        events.add('📻 Colony Radio: Kovacs\' scrap contact is now available on the Relay sell screen.');
+      }
+    }
+
     // ── Step 12: Build summary ────────────────────────────────────────────
     final summary = WeekSummary(
       week: state.currentWeek,
