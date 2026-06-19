@@ -26,7 +26,7 @@ raid_drops:
   # resets every raid and is shared across all fauna types — only the
   # per-type base below varies by creature. Tune this single number to
   # make the climb feel faster/slower without touching every fauna entry.
-  chitin_chance_climb_per_kill: 0.02
+  chitin_chance_climb_per_kill: 0.002
 
 # ─── CORE FAUNA TYPES ─────────────────────────────────────────
 # Stats here represent Level 1 baselines.

@@ -819,6 +819,7 @@ class EndWeekEngine {
       final bulk = _config.scrapDealerBulkAmount;
       final eligible = s.resources.metals >= bulk ||
           s.resources.chemicals >= bulk ||
+          s.resources.glass >= bulk ||
           s.resources.components >= bulk;
       if (eligible) {
         s = s.copyWith(

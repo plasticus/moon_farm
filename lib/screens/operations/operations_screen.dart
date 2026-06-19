@@ -1049,6 +1049,8 @@ class _DomeBotSection extends StatelessWidget {
     if (costComponents > 0) costParts.add('$costComponents comp');
     if (costChemicals > 0) costParts.add('$costChemicals chem');
     if (costChitin > 0) costParts.add('$costChitin chitin');
+    final powerDelta = (nextConfig['power_draw_kwh'] as int? ?? 0) - bot.powerDraw;
+    if (powerDelta > 0) costParts.add('+$powerDelta KWh');
 
     return GestureDetector(
       onTap: canAfford ? () => _upgradeBot(context, dome, bot, nextConfig) : null,

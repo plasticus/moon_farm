@@ -404,7 +404,7 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
           if (game.pendingSales.isNotEmpty) ...[
             const _SectionHeader('OUTGOING SHIPMENTS'),
             const SizedBox(height: 8),
-            _PendingSalesCard(sales: game.pendingSales),
+            _PendingSalesCard(sales: game.pendingSales, deliveryWeek: game.nextShipWindowWeek, currentWeek: game.currentWeek),
             const SizedBox(height: 16),
           ],
           if (game.pendingDeliveries.isNotEmpty) ...[
@@ -633,12 +633,18 @@ class _InfraCards extends StatelessWidget {
 
 class _PendingSalesCard extends StatelessWidget {
   final List<PendingSale> sales;
-  const _PendingSalesCard({required this.sales});
+  final int deliveryWeek;
+  final int currentWeek;
+  const _PendingSalesCard({required this.sales, required this.deliveryWeek, required this.currentWeek});
 
   @override
   Widget build(BuildContext context) {
     final totalScrip = sales.fold(0, (sum, s) => sum + s.scripValue);
     final totalVolume = sales.fold(0.0, (sum, s) => sum + s.amount);
+    final weeksUntil = deliveryWeek - currentWeek;
+    final deliveryLabel = weeksUntil <= 0
+        ? 'this week'
+        : weeksUntil == 1 ? 'next week (W$deliveryWeek)' : 'in $weeksUntil weeks (W$deliveryWeek)';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -658,7 +664,7 @@ class _PendingSalesCard extends StatelessWidget {
                 Text('${sales.length} shipment${sales.length == 1 ? '' : 's'} en route',
                     style: MFTextStyles.labelLarge),
                 Text(
-                  '${totalVolume.toStringAsFixed(1)}m³ · +$totalScrip 🎫 on delivery',
+                  '${totalVolume.toStringAsFixed(1)}m³  ·  ${totalScrip > 0 ? '+$totalScrip 🎫  · ' : ''} due $deliveryLabel',
                   style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
                 ),
               ],

@@ -655,6 +655,7 @@
       "bulk_amount": 1000,
       "metals_price": 150,
       "chemicals_price": 150,
+      "glass_price": 200,
       "components_price": 400
     }
   },

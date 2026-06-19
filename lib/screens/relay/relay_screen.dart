@@ -235,6 +235,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     final have = switch (resourceKey) {
       'metals' => game.resources.metals,
       'chemicals' => game.resources.chemicals,
+      'glass' => game.resources.glass,
       'components' => game.resources.components,
       _ => 0.0,
     };
@@ -246,6 +247,9 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
           starScrip: game.resources.starScrip + price),
       'chemicals' => game.resources.copyWith(
           chemicals: game.resources.chemicals - bulk,
+          starScrip: game.resources.starScrip + price),
+      'glass' => game.resources.copyWith(
+          glass: game.resources.glass - bulk,
           starScrip: game.resources.starScrip + price),
       'components' => game.resources.copyWith(
           components: game.resources.components - bulk,
@@ -797,6 +801,7 @@ class _SellTab extends StatelessWidget {
     final scrapBulk = config.scrapDealerBulkAmount;
     final scrapEligible = game.resources.metals >= scrapBulk ||
         game.resources.chemicals >= scrapBulk ||
+        game.resources.glass >= scrapBulk ||
         game.resources.components >= scrapBulk;
 
     return Column(
@@ -984,6 +989,7 @@ class _ScrapDealerSection extends StatelessWidget {
     final rows = [
       ('metals', '🔩', 'Metals', game.resources.metals),
       ('chemicals', '⚗️', 'Chemicals', game.resources.chemicals),
+      ('glass', '🪟', 'Glass', game.resources.glass),
       ('components', '⚙️', 'Components', game.resources.components),
     ];
 

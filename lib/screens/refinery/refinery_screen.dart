@@ -136,7 +136,7 @@ class _WaterPurifierCard extends StatelessWidget {
                         '+${nextConfig['output_water_per_week']}m³/wk  ·  '
                             '${nextConfig['cost_metals']} metals'
                             '${(nextConfig['cost_glass'] as int? ?? 0) > 0 ? '  ·  ${nextConfig['cost_glass']} glass' : ''}'
-                            '  ·  ${nextConfig['power_draw_kwh']} KWh',
+                            '  ·  +${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw} KWh',
                         style: MFTextStyles.bodySmall,
                       ),
                       if (!_hasPowerFor(game, (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw))
@@ -478,7 +478,7 @@ class _MachineCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Mk$nextLevel: ${_costLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  ${nextCfg['power_draw_kwh']} KWh',
+                'Mk$nextLevel: ${_costLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  +${(nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw} KWh',
                 style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted, fontSize: 10),
               ),
             ),
