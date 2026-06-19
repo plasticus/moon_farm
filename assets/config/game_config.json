@@ -498,21 +498,6 @@
       "the silence of space (he finds it peaceful)",
       "his detailed ship captain fantasy scenarios"
     ],
-    "radio_transmissions": [
-      "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming.",
-      "STATIC... did anyone else pick up that signal from sector 7?",
-      "Corporate memo: All lunar operations are reminded that compost storage quotas apply.",
-      "Kovacs here. Just so everyone knows, I passed my captain's exam. Again. For the third time.",
-      "Weather advisory: Increased micrometeorite activity. Check dome seals.",
-      "Colony update: Food stores at {colony_food_percent}%. Your deliveries are appreciated.",
-      "Relay broadcasting: The stars are particularly clear tonight. Not that anyone asked.",
-      "Corporate: Reminder that raid insurance does NOT cover structural negligence.",
-      "Kovacs personal log - open channel apparently: If anyone needs a highly qualified captain...",
-      "Colony celebrates: A new generation born this week. They'll need those calories.",
-      "Security advisory: Lunar fauna activity increasing in your sector. Brace for raid.",
-      "Kovacs: Management denied my transfer request. Again. Logging formal protest. Again."
-    ],
-    "opening_transmission": "New operator confirmed. I'm Specialist Kovacs, your relay contact on MF-7. The previous farmer left in a hurry \u2014 something about the fauna. Didn't elaborate. Your starting supplies were dropped this morning. First scheduled pickup is Week 4. Don't be late. I have other things to do. \u2014 Kovacs",
     "dialogue": {
       "greeting_neutral": [
         "Kovacs. What do you need.",
@@ -1555,9 +1540,9 @@
       "id": "arc",
       "name": "Arc Grenade",
       "emoji": "\ud83d\udd35",
-      "description": "Electric burst \u2014 area damage.",
+      "description": "Electric burst \u2014 deals 12% of each hit fauna's max HP.",
       "effect": "damage",
-      "damage": 30,
+      "damage_percent": 0.12,
       "effect_radius": 70.0,
       "craft_cost": {
         "components": 2,
@@ -1570,10 +1555,10 @@
       "id": "incendiary",
       "name": "Incendiary",
       "emoji": "\ud83d\udd25",
-      "description": "Creates a burn zone for 5 seconds.",
+      "description": "Burn zone for 5 seconds \u2014 4% of max HP per second to anything standing in it.",
       "effect": "burn_zone",
       "effect_duration": 5.0,
-      "damage_per_second": 10,
+      "damage_percent_per_second": 0.04,
       "effect_radius": 50.0,
       "craft_cost": {
         "ore": 3,
@@ -1600,9 +1585,9 @@
       "id": "chitin_burst",
       "name": "Chitin Burst",
       "emoji": "\ud83d\udca3",
-      "description": "Massive area damage. Use wisely.",
+      "description": "Massive area damage \u2014 35% of each hit fauna's max HP. Use wisely.",
       "effect": "damage",
-      "damage": 150,
+      "damage_percent": 0.35,
       "effect_radius": 100.0,
       "craft_cost": {
         "chitin": 3,
@@ -1642,56 +1627,6 @@
       }
     ]
   },
-  "radio_tips": [
-    {
-      "week": 1,
-      "message": "Colony Tip: Get some crops in the ground as soon as possible. Spacetatoes are slow but reliable. Terran Radishes are ready in one week if you need a fast first harvest."
-    },
-    {
-      "week": 2,
-      "message": "Colony Tip: Check your harvest drones in Operations. Assign them to moon dirt, ore, sand, or chemicals \u2014 a balanced spread works well early on."
-    },
-    {
-      "week": 3,
-      "message": "Colony Tip: If you have crops ready, head to the Relay and talk to Kovacs. Once the conversation is done, you can queue a shipment for Week 4's pickup window."
-    },
-    {
-      "week": 4,
-      "message": "Colony Tip: Ship window is open this week. Head to Relay \u2192 Sell to queue your harvest. Kovacs will confirm the pickup."
-    },
-    {
-      "week": 5,
-      "message": "Colony Tip: Compost from dead or cleared crops can be refined into Z Soil at the Refinery. Keep the composter running."
-    },
-    {
-      "week": 6,
-      "message": "Colony Tip: Metals unlock a lot. Build a second dome when you can \u2014 more crops means more scrip per ship window."
-    },
-    {
-      "week": 7,
-      "message": "Colony Tip: A raid is coming soon. Check your Defense Wall HP in the Habitat tab. Make sure you have a few grenades crafted."
-    },
-    {
-      "week": 8,
-      "message": "\u26a0\ufe0f Colony Alert: Fauna activity detected in your sector. Defend your installation from the Dashboard when prompted."
-    },
-    {
-      "week": 10,
-      "message": "Colony Tip: Drone efficiency matters more than drone count early on. One Mk2 drone outperforms two Mk1 drones on the same resource."
-    },
-    {
-      "week": 12,
-      "message": "Colony Tip: Ship window this week. If you have contract crops in your silo, submit them at the Relay before shipping for bonus scrip."
-    },
-    {
-      "week": 15,
-      "message": "Colony Tip: Consider upgrading your Water Purifier if your domes are running dry. More domes means more water demand."
-    },
-    {
-      "week": 20,
-      "message": "Colony Broadcast: You've survived 20 weeks. The colony appreciates your continued supply. Keep it up out there."
-    }
-  ],
   "dome_bot": {
     "levels": [
       {
@@ -1755,10 +1690,12 @@
     ]
   },
   "dome_building": {
-    "base_scrip_cost": 500,
-    "scrip_step_easy": 250,
-    "scrip_step_normal": 500,
-    "scrip_step_hard": 750,
+    "dome_cost_scaling": {
+      "base_scrip_cost": 500,
+      "rate": 1.8,
+      "cap": 100000,
+      "cap_at_count": 11
+    },
     "material_cost": {
       "glass": 20,
       "metals": 5,

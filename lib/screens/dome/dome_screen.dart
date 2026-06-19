@@ -8,6 +8,7 @@ import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
+import '../../engine/radio_trigger_engine.dart';
 
 /// Mk-level quality color. Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5+=orange
 Color mkColor(int level) => switch (level) {
@@ -361,17 +362,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       vatJustUnlocked = true;
       updatedGame = updatedGame.copyWith(
         unlockedFeatures: [...updatedGame.unlockedFeatures, 'mycoculture_vat'],
-        radioFeed: [
-          ...updatedGame.radioFeed,
-          RadioTransmission(
-            week: updatedGame.currentWeek,
-            message: "...what did you find there, farmer? That stuff's growing "
-                "something the colony's never logged before. The Refinery can "
-                "probably do something with it now.",
-            isRead: false,
-          ),
-        ],
       );
+      // Fires the matching feature_unlocked entry in radio_triggers.toml
+      // immediately, rather than waiting for the next End Week.
+      updatedGame = checkRadioTriggers(updatedGame);
     }
 
     // Check first harvest trophy

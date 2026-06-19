@@ -1,0 +1,56 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/radio_pool.toml
+# ═══════════════════════════════════════════════════════════════
+#
+# Random flavor-text pool. Every 3 weeks, one of these gets picked
+# and sent to the radio feed automatically. Purely cosmetic — these
+# don't unlock anything and don't react to game state except through
+# the {template} variables described below.
+#
+# Add, remove, or edit entries freely. Each [[message]] block is one
+# more line that can show up — there's no limit on how many you add,
+# and order doesn't matter.
+#
+# Available template variables (swapped in automatically before the
+# message is shown):
+#   {week}                  -> current week number
+#   {colony_food_percent}   -> 0-100, derived from total m³ delivered
+#                               to the colony so far
+
+[[message]]
+text = "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming."
+
+[[message]]
+text = "STATIC... did anyone else pick up that signal from sector 7?"
+
+[[message]]
+text = "Corporate memo: All lunar operations are reminded that compost storage quotas apply."
+
+[[message]]
+text = "Kovacs here. Just so everyone knows, I passed my captain's exam. Again. For the third time."
+
+[[message]]
+text = "Weather advisory: Increased micrometeorite activity. Check dome seals."
+
+[[message]]
+text = "Colony update: Food stores at {colony_food_percent}%. Your deliveries are appreciated."
+
+[[message]]
+text = "Relay broadcasting: The stars are particularly clear tonight. Not that anyone asked."
+
+[[message]]
+text = "Corporate: Reminder that raid insurance does NOT cover structural negligence."
+
+[[message]]
+text = "Kovacs personal log - open channel apparently: If anyone needs a highly qualified captain..."
+
+[[message]]
+text = "Colony celebrates: A new generation born this week. They'll need those calories."
+
+[[message]]
+text = "Security advisory: Lunar fauna activity increasing in your sector. Brace for raid."
+
+[[message]]
+text = "Kovacs: Management denied my transfer request. Again. Logging formal protest. Again."
+
+# Add your own below — same format as above, just text = "...".

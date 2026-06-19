@@ -23,6 +23,8 @@ import '../config/game_config_service.dart';
 import '../config/raid_config_service.dart';
 import '../config/milestone_config_service.dart';
 import '../config/upgrade_config_service.dart';
+import '../config/radio_config_service.dart';
+import 'radio_trigger_engine.dart';
 
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
@@ -606,16 +608,6 @@ class EndWeekEngine {
       if (vatJustUnlocked) {
         s = s.copyWith(
           unlockedFeatures: [...s.unlockedFeatures, 'mycoculture_vat'],
-          radioFeed: [
-            ...s.radioFeed,
-            RadioTransmission(
-              week: s.currentWeek,
-              message: "...what did you find there, farmer? That stuff's growing "
-                  "something the colony's never logged before. The Refinery can "
-                  "probably do something with it now.",
-              isRead: false,
-            ),
-          ],
         );
         events.add('🧫 Something new growing in the Hyper-Mycelium — Mycoculture Vat unlocked at the Refinery!');
       }
@@ -824,21 +816,15 @@ class EndWeekEngine {
       if (eligible) {
         s = s.copyWith(
           unlockedFeatures: [...s.unlockedFeatures, 'scrap_dealer'],
-          radioFeed: [
-            ...s.radioFeed,
-            RadioTransmission(
-              week: s.currentWeek,
-              message: "Kovacs radioed ahead — he's got a scrap contact who'll "
-                  "take metals, chemicals, and components off your hands. "
-                  "Truckloads only, and the rate depends on how he's feeling "
-                  "about you. Check the Sell screen.",
-              isRead: false,
-            ),
-          ],
         );
         events.add('📻 Colony Radio: Kovacs\' scrap contact is now available on the Relay sell screen.');
       }
     }
+
+    // ── Step 11d: Radio triggers (config-driven, radio_triggers.toml) ──────
+    // Catches every week/lifetime-counter/dome-count/feature-unlock trigger
+    // in one pass, now that all of this week's state changes are settled.
+    s = checkRadioTriggers(s);
 
     // ── Step 12: Build summary ────────────────────────────────────────────
     final summary = WeekSummary(
@@ -913,11 +899,11 @@ class EndWeekEngine {
     // Generate a transmission every 3-5 weeks
     if (state.currentWeek % 3 != 0) return null;
 
-    final templates = _config.radioTransmissionTemplates;
-    if (templates.isEmpty) return null;
+    final pool = RadioConfigService.instance.pool;
+    if (pool.isEmpty) return null;
 
-    final index = state.currentWeek % templates.length;
-    var message = templates[index];
+    final index = state.currentWeek % pool.length;
+    var message = pool[index];
 
     // Replace template variables
     message = message.replaceAll('{week}', '${state.currentWeek}');

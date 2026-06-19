@@ -9,6 +9,7 @@ import '../config/game_config_service.dart';
 import '../config/upgrade_config_service.dart';
 import '../config/raid_config_service.dart';
 import '../config/milestone_config_service.dart';
+import '../engine/radio_trigger_engine.dart';
 
 /// Creates a brand new GameState for a given save slot, farm name, and difficulty.
 class GameFactory {
@@ -64,19 +65,6 @@ class GameFactory {
     final milestones = MilestoneConfigService.instance.getMilestones(difficulty);
     final trophies = MilestoneConfigService.instance.getAllTrophies();
 
-    // Opening transmission from Kovacs
-    final openingMsg = GameConfigService.instance
-        .getRelayConfig()['opening_transmission'] as String? ??
-        "New operator confirmed. First pickup is Week 4. Don't be late. — Kovacs";
-
-    final radioFeed = [
-      RadioTransmission(
-        week: 1,
-        message: openingMsg,
-        isRead: false,
-      ),
-    ];
-
     // Starting wall and grenades from difficulty config
     final wallLevel = diffSettings['starting_wall_level'] as int? ?? 1;
     final wallLevels = GameConfigService.instance.getDefenseWallLevels();
@@ -110,7 +98,7 @@ class GameFactory {
     ))
         : <LaserSentry>[];
 
-    return GameState(
+    final initialState = GameState(
       gameId: DateTime.now().millisecondsSinceEpoch,
       slotNumber: slotNumber,
       farmName: farmName,
@@ -129,7 +117,7 @@ class GameFactory {
       milestones: milestones,
       trophies: trophies,
       log: [],
-      radioFeed: radioFeed,
+      radioFeed: const [],
       relay: RelayTechnicianState(
         mood: 30,  // starts sour — he's not happy about this posting
         seenRantTopics: [],
@@ -170,6 +158,10 @@ class GameFactory {
       waterPurifierLevel: 1,
       lastSaved: DateTime.now(),
     );
+
+    // Fires the game_start trigger (opening transmission) and anything
+    // else in radio_triggers.toml that's already true on turn 1.
+    return checkRadioTriggers(initialState);
   }
 
   static Dome createNewDome({required String name, int tier = 1}) {

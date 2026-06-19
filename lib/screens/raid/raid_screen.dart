@@ -237,7 +237,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
           final dy = effect.y - newY;
           final dist = sqrt(dx * dx + dy * dy);
           if (dist < effect.radius / (_fieldSize.width)) {
-            newHp -= effect.damagePerSecond * dt;
+            newHp -= f.maxHp * effect.damagePercentPerSecond * dt;
           }
         }
       }
@@ -431,12 +431,13 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
         break;
 
       case 'damage':
-        final damage = (gConfig['damage'] as num).toDouble();
+        final damagePercent = (gConfig['damage_percent'] as num).toDouble();
         for (var i = 0; i < _fauna.length; i++) {
           final f = _fauna[i];
           final dx = f.x - grenade.targetX;
           final dy = f.y - grenade.targetY;
           if (sqrt(dx * dx + dy * dy) < radiusNorm) {
+            final damage = f.maxHp * damagePercent;
             final newHp = f.hp - damage;
             _fauna[i] = f.copyWith(hp: newHp);
             if (newHp <= 0) _handleFaunaDeath(_fauna[i]);
@@ -453,7 +454,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
           y: grenade.targetY,
           radius: radius,
           timeRemaining: (gConfig['effect_duration'] as num).toDouble(),
-          damagePerSecond: (gConfig['damage_per_second'] as num).toDouble(),
+          damagePercentPerSecond: (gConfig['damage_percent_per_second'] as num).toDouble(),
         ));
         break;
 

@@ -12,6 +12,7 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../config/upgrade_config_service.dart';
+import '../../engine/radio_trigger_engine.dart';
 
 /// Returns true if the game has enough spare power for [additionalDraw] more KWh.
 /// Power never shuts anything off — this only gates NEW construction/upgrades.
@@ -592,17 +593,10 @@ class _MachineCard extends StatelessWidget {
     if (reactorJustUnlocked) {
       updatedGame = updatedGame.copyWith(
         unlockedFeatures: [...updatedGame.unlockedFeatures, 'mycovault_reactor'],
-        radioFeed: [
-          ...updatedGame.radioFeed,
-          RadioTransmission(
-            week: updatedGame.currentWeek,
-            message: "That vat of yours just put out something stable. Power "
-                "division wants a look — tell 'em you can build a Mycovault "
-                "Reactor whenever you're ready.",
-            isRead: false,
-          ),
-        ],
       );
+      // Fires the matching feature_unlocked entry in radio_triggers.toml
+      // immediately, rather than waiting for the next End Week.
+      updatedGame = checkRadioTriggers(updatedGame);
     }
     ref.read(activeGameProvider.notifier).updateGameLocal(updatedGame);
 

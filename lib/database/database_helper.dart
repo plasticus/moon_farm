@@ -331,6 +331,7 @@ class DatabaseHelper {
       'raid_defended_this_week': state.raidDefendedThisWeek,
       'manual_raid_triggered_this_week': state.manualRaidTriggeredThisWeek,
       'unlocked_features': state.unlockedFeatures,
+      'fired_radio_triggers': state.firedRadioTriggers,
       'water_purifier_level': state.waterPurifierLevel,
       'silo_inventory': state.siloInventory,
       'shipments_this_window': state.shipmentsThisWindow,
@@ -383,6 +384,8 @@ class DatabaseHelper {
       manualRaidTriggeredThisWeek:
       json['manual_raid_triggered_this_week'] as bool? ?? false,
       unlockedFeatures: (json['unlocked_features'] as List?)
+          ?.map((e) => e.toString()).toList() ?? const [],
+      firedRadioTriggers: (json['fired_radio_triggers'] as List?)
           ?.map((e) => e.toString()).toList() ?? const [],
       totalRaidsDefended: _i(json['total_raids_defended'] ?? 0),
       totalFaunaKilled: _i(json['total_fauna_killed'] ?? 0),

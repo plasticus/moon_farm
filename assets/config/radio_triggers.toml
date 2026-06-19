@@ -1,0 +1,209 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/radio_triggers.toml
+# ═══════════════════════════════════════════════════════════════
+#
+# One-shot radio messages that fire automatically when a specific
+# game-state condition is met. Each one fires exactly once per save,
+# ever — tracked internally by its `id`.
+#
+# ── TOML QUICK REFERENCE ─────────────────────────────────────────
+# This file is TOML (https://toml.io). The short version:
+#   - `key = value` sets a field. Strings need quotes, numbers don't.
+#   - `[[trigger]]` starts a NEW entry in a list of trigger tables —
+#     every trigger in this file is one of these blocks. The double
+#     brackets matter (single [trigger] would mean something else).
+#   - `#` starts a comment, same as everywhere else.
+#   - Multi-line strings use triple quotes \"\"\"like this\"\"\" if you
+#     ever need a message that spans multiple lines in the file.
+#
+# ── REQUIRED FIELDS on every [[trigger]] ─────────────────────────
+#   id      - unique string. NEVER change or reuse an id once a
+#             version has shipped — that's how the game remembers
+#             which triggers have already fired for a given save.
+#   kind    - which condition to check. See the full list below.
+#   value   - the threshold/target the kind checks against. Type
+#             depends on kind (a number for most, a string for
+#             feature_unlocked).
+#   message - the text sent to the radio feed. Supports the same
+#             {week} / {colony_food_percent} variables as
+#             radio_pool.toml.
+#
+# ── OPTIONAL FIELDS ───────────────────────────────────────────────
+#   show_as_tip = true
+#       Also shows as the persistent tip banner on the Week Summary
+#       screen (this is how the original "Colony Tip" messages work —
+#       see the tip_week* entries below). Only makes sense paired with
+#       kind = "week", since the banner shows "the most recent
+#       week-trigger you've reached so far."
+#
+# ── AVAILABLE TRIGGER KINDS ───────────────────────────────────────
+# All of these are already wired up — just add a new [[trigger]]
+# block below, no code changes needed. Every kind here is an
+# "at least" check (>=), not an exact match — that way a trigger
+# still fires correctly even if something jumps past the exact
+# threshold (e.g. a dev/debug time-skip).
+#
+#   week                     value = week number. Fires the first
+#                            week currentWeek reaches this.
+#   dome_count               value = dome count. Fires once you've
+#                            built at least this many domes, ever.
+#   dome_tier_reached        value = tier (1-5). Fires once ANY dome
+#                            reaches at least this tier.
+#   feature_unlocked         value = a string matching an entry in
+#                            unlockedFeatures. Built-in flags today:
+#                            "mycoculture_vat", "mycovault_reactor",
+#                            "scrap_dealer" — any future flag added
+#                            to unlockedFeatures works automatically,
+#                            no code changes needed here either.
+#   crops_harvested_total    value = lifetime crops harvested.
+#   volume_delivered_total   value = lifetime m³ delivered to colony.
+#   lifetime_scrip_earned    value = lifetime scrip earned (not
+#                            current balance — this only goes up).
+#   raids_survived           value = total raids successfully
+#                            defended.
+#   fauna_killed_total       value = lifetime fauna killed in raids.
+#   chitin_collected_total   value = lifetime chitin collected from
+#                            raids.
+#   compost_generated_total  value = lifetime compost generated.
+#   contracts_completed      value = lifetime contracts completed.
+#   game_start               value can be anything (ignored). Fires
+#                            once, the moment a new game is created.
+#
+# ── KINDS THAT WOULD NEED A LITTLE DART WORK FIRST ────────────────
+# (the underlying counter/hook doesn't exist yet, but could be added)
+#   - a specific fauna type's first kill (e.g. "first Apex Stalker")
+#   - lifetime scrip SPENT (only current balance + earned exist today)
+#   - a specific machine reaching Mk10
+#   - a specific sentry tier built
+#
+# ═══════════════════════════════════════════════════════════════
+
+# ─── Game start ───────────────────────────────────────────────────
+
+[[trigger]]
+id = "opening_transmission"
+kind = "game_start"
+value = 0
+message = "New operator confirmed. I'm Specialist Kovacs, your relay contact on MF-7. The previous farmer left in a hurry — something about the fauna. Didn't elaborate. Your starting supplies were dropped this morning. First scheduled pickup is Week 4. Don't be late. I have other things to do. — Kovacs"
+
+# ─── Early colony tips (these double as the Week Summary banner) ──
+
+[[trigger]]
+id = "tip_week1"
+kind = "week"
+value = 1
+show_as_tip = true
+message = "Colony Tip: Get some crops in the ground as soon as possible. Spacetatoes are slow but reliable. Terran Radishes are ready in one week if you need a fast first harvest."
+
+[[trigger]]
+id = "tip_week2"
+kind = "week"
+value = 2
+show_as_tip = true
+message = "Colony Tip: Check your harvest drones in Operations. Assign them to moon dirt, ore, sand, or chemicals — a balanced spread works well early on."
+
+[[trigger]]
+id = "tip_week3"
+kind = "week"
+value = 3
+show_as_tip = true
+message = "Colony Tip: If you have crops ready, head to the Relay and talk to Kovacs. Once the conversation is done, you can queue a shipment for Week 4's pickup window."
+
+[[trigger]]
+id = "tip_week4"
+kind = "week"
+value = 4
+show_as_tip = true
+message = "Colony Tip: Ship window is open this week. Head to Relay → Sell to queue your harvest. Kovacs will confirm the pickup."
+
+[[trigger]]
+id = "tip_week5"
+kind = "week"
+value = 5
+show_as_tip = true
+message = "Colony Tip: Compost from dead or cleared crops can be refined into Z Soil at the Refinery. Keep the composter running."
+
+[[trigger]]
+id = "tip_week6"
+kind = "week"
+value = 6
+show_as_tip = true
+message = "Colony Tip: Metals unlock a lot. Build a second dome when you can — more crops means more scrip per ship window."
+
+[[trigger]]
+id = "tip_week7"
+kind = "week"
+value = 7
+show_as_tip = true
+message = "Colony Tip: A raid is coming soon. Check your Defense Wall HP in the Habitat tab. Make sure you have a few grenades crafted."
+
+[[trigger]]
+id = "tip_week8"
+kind = "week"
+value = 8
+show_as_tip = true
+message = "⚠️ Colony Alert: Fauna activity detected in your sector. Defend your installation from the Dashboard when prompted."
+
+[[trigger]]
+id = "tip_week10"
+kind = "week"
+value = 10
+show_as_tip = true
+message = "Colony Tip: Drone efficiency matters more than drone count early on. One Mk2 drone outperforms two Mk1 drones on the same resource."
+
+[[trigger]]
+id = "tip_week12"
+kind = "week"
+value = 12
+show_as_tip = true
+message = "Colony Tip: Ship window this week. If you have contract crops in your silo, submit them at the Relay before shipping for bonus scrip."
+
+[[trigger]]
+id = "tip_week15"
+kind = "week"
+value = 15
+show_as_tip = true
+message = "Colony Tip: Consider upgrading your Water Purifier if your domes are running dry. More domes means more water demand."
+
+[[trigger]]
+id = "milestone_week20"
+kind = "week"
+value = 20
+show_as_tip = true
+message = "Colony Broadcast: You've survived 20 weeks. The colony appreciates your continued supply. Keep it up out there."
+
+# ─── Discovery / feature-unlock messages ───────────────────────────
+
+[[trigger]]
+id = "discovery_mycoculture_vat"
+kind = "feature_unlocked"
+value = "mycoculture_vat"
+message = "...what did you find there, farmer? That stuff's growing something the colony's never logged before. The Refinery can probably do something with it now."
+
+[[trigger]]
+id = "discovery_mycovault_reactor"
+kind = "feature_unlocked"
+value = "mycovault_reactor"
+message = "That vat of yours just put out something stable. Power division wants a look — tell 'em you can build a Mycovault Reactor whenever you're ready."
+
+[[trigger]]
+id = "discovery_scrap_dealer"
+kind = "feature_unlocked"
+value = "scrap_dealer"
+message = "Kovacs radioed ahead — he's got a scrap contact who'll take metals, chemicals, and components off your hands. Truckloads only, and the rate depends on how he's feeling about you. Check the Sell screen."
+
+# ─── Add your own below ────────────────────────────────────────────
+# A couple of ready-made examples using kinds from the list above —
+# delete or edit these, they're just here to show the shape:
+#
+# [[trigger]]
+# id = "milestone_week100"
+# kind = "week"
+# value = 100
+# message = "Colony Broadcast: 100 weeks. Someone in records wants to know if you're even human anymore."
+#
+# [[trigger]]
+# id = "milestone_10th_dome"
+# kind = "dome_count"
+# value = 10
+# message = "Corporate: Your operation now ranks among our top lunar producers. Don't let it go to your head."

@@ -3,11 +3,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:yaml/yaml.dart';
 import '../models/game_models.dart';
 import 'raid_config_service.dart';
 import 'upgrade_config_service.dart';
+import 'radio_config_service.dart';
 import 'milestone_config_service.dart';
 
 /// Singleton that loads game_config.json once and provides typed access.
@@ -241,12 +243,6 @@ class GameConfigService {
     );
   }
 
-  List<String> get radioTransmissionTemplates {
-    return List<String>.from(
-      relayConfig['radio_transmissions'] as List,
-    );
-  }
-
   Map<String, dynamic> get moodSystemConfig {
     return relayConfig['mood_system'] as Map<String, dynamic>;
   }
@@ -360,23 +356,34 @@ class GameConfigService {
 
   /// Computes the scrip cost for the next dome based on how many you already have.
   int getNextDomeScripCost(Difficulty difficulty, int currentDomeCount) {
-    // Dome 2 = 500, doubles each time: 500, 1000, 2000, 4000, 8000...
-    // currentDomeCount = how many you already have (start with 1)
-    if (currentDomeCount <= 1) return 500;
-    int cost = 500;
-    for (int i = 1; i < currentDomeCount; i++) {
-      cost *= 2;
-    }
-    return cost;
+    // domeNumber = the dome about to be built (you start with 1, so the
+    // first one you ever buy is dome #2).
+    final domeNumber = currentDomeCount + 1;
+    final cfg = (_c['dome_building'] as Map?)?['dome_cost_scaling']
+    as Map<String, dynamic>?;
+    if (cfg == null) return 500; // safety fallback if config is missing
+
+    final base = (cfg['base_scrip_cost'] as num).toDouble();
+    final rate = (cfg['rate'] as num).toDouble();
+    final cap = (cfg['cap'] as num).toInt();
+    final capAtCount = cfg['cap_at_count'] as int;
+
+    // Soft cap: once you've reached the configured dome number, price
+    // stops climbing entirely and just sits flat at `cap` forever after.
+    if (domeNumber >= capAtCount) return cap;
+
+    final n = domeNumber < 2 ? 2 : domeNumber;
+    final cost = base * pow(rate, n - 2);
+    return cost.round().clamp(0, cap);
   }
 
   List<Map<String, dynamic>> getDomeBotLevels() =>
       UpgradeConfigService.instance.domeBotLevels;
 
   List<Map<String, dynamic>> getRadioTips() {
-    final tips = _c['radio_tips'] as List?;
-    if (tips == null) return [];
-    return List<Map<String, dynamic>>.from(tips);
+    // Now sourced from radio_triggers.toml (kind = "week", show_as_tip =
+    // true) via RadioConfigService — see that file for how to add more.
+    return RadioConfigService.instance.tipBannerEntries;
   }
 
   Map<String, dynamic> getDifficultyConfig(Difficulty difficulty) {

@@ -106,6 +106,9 @@ class GameState {
   // rather than scrip/resources (e.g. 'mycoculture_vat' on first
   // Hyper-Mycelium harvest, 'mycovault_reactor' on first Mycoculture made).
   final List<String> unlockedFeatures;
+  // Ids of one-shot radio_triggers.toml entries that have already
+  // fired for this save — see lib/engine/radio_trigger_engine.dart.
+  final List<String> firedRadioTriggers;
   final List<PendingSale> pendingSales;
   final Map<String, double> siloInventory; // cropId -> units in silo
   final int shipmentsThisWindow;           // resets each ship window
@@ -152,6 +155,7 @@ class GameState {
     required this.raidDefendedThisWeek,
     this.manualRaidTriggeredThisWeek = false,
     this.unlockedFeatures = const [],
+    this.firedRadioTriggers = const [],
     required this.pendingSales,
     required this.siloInventory,
     required this.shipmentsThisWindow,
@@ -198,6 +202,7 @@ class GameState {
     bool? raidDefendedThisWeek,
     bool? manualRaidTriggeredThisWeek,
     List<String>? unlockedFeatures,
+    List<String>? firedRadioTriggers,
     List<PendingSale>? pendingSales,
     List<PendingDelivery>? pendingDeliveries,
     Map<String, double>? siloInventory,
@@ -247,6 +252,7 @@ class GameState {
       manualRaidTriggeredThisWeek:
       manualRaidTriggeredThisWeek ?? this.manualRaidTriggeredThisWeek,
       unlockedFeatures: unlockedFeatures ?? this.unlockedFeatures,
+      firedRadioTriggers: firedRadioTriggers ?? this.firedRadioTriggers,
       pendingSales: pendingSales ?? this.pendingSales,
       siloInventory: siloInventory ?? this.siloInventory,
       shipmentsThisWindow: shipmentsThisWindow ?? this.shipmentsThisWindow,
@@ -1524,7 +1530,7 @@ class ActiveEffect {
   final double y;
   final double radius;
   final double timeRemaining;
-  final double damagePerSecond;
+  final double damagePercentPerSecond; // % of target's maxHp, per second
 
   const ActiveEffect({
     required this.id,
@@ -1533,13 +1539,13 @@ class ActiveEffect {
     required this.y,
     required this.radius,
     required this.timeRemaining,
-    this.damagePerSecond = 0,
+    this.damagePercentPerSecond = 0,
   });
 
   ActiveEffect copyWith({double? timeRemaining}) {
     return ActiveEffect(
       id: id, effectType: effectType, x: x, y: y,
-      radius: radius, damagePerSecond: damagePerSecond,
+      radius: radius, damagePercentPerSecond: damagePercentPerSecond,
       timeRemaining: timeRemaining ?? this.timeRemaining,
     );
   }
