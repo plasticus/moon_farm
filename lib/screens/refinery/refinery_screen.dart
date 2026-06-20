@@ -14,7 +14,7 @@ import '../../config/game_config_service.dart';
 import '../../config/upgrade_config_service.dart';
 import '../../engine/radio_trigger_engine.dart';
 
-/// Returns true if the game has enough spare power for [additionalDraw] more KWh.
+/// Returns true if the game has enough spare power for [additionalDraw] more kW.
 /// Power never shuts anything off — this only gates NEW construction/upgrades.
 bool _hasPowerFor(GameState game, int additionalDraw) {
   if (additionalDraw <= 0) return true;
@@ -28,7 +28,21 @@ void _powerSnack(BuildContext context, int needed, int surplus) {
     SnackBar(
       content: GestureDetector(
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('⚡ Not enough power. Needs $needed KWh, only $surplus KWh spare. Build more power first.'),
+        child: Text('⚡ Not enough power. Needs $needed kW, only $surplus kW spare. Build more power first.'),
+      ),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
+
+void _missingSnack(BuildContext context, List<String> missingParts) {
+  if (missingParts.isEmpty) return;
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('Need: ${missingParts.join(', ')}'),
       ),
       duration: const Duration(seconds: 3),
     ),
@@ -116,7 +130,7 @@ class _WaterPurifierCard extends StatelessWidget {
                   children: [
                     Text('Water Purifier Mk$level', style: MFTextStyles.labelLarge),
                     Text(
-                      '+${output}m³/wk passive  ·  ${currentPowerDraw == 0 ? '0 KWh' : '$currentPowerDraw KWh'}',
+                      '+${output}m³/wk passive  ·  ${currentPowerDraw == 0 ? '0 kW' : '$currentPowerDraw kW'}',
                       style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan),
                     ),
                   ],
@@ -137,14 +151,14 @@ class _WaterPurifierCard extends StatelessWidget {
                         '+${nextConfig['output_water_per_week']}m³/wk  ·  '
                             '${nextConfig['cost_metals']} metals'
                             '${(nextConfig['cost_glass'] as int? ?? 0) > 0 ? '  ·  ${nextConfig['cost_glass']} glass' : ''}'
-                            '  ·  +${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw} KWh',
+                            '  ·  +${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw} kW',
                         style: MFTextStyles.bodySmall,
                       ),
                       if (!_hasPowerFor(game, (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw))
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            'Need ${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw - game.powerSurplus} more KWh spare',
+                            'Need ${(nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw - game.powerSurplus} more kW spare',
                             style: MFTextStyles.bodySmall.copyWith(
                                 color: MFColors.neonPink, fontSize: 10),
                           ),
@@ -162,6 +176,19 @@ class _WaterPurifierCard extends StatelessWidget {
                     final powerDelta = (nextConfig['power_draw_kwh'] as int? ?? 0) - currentPowerDraw;
                     if (!_hasPowerFor(game, powerDelta)) {
                       _powerSnack(context, powerDelta, game.powerSurplus);
+                      return;
+                    }
+                    final needMetals = nextConfig['cost_metals'] as int? ?? 0;
+                    final needGlass = nextConfig['cost_glass'] as int? ?? 0;
+                    final missing = <String>[];
+                    if (game.resources.metals < needMetals) {
+                      missing.add('${(needMetals - game.resources.metals).toInt()} more metals');
+                    }
+                    if (game.resources.glass < needGlass) {
+                      missing.add('${(needGlass - game.resources.glass).toInt()} more glass');
+                    }
+                    if (missing.isNotEmpty) {
+                      _missingSnack(context, missing);
                       return;
                     }
                     _upgrade(context, nextConfig);
@@ -269,7 +296,7 @@ class _MachineCard extends StatelessWidget {
                   children: [
                     Text('${machine.name} Mk${machine.level}',
                         style: MFTextStyles.labelLarge),
-                    Text('${levelCfg['power_draw_kwh']} KWh',
+                    Text('${levelCfg['power_draw_kwh']} kW',
                         style: MFTextStyles.bodySmall),
                   ],
                 ),
@@ -315,6 +342,10 @@ class _MachineCard extends StatelessWidget {
                     final powerDelta = (nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw;
                     if (!_hasPowerFor(game, powerDelta)) {
                       _powerSnack(context, powerDelta, game.powerSurplus);
+                      return;
+                    }
+                    if (!_canAffordUpgrade(nextCfg)) {
+                      _missingSnack(context, _missingParts(nextCfg['upgrade_cost'] as Map? ?? {}));
                       return;
                     }
                     _upgrade(context, nextCfg, nextLevel);
@@ -389,7 +420,7 @@ class _MachineCard extends StatelessWidget {
               ],
               if (machine.level >= 8 && maxCrafts >= 1) ...[
                 const SizedBox(width: 6),
-                _SmeltAllButton(
+                _CraftAllButton(
                   maxCrafts: maxCrafts,
                   onTap: () => _craft(context, recipeIn, recipeOut, maxCrafts),
                 ),
@@ -465,7 +496,7 @@ class _MachineCard extends StatelessWidget {
                 ],
                 if (machine.level >= 8 && maxCraftsPrime >= 1) ...[
                   const SizedBox(width: 6),
-                  _SmeltAllButton(
+                  _CraftAllButton(
                     maxCrafts: maxCraftsPrime,
                     onTap: () => _craft(context, recipeInPrime, recipeOutPrime, maxCraftsPrime),
                   ),
@@ -479,7 +510,7 @@ class _MachineCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Mk$nextLevel: ${_costLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  +${(nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw} KWh',
+                'Mk$nextLevel: ${_costLine(nextCfg['upgrade_cost'] as Map? ?? {})}  ·  +${(nextCfg['power_draw_kwh'] as int? ?? 0) - machine.powerDraw} kW',
                 style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted, fontSize: 10),
               ),
             ),
@@ -539,6 +570,20 @@ class _MachineCard extends StatelessWidget {
     return true;
   }
 
+  List<String> _missingParts(Map cost) {
+    final parts = <String>[];
+    for (final e in cost.entries) {
+      final needed = (e.value as num).toDouble();
+      final key = e.key.toString();
+      final have = _getHave(key);
+      if (have < needed) {
+        final shortBy = needed - have;
+        parts.add('${shortBy == shortBy.roundToDouble() ? shortBy.toInt() : shortBy.toStringAsFixed(1)} more ${key.replaceAll('_', ' ')}');
+      }
+    }
+    return parts;
+  }
+
   void _toggleAutoRefine(BuildContext context) {
     final updatedMachine = machine.copyWith(autoRefine: !machine.autoRefine);
     final updatedMachines = refinery.machines
@@ -584,6 +629,10 @@ class _MachineCard extends StatelessWidget {
         r = _add(r, e.key, amt);
       }
     }
+
+    // Clean up any silo entries that were fully consumed — a leftover
+    // key sitting at 0 still renders in the Silo and Sell-tab lists.
+    silo.removeWhere((key, value) => value <= 0.0001);
 
     // First-ever Mycoculture craft (either recipe) unlocks the Mycovault Reactor.
     final reactorJustUnlocked = recipeOut.containsKey('mycoculture') &&
@@ -661,12 +710,7 @@ class _MachineCard extends StatelessWidget {
 
   void _upgrade(BuildContext context, Map<String, dynamic> cfg, int newLevel) {
     if (!_canAffordUpgrade(cfg)) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GestureDetector(
-            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            child: Text('Not enough resources.'),
-          )));
+      _missingSnack(context, _missingParts(cfg['upgrade_cost'] as Map? ?? {}));
       return;
     }
     var r = game.resources;
@@ -760,7 +804,7 @@ class _BuildMachineCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Build cost: ${_costLine(buildCost)}  ·  ${level1['power_draw_kwh']} KWh',
+                  'Build cost: ${_costLine(buildCost)}  ·  ${level1['power_draw_kwh']} kW',
                   style: MFTextStyles.bodySmall.copyWith(
                     color: canAfford ? MFColors.textSecondary : MFColors.neonPink,
                   ),
@@ -801,6 +845,20 @@ class _BuildMachineCard extends StatelessWidget {
     return true;
   }
 
+  List<String> _missingParts(Map cost) {
+    final parts = <String>[];
+    for (final e in cost.entries) {
+      final needed = (e.value as num).toDouble();
+      final key = e.key.toString();
+      final have = _getHave(key);
+      if (have < needed) {
+        final shortBy = needed - have;
+        parts.add('${shortBy == shortBy.roundToDouble() ? shortBy.toInt() : shortBy.toStringAsFixed(1)} more ${key.replaceAll('_', ' ')}');
+      }
+    }
+    return parts;
+  }
+
   double _getHave(String resource) {
     if (GameConfigService.instance.getCrop(resource) != null) {
       return game.siloInventory[resource] ?? 0;
@@ -827,12 +885,7 @@ class _BuildMachineCard extends StatelessWidget {
 
   void _build(BuildContext context, Map<String, dynamic> cost, int powerDraw) {
     if (!_canAfford(cost) || refinery == null) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GestureDetector(
-            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            child: Text('Not enough resources.'),
-          )));
+      _missingSnack(context, _missingParts(cost));
       return;
     }
     var r = game.resources;
@@ -915,11 +968,11 @@ class _CraftButton extends StatelessWidget {
   }
 }
 
-class _SmeltAllButton extends StatelessWidget {
+class _CraftAllButton extends StatelessWidget {
   final int maxCrafts;
   final VoidCallback onTap;
 
-  const _SmeltAllButton({required this.maxCrafts, required this.onTap});
+  const _CraftAllButton({required this.maxCrafts, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -939,7 +992,7 @@ class _SmeltAllButton extends StatelessWidget {
             border: Border.all(color: MFColors.neonOrange),
           ),
           child: Text(
-            'SMELT ALL ($maxCrafts)',
+            'CRAFT ALL ($maxCrafts)',
             textAlign: TextAlign.center,
             style: MFTextStyles.labelLarge.copyWith(
               color: MFColors.neonOrange,
@@ -967,7 +1020,7 @@ class _MiniButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: canAfford ? onTap : null,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(

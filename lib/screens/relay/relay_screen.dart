@@ -37,10 +37,19 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     final conversation = ref.watch(kovacsConversationProvider);
     final tabsUnlocked = game.relay.conversationDoneThisWeek;
 
-    // Start conversation once per week — only if not already started
-    if (_tab == RelayTab.comms && conversation == null) {
+    // Start conversation once per week — only if not already started, OR
+    // if what's showing is a stale completed conversation from before a
+    // reload (conversationDoneThisWeek says "not done," but the visible
+    // conversation disagrees — that mismatch means it's stale, not current).
+    final conversationIsStale =
+        conversation != null && conversation.isComplete && !tabsUnlocked;
+    if (_tab == RelayTab.comms && (conversation == null || conversationIsStale)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && ref.read(kovacsConversationProvider) == null) {
+        if (!mounted) return;
+        final current = ref.read(kovacsConversationProvider);
+        final stillStale =
+            current != null && current.isComplete && !tabsUnlocked;
+        if (current == null || stillStale) {
           _initConversation(game);
         }
       });
@@ -91,6 +100,7 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
           game: game,
           onAcceptContract: _doAcceptContract,
           onSubmitToContract: _doSubmitToContract,
+          onCancelContract: _doCancelContract,
         );
     }
   }
@@ -242,25 +252,30 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     if (have < bulk) return;
 
     final updatedResources = switch (resourceKey) {
-      'metals' => game.resources.copyWith(
-          metals: game.resources.metals - bulk,
-          starScrip: game.resources.starScrip + price),
-      'chemicals' => game.resources.copyWith(
-          chemicals: game.resources.chemicals - bulk,
-          starScrip: game.resources.starScrip + price),
-      'glass' => game.resources.copyWith(
-          glass: game.resources.glass - bulk,
-          starScrip: game.resources.starScrip + price),
-      'components' => game.resources.copyWith(
-          components: game.resources.components - bulk,
-          starScrip: game.resources.starScrip + price),
+      'metals' => game.resources.copyWith(metals: game.resources.metals - bulk),
+      'chemicals' => game.resources.copyWith(chemicals: game.resources.chemicals - bulk),
+      'glass' => game.resources.copyWith(glass: game.resources.glass - bulk),
+      'components' => game.resources.copyWith(components: game.resources.components - bulk),
       _ => game.resources,
     };
 
-    ref.read(activeGameProvider.notifier).updateGameLocal(
-      game.copyWith(resources: updatedResources),
+    // Mirrors the contract pattern: the load leaves your stock the moment
+    // you sell it, but the scrap hauler only actually picks up — and pays
+    // out — on Kovacs' next ship day.
+    final sale = PendingSale(
+      resourceId: 'scrap_${resourceKey}_${game.currentWeek}',
+      amount: 0, // not freighter cargo — no m³ contribution
+      scripValue: price,
+      weekQueued: game.currentWeek,
     );
-    _showMsg('Scrap hauler weighs the load, pays cash, and rolls out. +$price 🎫');
+
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        resources: updatedResources,
+        pendingSales: [...game.pendingSales, sale],
+      ),
+    );
+    _showMsg('Scrap hauler loads up. Pickup — and payout — lands Week ${game.nextShipWindowWeek}.');
   }
 
   void _doBuy(String itemId, int quantity, int costPerUnit, GameState game) {
@@ -309,6 +324,29 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       game.copyWith(activeContracts: [...game.activeContracts, updated]),
     );
     _showMsg('"Contract accepted. Get me ${contract.requiredAmount} units. Bonus on delivery."');
+  }
+
+  // Cancelling does NOT refund crops you've already submitted toward this
+  // contract — those already shipped the moment you submitted them. Only
+  // the remaining requirement goes away, and you pay a 10% penalty (of
+  // the contract's full reward) on top.
+  void _doCancelContract(Contract contract, GameState game) {
+    final penalty = (contract.rewardScrip * 0.1).round();
+    if (game.resources.starScrip < penalty) {
+      _showMsg('"Can\'t cover the cancellation fee. Need $penalty 🎫."');
+      return;
+    }
+    final updatedActive =
+    game.activeContracts.where((c) => c.id != contract.id).toList();
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        activeContracts: updatedActive,
+        resources: game.resources.copyWith(
+          starScrip: game.resources.starScrip - penalty,
+        ),
+      ),
+    );
+    _showMsg('"Contract cancelled. $penalty 🎫 penalty deducted."');
   }
 
   void _doSubmitToContract(String contractId, double amount, GameState game) {
@@ -850,7 +888,7 @@ class _SellTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ...game.siloInventory.entries.map((entry) {
+                ...game.siloInventory.entries.where((e) => e.value > 0.0001).map((entry) {
                   final crop = config.getCrop(entry.key);
                   if (crop == null) return const SizedBox();
                   final price = (crop.baseScrip * (1 + discount)).round();
@@ -1506,11 +1544,13 @@ class _ContractsTab extends StatelessWidget {
   final GameState game;
   final Function(Contract, GameState) onAcceptContract;
   final Function(String, double, GameState) onSubmitToContract;
+  final Function(Contract, GameState) onCancelContract;
 
   const _ContractsTab({
     required this.game,
     required this.onAcceptContract,
     required this.onSubmitToContract,
+    required this.onCancelContract,
   });
 
   @override
@@ -1539,6 +1579,7 @@ class _ContractsTab extends StatelessWidget {
               final amt = inSilo.clamp(0, remaining).toDouble();
               onSubmitToContract(c.id, amt, game);
             },
+            onCancel: () => _confirmCancel(context, c, game),
           )),
           const SizedBox(height: 16),
         ],
@@ -1581,6 +1622,37 @@ class _ContractsTab extends StatelessWidget {
       ],
     );
   }
+
+  void _confirmCancel(BuildContext context, Contract contract, GameState game) {
+    final penalty = (contract.rewardScrip * 0.1).round();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: MFColors.surfaceElevated,
+        title: const Text('Cancel Contract?'),
+        content: Text(
+          'Cancelling "${contract.title}" forfeits any progress toward it '
+              'and costs a 10% penalty: $penalty 🎫. Crops already submitted '
+              'are not refunded.',
+          style: MFTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('NEVERMIND'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              onCancelContract(contract, game);
+            },
+            child: Text('YES, CANCEL',
+                style: TextStyle(color: MFColors.neonPink)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ContractCard extends StatelessWidget {
@@ -1589,6 +1661,7 @@ class _ContractCard extends StatelessWidget {
   final bool isActive;
   final VoidCallback? onAccept;
   final VoidCallback? onSubmit;
+  final VoidCallback? onCancel;
 
   const _ContractCard({
     required this.contract,
@@ -1596,6 +1669,7 @@ class _ContractCard extends StatelessWidget {
     required this.isActive,
     this.onAccept,
     this.onSubmit,
+    this.onCancel,
   });
 
   @override
@@ -1631,6 +1705,25 @@ class _ContractCard extends StatelessWidget {
               Text('+${contract.rewardScrip} 🎫',
                   style: MFTextStyles.bodySmall
                       .copyWith(color: MFColors.neonGold)),
+              if (isActive && !isCompleted && onCancel != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onCancel,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: MFColors.neonPink.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: MFColors.neonPink.withValues(alpha: 0.5)),
+                    ),
+                    child: Text('✕',
+                        style: MFTextStyles.bodySmall.copyWith(
+                            color: MFColors.neonPink,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 4),

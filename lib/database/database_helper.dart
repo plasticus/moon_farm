@@ -332,6 +332,9 @@ class DatabaseHelper {
       'manual_raid_triggered_this_week': state.manualRaidTriggeredThisWeek,
       'unlocked_features': state.unlockedFeatures,
       'fired_radio_triggers': state.firedRadioTriggers,
+      'last_week_summary': state.lastWeekSummary != null
+          ? _weekSummaryToJson(state.lastWeekSummary!)
+          : null,
       'water_purifier_level': state.waterPurifierLevel,
       'silo_inventory': state.siloInventory,
       'shipments_this_window': state.shipmentsThisWindow,
@@ -387,6 +390,9 @@ class DatabaseHelper {
           ?.map((e) => e.toString()).toList() ?? const [],
       firedRadioTriggers: (json['fired_radio_triggers'] as List?)
           ?.map((e) => e.toString()).toList() ?? const [],
+      lastWeekSummary: json['last_week_summary'] != null
+          ? _weekSummaryFromJson(json['last_week_summary'] as Map<String, dynamic>)
+          : null,
       totalRaidsDefended: _i(json['total_raids_defended'] ?? 0),
       totalFaunaKilled: _i(json['total_fauna_killed'] ?? 0),
       totalChitinCollected: _i(json['total_chitin_collected'] ?? 0),
@@ -440,6 +446,42 @@ class DatabaseHelper {
     mycoculture: (j['mycoculture'] as num?)?.toDouble() ?? 0,
     starScrip: (j['star_scrip'] as num).toInt(),
     seeds: (j['seeds'] as num).toInt(),
+  );
+
+  Map<String, dynamic> _weekSummaryToJson(WeekSummary s) => {
+    'week': s.week,
+    'scrip_received': s.scripReceived,
+    'scrip_spent': s.scripSpent,
+    'crops_harvested': s.cropsHarvested,
+    'crops_died': s.cropsDied,
+    'volume_to_colony_m3': s.volumeToColonyM3,
+    'new_trophies': s.newTrophies,
+    'milestone_updates': s.milestoneUpdates,
+    'contract_updates': s.contractUpdates,
+    'raid_occurred': s.raidOccurred,
+    'resource_changes': s.resourceChanges,
+    'robot_actions': s.robotActions,
+    'events': s.events,
+    'new_week': s.newWeek,
+  };
+
+  WeekSummary _weekSummaryFromJson(Map<String, dynamic> j) => WeekSummary(
+    week: (j['week'] as num).toInt(),
+    scripReceived: (j['scrip_received'] as num).toInt(),
+    scripSpent: (j['scrip_spent'] as num).toInt(),
+    cropsHarvested: (j['crops_harvested'] as num).toInt(),
+    cropsDied: (j['crops_died'] as num).toInt(),
+    volumeToColonyM3: (j['volume_to_colony_m3'] as num).toDouble(),
+    newTrophies: List<String>.from(j['new_trophies'] as List? ?? []),
+    milestoneUpdates: List<String>.from(j['milestone_updates'] as List? ?? []),
+    contractUpdates: List<String>.from(j['contract_updates'] as List? ?? []),
+    raidOccurred: j['raid_occurred'] as bool? ?? false,
+    resourceChanges: Map<String, double>.from(
+        (j['resource_changes'] as Map? ?? {})
+            .map((k, v) => MapEntry(k.toString(), (v as num).toDouble()))),
+    robotActions: List<String>.from(j['robot_actions'] as List? ?? []),
+    events: List<String>.from(j['events'] as List? ?? []),
+    newWeek: (j['new_week'] as num).toInt(),
   );
 
   Map<String, dynamic> _domeToJson(Dome d) => {
@@ -634,6 +676,7 @@ class DatabaseHelper {
     'mood': r.mood, 'seen_rant_topics': r.seenRantTopics,
     'available_contracts': r.availableContracts,
     'contracts_refreshed': r.contractsRefreshedThisWeek,
+    'conversation_done_this_week': r.conversationDoneThisWeek,
   };
 
   RelayTechnicianState _relayFromJson(Map<String, dynamic> j) =>
@@ -642,6 +685,8 @@ class DatabaseHelper {
         seenRantTopics: List<String>.from(j['seen_rant_topics'] as List),
         availableContracts: List<String>.from(j['available_contracts'] as List),
         contractsRefreshedThisWeek: j['contracts_refreshed'] as bool,
+        conversationDoneThisWeek:
+        j['conversation_done_this_week'] as bool? ?? false,
       );
 
   Map<String, dynamic> _pendingSaleToJson(PendingSale p) => {

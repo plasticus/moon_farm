@@ -248,7 +248,8 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     try {
       debugPrint('[EndWeek] Running engine...');
       final engine = EndWeekEngine();
-      final (newState, summary) = engine.processEndWeek(game);
+      final (rawNewState, summary) = engine.processEndWeek(game);
+      final newState = rawNewState.copyWith(lastWeekSummary: summary);
       debugPrint('[EndWeek] Engine done. New week: ${newState.currentWeek}, '
           'summary events: ${summary.events.length}');
 
@@ -419,6 +420,12 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
             _SiloInventoryCard(inventory: game.siloInventory),
             const SizedBox(height: 16),
           ],
+          if (game.activeContracts.isNotEmpty) ...[
+            const _SectionHeader('📋  ACTIVE CONTRACTS'),
+            const SizedBox(height: 8),
+            _DashboardContractsCard(game: game),
+            const SizedBox(height: 16),
+          ],
           const _SectionHeader('MILESTONES'),
           const SizedBox(height: 8),
           ...game.milestones
@@ -458,6 +465,24 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
                 ],
               ),
             ),
+          if (game.lastWeekSummary != null) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => WeekSummaryScreen(summary: game.lastWeekSummary!),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.history, size: 16, color: MFColors.textMuted),
+                label: Text('View last week\'s summary',
+                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
           _EndWeekButton(
             game: game,
             isLoading: isLoading,
@@ -599,7 +624,7 @@ class _InfraCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       ('🔵', 'Domes',    '${game.domes.length}'),
-      ('⚡',  'Power',    '+${game.powerSurplus} KWh'),
+      ('⚡',  'Power',    '+${game.powerSurplus} kW'),
       ('🔫', 'Sentries', '${game.laserSentries.length}'),
       ('🤖', 'Robots',   '${game.domes.where((d) => d.robot != null).length}'),
     ];
@@ -850,7 +875,7 @@ class _SiloInventoryCard extends StatelessWidget {
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: inventory.entries.map((entry) {
+        children: inventory.entries.where((e) => e.value > 0.0001).map((entry) {
           final crop = config.getCrop(entry.key);
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -868,6 +893,64 @@ class _SiloInventoryCard extends StatelessWidget {
                   '${entry.value.toInt()}',
                   style: MFTextStyles.labelLarge.copyWith(fontSize: 13),
                 ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─── Dashboard Active Contracts Card ──────────────────────────────────────────
+// Same card styling as the Relay/Sell screen's "Active Contracts" preview,
+// but shows every active contract regardless of current silo contents —
+// the Relay version only shows ones you can submit to right now.
+
+class _DashboardContractsCard extends StatelessWidget {
+  final GameState game;
+  const _DashboardContractsCard({required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final config = GameConfigService.instance;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: MFColors.neonGold.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: game.activeContracts.map((c) {
+          final crop = config.getCrop(c.cropId);
+          final inSilo = game.siloInventory[c.cropId] ?? 0;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: MFColors.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: MFColors.neonGold.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                Text(crop?.emoji ?? '?', style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(c.title, style: MFTextStyles.labelLarge),
+                      Text(
+                        '${c.currentAmount}/${c.requiredAmount}  ·  ${inSilo.toInt()} in silo',
+                        style: MFTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Text('+${c.rewardScrip} 🎫',
+                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonGold)),
               ],
             ),
           );

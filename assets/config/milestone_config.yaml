@@ -213,7 +213,7 @@ trophies:
 
   - id: power_hungry
     name: Power Hungry
-    description: Generate 500 KWh of power capacity
+    description: Generate 500 kW of power capacity
     emoji: "⚡"
     category: expansion
     check_type: power_capacity

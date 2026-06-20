@@ -751,7 +751,7 @@ class _SentriesSection extends StatelessWidget {
                                 style: MFTextStyles.labelLarge.copyWith(color: color)),
                             Text(
                               '${s.damage} dmg  ·  ${s.fireRate}/sec  ·  '
-                                  '${s.powerDraw} KWh',
+                                  '${s.powerDraw} kW',
                               style: MFTextStyles.bodySmall,
                             ),
                           ],
@@ -772,7 +772,7 @@ class _SentriesSection extends StatelessWidget {
                             if (game.resources.mycoculture < costMycoculture)
                               parts.add('${costMycoculture - game.resources.mycoculture.toInt()} mycoculture');
                             if (!hasPower)
-                              parts.add('$powerDelta KWh spare');
+                              parts.add('$powerDelta kW spare');
                             ScaffoldMessenger.of(context).clearSnackBars();
                             ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: GestureDetector(
@@ -825,7 +825,7 @@ class _SentriesSection extends StatelessWidget {
                           '${costComponents > 0 ? '  ·  $costComponents comp' : ''}'
                           '${costChitin > 0 ? '  ·  $costChitin chitin' : ''}'
                           '${costMycoculture > 0 ? '  ·  $costMycoculture culture' : ''}'
-                          '${powerDelta > 0 ? '  ·  +$powerDelta KWh' : ''}',
+                          '${powerDelta > 0 ? '  ·  +$powerDelta kW' : ''}',
                       style: MFTextStyles.bodySmall.copyWith(
                         color: canAfford ? MFColors.textMuted : MFColors.neonPink,
                         fontSize: 10,
@@ -886,8 +886,8 @@ class _SentriesSection extends StatelessWidget {
                         ),
                         Text(
                           '${cfg['damage']} dmg  ·  ${cfg['fire_rate']}/sec  ·  '
-                              '${cfg['power_draw_kwh']} KWh'
-                              '${!hasPower ? '  ·  need ${powerNeeded - game.powerSurplus} more KWh' : ''}',
+                              '${cfg['power_draw_kwh']} kW'
+                              '${!hasPower ? '  ·  need ${powerNeeded - game.powerSurplus} more kW' : ''}',
                           style: MFTextStyles.bodySmall.copyWith(
                               color: hasPower ? MFColors.textMuted : MFColors.neonPink),
                         ),
@@ -904,8 +904,8 @@ class _SentriesSection extends StatelessWidget {
                           SnackBar(content: GestureDetector(
                             onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
                             child: Text(
-                                '⚡ Not enough power. Needs $powerNeeded KWh, '
-                                    'only ${game.powerSurplus} KWh spare.'),
+                                '⚡ Not enough power. Needs $powerNeeded kW, '
+                                    'only ${game.powerSurplus} kW spare.'),
                           ),
                               duration: const Duration(seconds: 3)),
                         );

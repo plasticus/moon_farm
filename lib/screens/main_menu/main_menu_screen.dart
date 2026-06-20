@@ -97,6 +97,17 @@ class MainMenuScreen extends ConsumerWidget {
                             onDelete: null,
                           ),
                         ],
+
+                        const SizedBox(height: 24),
+                        Text(
+                          'THE STORY SO FAR',
+                          style: MFTextStyles.bodySmall.copyWith(
+                            color: MFColors.textMuted,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const _StoryBlurb(),
                       ],
                     );
                   },
@@ -250,6 +261,76 @@ class _GameTitle extends StatelessWidget {
             style: MFTextStyles.bodySmall.copyWith(
               color: MFColors.textMuted,
               letterSpacing: 3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Story So Far ─────────────────────────────────────────────────────────────
+
+class _StoryBlurb extends StatelessWidget {
+  const _StoryBlurb();
+
+  static const _coordLines = [
+    'PRIMARY ORBIT: Caelum-V [CLM-05]',
+    'COORDINATES: Olanthe [CLM-05-C]',
+    'SECTOR GRID: 4J',
+    'TARGET HUB: X-OLN-4J-[undetermined]',
+    'OUTPOST NAME: [undetermined]',
+  ];
+
+  static const _narrative =
+      "You've been awarded a contract to work the land in Sector 4J, on the "
+      "moon Olanthe, in orbit of Caelum-V.\n\n"
+      "Also in orbit of Caelum-V is a Colony Ship: The Ark of Caelum (Official "
+      "Registry: AC-Ring-01). They're waiting for Olanthe to finish "
+      "terraforming before they attempt to inhabit it full-time. They can "
+      "stay in orbit indefinitely, provided they have an influx of food. "
+      "That's where you come in.\n\n"
+      "There was no information given on the status of the prior contract "
+      "holder at location 4J. However, The Ark sent down a group of S.E.E.D."
+      "ers (Surface Environment Engineering Drones) to fabricate a basic "
+      "setup for you: a farming dome, a small refinery with basic equipment, "
+      "and a habitat.\n\n"
+      "Your primary contact to the Colony is Specialist Kovacs. You have a "
+      "Comms Relay tuned to his signal. Reach out to him when you need more "
+      "seeds or have food ready to ship up.\n\n"
+      "Good luck, moon farmer.";
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MFColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: MFColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ..._coordLines.map((line) => Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text(
+              line,
+              style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.neonCyan,
+                fontFamily: 'monospace',
+                letterSpacing: 0.5,
+              ),
+            ),
+          )),
+          const SizedBox(height: 10),
+          Container(height: 1, color: MFColors.borderSubtle),
+          const SizedBox(height: 10),
+          Text(
+            _narrative,
+            style: MFTextStyles.bodyMedium.copyWith(
+              color: MFColors.textSecondary,
+              height: 1.5,
             ),
           ),
         ],

@@ -16,10 +16,11 @@
 #   NOT backward-compatible — a Tier 4 dome grows only Tier 4 crops.
 #
 # POWER:
-#   T1-5 draw: 25/30/30/30/35 KWh — flat-ish curve so a fully-tiered
-#   dome stays in reach of a single Geothermal Tap (150 KWh) even
-#   stacked with a couple other domes/buildings.
-#   T1 dome (25) + 1 sentry (2) + 1 drone (3) = 30 KWh at game start. OK.
+#   T1-5 draw (cumulative, not incremental — each tier's number below
+#   IS the dome's total draw at that tier): 25 / 55 / 85 / 115 / 150 kW.
+#   First dome costs 25kW; each upgrade after that adds 30kW, except
+#   the final T4->T5 upgrade which adds 35kW. A fully-upgraded T5 dome
+#   draws exactly 150kW — the output of one maxed Geothermal Tap.
 #
 # COSTS:
 #   No scrip for upgrades — you're improving a structure you already own,
@@ -30,7 +31,9 @@
 # EDITING TIPS:
 #   - Indentation matters. 2 spaces, no tabs.
 #   - chitin maps to the ore resource slot internally (proxy) for now.
-#   - power_draw_kwh is the dome's passive draw once at this tier.
+#   - power_draw_kwh is the dome's passive draw once at this tier (the
+#     field name is a legacy holdover — the unit is actually kW, not kWh;
+#     see the project-wide kWh -> kW cleanup).
 
 dome_tiers:
   - tier: 1
@@ -42,14 +45,14 @@ dome_tiers:
       components: 1
 
   - tier: 2
-    power_draw_kwh: 30
+    power_draw_kwh: 55
     upgrade_cost:
       glass: 20
       metals: 10
       components: 5
 
   - tier: 3
-    power_draw_kwh: 30
+    power_draw_kwh: 85
     upgrade_cost:
       glass: 10
       metals: 20
@@ -57,7 +60,7 @@ dome_tiers:
       chitin: 10
 
   - tier: 4
-    power_draw_kwh: 30
+    power_draw_kwh: 115
     upgrade_cost:
       glass: 10
       metals: 40
@@ -65,7 +68,7 @@ dome_tiers:
       chitin: 20
 
   - tier: 5
-    power_draw_kwh: 35
+    power_draw_kwh: 150
     upgrade_cost:
       glass: 15
       metals: 80

@@ -109,6 +109,10 @@ class GameState {
   // Ids of one-shot radio_triggers.toml entries that have already
   // fired for this save — see lib/engine/radio_trigger_engine.dart.
   final List<String> firedRadioTriggers;
+  // The most recently completed week's summary — lets the dashboard
+  // offer a "view summary again" button without re-running the engine.
+  // Overwritten every End Week; null until the first week ever ends.
+  final WeekSummary? lastWeekSummary;
   final List<PendingSale> pendingSales;
   final Map<String, double> siloInventory; // cropId -> units in silo
   final int shipmentsThisWindow;           // resets each ship window
@@ -156,6 +160,7 @@ class GameState {
     this.manualRaidTriggeredThisWeek = false,
     this.unlockedFeatures = const [],
     this.firedRadioTriggers = const [],
+    this.lastWeekSummary,
     required this.pendingSales,
     required this.siloInventory,
     required this.shipmentsThisWindow,
@@ -203,6 +208,7 @@ class GameState {
     bool? manualRaidTriggeredThisWeek,
     List<String>? unlockedFeatures,
     List<String>? firedRadioTriggers,
+    WeekSummary? lastWeekSummary,
     List<PendingSale>? pendingSales,
     List<PendingDelivery>? pendingDeliveries,
     Map<String, double>? siloInventory,
@@ -253,6 +259,7 @@ class GameState {
       manualRaidTriggeredThisWeek ?? this.manualRaidTriggeredThisWeek,
       unlockedFeatures: unlockedFeatures ?? this.unlockedFeatures,
       firedRadioTriggers: firedRadioTriggers ?? this.firedRadioTriggers,
+      lastWeekSummary: lastWeekSummary ?? this.lastWeekSummary,
       pendingSales: pendingSales ?? this.pendingSales,
       siloInventory: siloInventory ?? this.siloInventory,
       shipmentsThisWindow: shipmentsThisWindow ?? this.shipmentsThisWindow,
@@ -795,7 +802,7 @@ class PowerSource {
     switch (type) {
       case PowerSourceType.solarArray: return 'Solar Array';
       case PowerSourceType.windTurbine: return 'Wind Turbine';
-      case PowerSourceType.geothermalTap: return 'Geothermal Core Tap';
+      case PowerSourceType.geothermalTap: return 'Geothermal Tap';
       case PowerSourceType.mycovaultReactor: return 'Mycovault Reactor';
     }
   }
@@ -803,7 +810,7 @@ class PowerSource {
   String get emoji {
     switch (type) {
       case PowerSourceType.solarArray: return '☀️';
-      case PowerSourceType.windTurbine: return '🌬️';
+      case PowerSourceType.windTurbine: return '🌀';
       case PowerSourceType.geothermalTap: return '🌋';
       case PowerSourceType.mycovaultReactor: return '⚛️';
     }
