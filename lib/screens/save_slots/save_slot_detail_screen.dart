@@ -664,12 +664,7 @@ class _PendingSalesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalScrip = sales.fold(0, (sum, s) => sum + s.scripValue);
-    final totalVolume = sales.fold(0.0, (sum, s) => sum + s.amount);
-    final weeksUntil = deliveryWeek - currentWeek;
-    final deliveryLabel = weeksUntil <= 0
-        ? 'this week'
-        : weeksUntil == 1 ? 'next week (W$deliveryWeek)' : 'in $weeksUntil weeks (W$deliveryWeek)';
+    final pickupLabel = 'pickup W$deliveryWeek';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -678,26 +673,48 @@ class _PendingSalesCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: MFColors.starScrip.withValues(alpha: 0.4)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('📦', style: TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${sales.length} shipment${sales.length == 1 ? '' : 's'} en route',
-                    style: MFTextStyles.labelLarge),
-                Text(
-                  '${totalVolume.toStringAsFixed(1)}m³  ·  ${totalScrip > 0 ? '+$totalScrip 🎫  · ' : ''} due $deliveryLabel',
-                  style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
-                ),
-              ],
-            ),
+          Row(
+            children: [
+              const Text('📦', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Text('${sales.length} shipment${sales.length == 1 ? '' : 's'} ready for pickup',
+                  style: MFTextStyles.labelLarge),
+            ],
           ),
+          const SizedBox(height: 8),
+          ...sales.map((sale) {
+            final (label, isScrap) = _typeFor(sale.resourceId);
+            final volumeText = isScrap
+                ? '${(GameConfigService.instance.scrapDealerBulkAmount / 1000).toStringAsFixed(1)}dam³'
+                : '${sale.amount.toStringAsFixed(1)}m³';
+            // Food supply doesn't show a pickup week — it can only ever
+            // ship on a Kovacs ship window to begin with, so the reminder
+            // is redundant. Scrap and contracts get it since those are
+            // queued ahead of time and the week is genuinely useful context.
+            final showWeek = label != 'food supply';
+            return Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '$volumeText  ·  +${sale.scripValue} 🎫  ·  $label'
+                    '${showWeek ? '  ·  $pickupLabel' : ''}',
+                style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
+              ),
+            );
+          }),
         ],
       ),
     );
+  }
+
+  // Classifies a PendingSale by its resourceId prefix (set at creation
+  // time in relay_screen.dart). Returns (display label, isScrap).
+  (String, bool) _typeFor(String resourceId) {
+    if (resourceId.startsWith('scrap_')) return ('scrap', true);
+    if (resourceId.startsWith('contract_')) return ('contract', false);
+    return ('food supply', false);
   }
 }
 
