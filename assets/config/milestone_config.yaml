@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════
 #  assets/config/milestone_config.yaml
 # ═══════════════════════════════════════════════════════════════
-# All milestone, trophy, and difficulty configuration.
+# All milestone and difficulty configuration.
 # Edit this file to rebalance goals, deadlines, and failure messages.
 # Milestones are checked in order — failing any one terminates the contract.
 #
@@ -69,13 +69,49 @@ milestones:
       failure_detail: "You delivered {actual}m³ of the required 50m³."
 
     - id: m3
+      name: Established Yield
+      description: Deliver 120m³ of cargo to the colony
+      target_volume_m3: 120
+      by_week: 100
+      reward_scrip: 600
+      failure_message: "The colony's expanding population required 120m³ by Week 100."
+      failure_detail: "You delivered {actual}m³ of the required 120m³."
+
+    - id: m4
       name: Colony Cornerstone
-      description: Deliver 200m³ of cargo to the colony
-      target_volume_m3: 200
+      description: Deliver 250m³ of cargo to the colony
+      target_volume_m3: 250
       by_week: 150
-      reward_scrip: 1000
-      failure_message: "The colony's long-term supply contract was not fulfilled."
-      failure_detail: "You delivered {actual}m³ of the required 200m³ by Week 150."
+      reward_scrip: 1200
+      failure_message: "The colony's core infrastructure was not sustained at Week 150."
+      failure_detail: "You delivered {actual}m³ of the required 250m³."
+
+    - id: m5
+      name: Market Pillar
+      description: Deliver 500m³ of cargo to the colony
+      target_volume_m3: 500
+      by_week: 200
+      reward_scrip: 2500
+      failure_message: "The commercial trade targets fell short at Week 200."
+      failure_detail: "You delivered {actual}m³ of the required 500m³."
+
+    - id: m6
+      name: Biosphere Engine
+      description: Deliver 1,000m³ of cargo to the colony
+      target_volume_m3: 1000
+      by_week: 260
+      reward_scrip: 5000
+      failure_message: "The high-volume export demands were unmet by Week 260."
+      failure_detail: "You delivered {actual}m³ of the required 1,000m³."
+
+    - id: m7
+      name: Agricultural Titan
+      description: Deliver 2,500m³ of cargo to the colony
+      target_volume_m3: 2500
+      by_week: 320
+      reward_scrip: 12000
+      failure_message: "The ultimate production contract was not fulfilled by Week 320."
+      failure_detail: "You delivered {actual}m³ of the required 2,500m³."
 
   normal:
     - id: m1
@@ -98,12 +134,48 @@ milestones:
 
     - id: m3
       name: Colony Cornerstone
-      description: Deliver 100m³ of cargo to the colony
-      target_volume_m3: 100
-      by_week: 100
+      description: Deliver 150m³ of cargo to the colony
+      target_volume_m3: 150
+      by_week: 80
       reward_scrip: 1000
-      failure_message: "The colony's primary supply contract was not fulfilled by Week 100."
-      failure_detail: "You delivered {actual}m³ of the required 100m³."
+      failure_message: "The primary supply contract was not fulfilled by Week 80."
+      failure_detail: "You delivered {actual}m³ of the required 150m³."
+
+    - id: m4
+      name: Operational Hub
+      description: Deliver 350m³ of cargo to the colony
+      target_volume_m3: 350
+      by_week: 120
+      reward_scrip: 2000
+      failure_message: "Logistics pipelines suffered a deficit at Week 120."
+      failure_detail: "You delivered {actual}m³ of the required 350m³."
+
+    - id: m5
+      name: Freight Magnate
+      description: Deliver 750m³ of cargo to the colony
+      target_volume_m3: 750
+      by_week: 170
+      reward_scrip: 4500
+      failure_message: "The mid-tier commercial quota was missed at Week 170."
+      failure_detail: "You delivered {actual}m³ of the required 750m³."
+
+    - id: m6
+      name: Planetary Breadbasket
+      description: Deliver 1,500m³ of cargo to the colony
+      target_volume_m3: 1500
+      by_week: 220
+      reward_scrip: 8000
+      failure_message: "The colony's core reserve targets were abandoned at Week 220."
+      failure_detail: "You delivered {actual}m³ of the required 1,500m³."
+
+    - id: m7
+      name: Total Sector Dominance
+      description: Deliver 4,000m³ of cargo to the colony
+      target_volume_m3: 4000
+      by_week: 280
+      reward_scrip: 20000
+      failure_message: "The grand master industrial milestone collapsed at Week 280."
+      failure_detail: "You delivered {actual}m³ of the required 4,000m³."
 
   hard:
     - id: m1
@@ -117,118 +189,54 @@ milestones:
 
     - id: m2
       name: Steady Supply
-      description: Deliver 50m³ of cargo to the colony
-      target_volume_m3: 50
+      description: Deliver 60m³ of cargo to the colony
+      target_volume_m3: 60
       by_week: 25
-      reward_scrip: 300
+      reward_scrip: 400
       failure_message: "Supply targets missed at Week 25. The colony is losing patience."
-      failure_detail: "You delivered {actual}m³ of the required 50m³."
+      failure_detail: "You delivered {actual}m³ of the required 60m³."
 
     - id: m3
       name: Colony Cornerstone
       description: Deliver 200m³ of cargo to the colony
       target_volume_m3: 200
-      by_week: 70
-      reward_scrip: 1000
-      failure_message: "The hard contract was not fulfilled. The colony expected more."
-      failure_detail: "You delivered {actual}m³ of the required 200m³ by Week 70."
+      by_week: 55
+      reward_scrip: 1200
+      failure_message: "The elite production pace faltered at Week 55."
+      failure_detail: "You delivered {actual}m³ of the required 200m³."
 
-# ─── TROPHIES ─────────────────────────────────────────────────────────────────
-# Trophies are cross-difficulty achievements unlocked during play.
-# check_type determines what the engine looks at:
-#   volume_delivered, weeks_survived, scrip_earned, crops_harvested,
-#   domes_owned, raids_defended, contracts_completed, compost_generated,
-#   power_capacity, specific_crop, manual (checked in trophy_checker code)
+    - id: m4
+      name: Breakneck Outward
+      description: Deliver 500m³ of cargo to the colony
+      target_volume_m3: 500
+      by_week: 90
+      reward_scrip: 3000
+      failure_message: "Industrial development schedule breached at Week 90."
+      failure_detail: "You delivered {actual}m³ of the required 500m³."
 
-trophies:
-  - id: first_harvest
-    name: First Harvest
-    description: Harvest your first crop
-    emoji: "🏆"
-    category: farming
-    check_type: crops_harvested
-    check_value: 1
+    - id: m5
+      name: Imperial Supplier
+      description: Deliver 1,200m³ of cargo to the colony
+      target_volume_m3: 1200
+      by_week: 130
+      reward_scrip: 7000
+      failure_message: "Corporate high-priority manifest unfulfilled at Week 130."
+      failure_detail: "You delivered {actual}m³ of the required 1,200m³."
 
-  - id: century_farmer
-    name: Century Farmer
-    description: Survive 100 weeks
-    emoji: "📅"
-    category: survival
-    check_type: weeks_survived
-    check_value: 100
+    - id: m6
+      name: Sovereign Monopoly
+      description: Deliver 2,500m³ of cargo to the colony
+      target_volume_m3: 2500
+      by_week: 180
+      reward_scrip: 15000
+      failure_message: "Critical planetary baseline supply failed at Week 180."
+      failure_detail: "You delivered {actual}m³ of the required 2,500m³."
 
-  - id: solar_millionaire
-    name: Solar Millionaire
-    description: Accumulate 10,000 Star-Scrip lifetime
-    emoji: "💰"
-    category: economy
-    check_type: scrip_earned
-    check_value: 10000
-
-  - id: raid_survivor
-    name: Raid Survivor
-    description: Successfully defend your first raid
-    emoji: "🛡️"
-    category: combat
-    check_type: raids_defended
-    check_value: 1
-
-  - id: five_domes
-    name: Dome Empire
-    description: Own 5 domes simultaneously
-    emoji: "🔵"
-    category: expansion
-    check_type: domes_owned
-    check_value: 5
-
-  - id: robot_army
-    name: Robot Army
-    description: Have 3 active dome bots
-    emoji: "🤖"
-    category: automation
-    check_type: manual
-
-  - id: relay_friend
-    name: Relay Friend
-    description: Complete 10 contracts
-    emoji: "📡"
-    category: contracts
-    check_type: contracts_completed
-    check_value: 10
-
-  - id: colony_hero
-    name: Colony Hero
-    description: Complete all milestones on Normal or Hard
-    emoji: "🚀"
-    category: milestones
-    check_type: manual
-
-  - id: compost_king
-    name: Compost King
-    description: Generate 1000 units of compost
-    emoji: "♻️"
-    category: farming
-    check_type: compost_generated
-    check_value: 1000
-
-  - id: power_hungry
-    name: Power Hungry
-    description: Generate 500 kW of power capacity
-    emoji: "⚡"
-    category: expansion
-    check_type: power_capacity
-    check_value: 500
-
-  - id: no_miss_10
-    name: Reliable
-    description: Complete 10 weeks without a crop dying
-    emoji: "✅"
-    category: survival
-    check_type: manual
-
-  - id: speed_harvest
-    name: Speed Farmer
-    description: Harvest 5 crops in a single week
-    emoji: "⚡"
-    category: farming
-    check_type: manual
+    - id: m7
+      name: Apex Megastructure
+      description: Deliver 6,000m³ of cargo to the colony
+      target_volume_m3: 6000
+      by_week: 240
+      reward_scrip: 35000
+      failure_message: "The absolute limits of agricultural speed failed at Week 240."
+      failure_detail: "You delivered {actual}m³ of the required 6000m³."

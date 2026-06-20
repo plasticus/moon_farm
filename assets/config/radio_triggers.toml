@@ -13,7 +13,7 @@
 #     every trigger in this file is one of these blocks. The double
 #     brackets matter (single [trigger] would mean something else).
 #   - `#` starts a comment, same as everywhere else.
-#   - Multi-line strings use triple quotes \"\"\"like this\"\"\" if you
+#   - Multi-line strings use triple quotes """like this""" if you
 #     ever need a message that spans multiple lines in the file.
 #
 # ── REQUIRED FIELDS on every [[trigger]] ─────────────────────────
@@ -25,8 +25,7 @@
 #             depends on kind (a number for most, a string for
 #             feature_unlocked).
 #   message - the text sent to the radio feed. Supports the same
-#             {week} / {colony_food_percent} variables as
-#             radio_pool.toml.
+#             {week} variable as radio_pool.toml.
 #
 # ── OPTIONAL FIELDS ───────────────────────────────────────────────
 #   show_as_tip = true
@@ -84,7 +83,7 @@
 id = "opening_transmission"
 kind = "game_start"
 value = 0
-message = "New operator confirmed. I'm Specialist Kovacs, your relay contact on MF-7. The previous farmer left in a hurry — something about the fauna. Didn't elaborate. Your starting supplies were dropped this morning. First scheduled pickup is Week 4. Don't be late. I have other things to do. — Kovacs"
+message = "New operator confirmed. I'm Specialist Kovacs, your relay contact for Olanthe Sector 4J. The previous farmer left in a hurry — something about the fauna. Didn't elaborate. Your starting supplies were dropped this morning. First scheduled pickup is Week 4. Don't be late. I have other things to do. — Kovacs"
 
 # ─── Early colony tips (these double as the Week Summary banner) ──
 
@@ -192,18 +191,259 @@ kind = "feature_unlocked"
 value = "scrap_dealer"
 message = "Kovacs radioed ahead — he's got a scrap contact who'll take metals, chemicals, and components off your hands. Truckloads only, and the rate depends on how he's feeling about you. Check the Sell screen."
 
-# ─── Add your own below ────────────────────────────────────────────
-# A couple of ready-made examples using kinds from the list above —
-# delete or edit these, they're just here to show the shape:
-#
-# [[trigger]]
-# id = "milestone_week100"
-# kind = "week"
-# value = 100
-# message = "Colony Broadcast: 100 weeks. Someone in records wants to know if you're even human anymore."
-#
-# [[trigger]]
-# id = "milestone_10th_dome"
-# kind = "dome_count"
-# value = 10
-# message = "Corporate: Your operation now ranks among our top lunar producers. Don't let it go to your head."
+# ─── Custom Community & Milestone Additions (Sector 4J Edition) ───
+
+[[trigger]]
+id = "milestone_3rd_dome"
+kind = "dome_count"
+value = 3
+message = "STATIC... intercepting open channel: 'Hey, you see the long-range scans for Sector 4J? That new farmer already has three whole domes pressurized. Three! I'm still trying to patch the seal on my first one and they're down there building an agricultural empire...'"
+
+[[trigger]]
+id = "milestone_tier3_dome"
+kind = "dome_tier_reached"
+value = 3
+message = "Tech Division Alert: Advanced biological containment seals confirmed in Sector 4J. Your structural upgrades are finally meeting baseline standard efficiency regulations. Capital work, Farmer 4J."
+
+[[trigger]]
+id = "milestone_crops_500"
+kind = "crops_harvested_total"
+value = 500
+message = "Colony Logistics: Five hundred lifetime harvests logged for unit 4J. Supply management notes that your local yield consistency is officially outperforming the automated hydroponics bays back on the primary station."
+
+[[trigger]]
+id = "milestone_volume_100"
+kind = "volume_delivered_total"
+value = 100
+message = "STATIC... comms chatter from Orbital Docking: '...yeah, shipment just came in from 4J. Over a hundred cubes of actual, fresh greens. The mess hall is serving real food tonight instead of that gray nutritional paste, so if you want a seat, you better run.'"
+
+[[trigger]]
+id = "milestone_scrip_5000"
+kind = "lifetime_scrip_earned"
+value = 5000
+message = "Corporate Finance: Account milestone reached. Sector 4J has generated 5,000 lifetime Star-Scrip. Your operational tier has been upgraded to 'Valued Contractor'. A commemorative digital badge has been appended to your employee file."
+
+[[trigger]]
+id = "milestone_raids_5"
+kind = "raids_survived"
+value = 5
+message = "⚠️ Security Relay: Five consecutive swarm incursions repelled in Sector 4J. The local fauna seems to be realizing that Farmer 4J isn't moving out easily. Expect future groups to be a touch more aggressive. Keep those wall welds tight."
+
+[[trigger]]
+id = "milestone_fauna_50"
+kind = "fauna_killed_total"
+value = 50
+message = "Kovacs personal note: Fleet Command wanted me to pass along a thumbs-up to 4J. You've cleared 50 of those pesky critters off the sector map. Personally, I'm just glad I don't have to sweep up the chitin. Good hunting. — Kovacs"
+
+[[trigger]]
+id = "milestone_chitin_100"
+kind = "chitin_collected_total"
+value = 100
+message = "STATIC... overheard on frequency 104.2: 'Did you hear about the pile of bug shells the guy in 4J has stacked up outside his habitat? Must be over a hundred units of raw chitin. If he isn't using that stuff to reinforce his walls, he's crazy... or building a throne.'"
+
+[[trigger]]
+id = "milestone_compost_200"
+kind = "compost_generated_total"
+value = 200
+message = "Colony Safety Memo: Organic decomposition sensors indicate high-volume compost throughput in Sector 4J. Smells like... progress. Or heavy-duty nitrogen compounds. Mostly nitrogen. Keep refining it into Z Soil."
+
+[[trigger]]
+id = "milestone_contracts_10"
+kind = "contracts_completed"
+value = 10
+message = "STATIC... automated logistics relay: 'Contract ten successfully processed for Sector 4J. Procurement satisfaction rating: Optimal. Drone dispatching priority status updated for Farmer 4J.'"
+
+[[trigger]]
+id = "kovacs_zsoil_briefing"
+kind = "week"
+value = 2
+message = "4J, stop asking what the 'Z' stands for. It's just raw Olanthian moon dirt laced with raw chemicals so your fragile Earth seeds don't instantly rot. Mix it, dump it in the domes, and grow something. I'm busy. — Kovacs"
+
+[[trigger]]
+id = "kovacs_post_first_raid"
+kind = "raids_survived"
+value = 1
+message = "4J, if you're celebrating that victory, wipe the smile off your face. That was the mildest swarm you're ever going to see. If you want to survive the next fauna raid and every single one after, you need to add or upgrade a sentry between every engagement to stay ahead of the curve. And don't forget to keep bolstering your defensive wall welds. The bugs only get bigger. — Kovacs"
+
+[[trigger]]
+id = "tip_week4_drones"
+kind = "week"
+value = 4
+show_as_tip = true
+message = "Colony Tip: Don't get complacent with your resource income. The single starter harvest drone in Operations isn't going to cut it for long. Build more drones soon, or your production lines are going to choke."
+
+# ─── LATE-GAME & END-GAME MEGA MILESTONES (Sector 4J) ═════════════
+
+# ─── Massive Delivery Milestones ──────────────────────────────────
+
+[[trigger]]
+id = "mega_volume_1000"
+kind = "volume_delivered_total"
+value = 1000
+message = "STATIC... overheard on Fleet logistics: 'Hey, look at the quarterly board. That operator in 4J just cleared one thousand total cubic meters delivered. One thousand. They're supplying half the civilian blocks on the station single-handedly now. Someone buy that person a drink.'"
+
+[[trigger]]
+id = "mega_volume_10000"
+kind = "volume_delivered_total"
+value = 10000
+message = "Corporate Procurement Official Announcement: 'Sector 4J has crossed the 10,000 m³ lifetime delivery threshold. Farmer 4J is hereby granted the status of Master Producer. Station manifests are adjusting orbital docking priority to accommodate 4J cargo transport craft.'"
+
+[[trigger]]
+id = "mega_volume_100000"
+kind = "volume_delivered_total"
+value = 100000
+message = "STATIC... emergency broadcast interruption... 'Attention all hands. The cargo freighter currently docking just brought in the 100,000th cubic meter of organic material from Sector 4J. The entire primary station is now literally eating, breathing, and wearing products grown by one person on Olanthe. Long live the Titan of 4J.'"
+
+# ─── High-Tier Dome & Crop Achievements ───────────────────────────
+
+[[trigger]]
+id = "mega_dome_count_10"
+kind = "dome_count"
+value = 10
+message = "STATIC... intercepted chat: 'Bro, have you seen the mapping data for sector 4J lately? Ten domes. Ten! It looks like a giant glittering pearl necklace dropped on the surface from orbit. How are they even managing the pressure differentials on a footprint that big?'"
+
+[[trigger]]
+id = "mega_dome_tier_5"
+kind = "dome_tier_reached"
+value = 5
+message = "Tech Division Command: 'Bio-dome containment matrix upgraded to Tier 5 in Sector 4J. Biosphere equilibrium has achieved perfection. You have created an environment more stable than Earth-normal baseline. Incredible work, Operator 4J.'"
+
+[[trigger]]
+id = "mega_crops_10000"
+kind = "crops_harvested_total"
+value = 10000
+message = "Kovacs personal note: 'Ten thousand lifetime crops harvested, 4J. Ten. Thousand. I looked up the records, and you've officially pulled more food out of that red dirt than the last six operators combined. I might actually have to stop calling you a rookie. Don't let it go to your head. — Kovacs'"
+
+# ─── Unbelievable Wealth ──────────────────────────────────────────
+
+[[trigger]]
+id = "mega_scrip_50000"
+kind = "lifetime_scrip_earned"
+value = 50000
+message = "STATIC... sector rumor mill: '...yeah, I heard 4J's scrip ledger is sitting at fifty grand earned. Corporate finance actually sent a specialized encryption key just to hold that many zeroes. They could probably buy their own shuttle and fly back to Earth tomorrow if they wanted to.'"
+
+[[trigger]]
+id = "mega_scrip_250000"
+kind = "lifetime_scrip_earned"
+value = 250000
+message = "Corporate Board of Directors: 'Account milestone recognized. Sector 4J has generated a quarter-million lifetime Star-Scrip. Farmer 4J has been designated a Primary Corporate Shareholder. Your financial clearance now exceeds that of Sector Specialist Kovacs.'"
+
+# ─── Legendary Combat & Survival ──────────────────────────────────
+
+[[trigger]]
+id = "mega_raids_25"
+kind = "raids_survived"
+value = 25
+message = "⚠️ Tactical Overwatch Alert: 'Twenty-five swarm incursions successfully repelled in Sector 4J. The native fauna population density in your quadrant has dropped by an estimated fourteen percent due to sustained defensive operations. You're turning that valley into a graveyard, 4J.'"
+
+[[trigger]]
+id = "mega_raids_50"
+kind = "raids_survived"
+value = 50
+message = "STATIC... open frequency chatter: 'Did you hear? The wall at 4J just survived its fiftieth raid. Fiftieth! Most outposts don't make it to ten before a breach. That farmer isn't running an agricultural dome anymore, they're running a planetary fortress.'"
+
+[[trigger]]
+id = "mega_fauna_500"
+kind = "fauna_killed_total"
+value = 500
+message = "Kovacs here. 'Overwatch logs show five hundred confirmed fauna casualties in your sector, 4J. The local wildlife department back home would have a heart attack, but up here? That's five hundred reasons the rest of us can sleep a little easier. Keep pulling those triggers. — Kovacs'"
+
+[[trigger]]
+id = "mega_chitin_1000"
+kind = "chitin_collected_total"
+value = 1000
+message = "STATIC... black market frequency: 'If you need armor plating, try to hack into 4J's waste bins. Word is they've processed over a thousand units of pure swarm chitin. They have enough high-grade biological alloy down there to build a whole battlecruiser.'"
+
+# ─── Industry & Automation ────────────────────────────────────────
+
+[[trigger]]
+id = "mega_compost_2000"
+kind = "compost_generated_total"
+value = 2000
+message = "Colony Environmental Control: 'Two thousand units of organic compost recycled. Sector 4J has successfully diverted an unprecedented volume of biological waste into active soil reclamation. Planetary engineering has noted your contribution to the terraforming models.'"
+
+[[trigger]]
+id = "mega_contracts_50"
+kind = "contracts_completed"
+value = 50
+message = "STATIC... automated orbital relay: 'Fifty corporate and colony supply contracts fulfilled by Sector 4J. Fulfillment rate: 100%. Supply reliability index is now tracking at maximum historical levels. Excellent work, Farmer 4J.'"
+
+# ─── MID-GAME & PROGRESSION TRIGGERS (Sector 4J Expansion) ════════
+
+[[trigger]]
+id = "milestone_dome_tier_2"
+kind = "dome_tier_reached"
+value = 2
+message = "Tech Division: 'Sector 4J has upgraded a containment unit to Tier 2. Structural reinforcement confirmed. Your domes are looking less like temporary tents and more like actual architecture now.'"
+
+[[trigger]]
+id = "milestone_scrip_20000"
+kind = "lifetime_scrip_earned"
+value = 20000
+message = "STATIC... overheard chatter: 'Don't try to outbid the farmer in 4J at the next supply auction. Word is their lifetime ledger just cleared twenty thousand scrip. They're sitting on a dragon's hoard of corporate credit down there.'"
+
+[[trigger]]
+id = "milestone_raids_15"
+kind = "raids_survived"
+value = 15
+message = "⚠️ Tactical Overwatch: 'Fifteen successful defensive engagements logged for Sector 4J. Automated systems note that your defensive wall is taking a beating, but those welds are holding. Keep your guard up, operator.'"
+
+[[trigger]]
+id = "mid_dome_count_5"
+kind = "dome_count"
+value = 5
+message = "STATIC... intercepted orbital chatter: 'Have you looked at the surface map for Sector 4J lately? Five active domes. They've practically got a small village running down there. Meanwhile, my single airlock is throwing a pressure error code every time I sneeze.'"
+
+[[trigger]]
+id = "mid_dome_tier_4"
+kind = "dome_tier_reached"
+value = 4
+message = "Tech Division: 'Bio-dome containment matrix upgraded to Tier 4 in Sector 4J. Automated cross-ventilation and advanced radiation shielding are now fully operational. You're getting dangerously close to a self-sustaining ecosystem, operator.'"
+
+[[trigger]]
+id = "mid_crops_2500"
+kind = "crops_harvested_total"
+value = 2500
+message = "Colony Logistics: 'Two thousand five hundred lifetime harvests logged for Unit 4J. The central station's culinary department has officially named a synthetic soup blend after your sector to celebrate the supply consistency. Don't worry, it still tastes like cardboard.'"
+
+[[trigger]]
+id = "mid_volume_500"
+kind = "volume_delivered_total"
+value = 500
+message = "STATIC... overheard on Fleet Comms: '...yeah, shipment just cleared from 4J. Total lifetime delivery is past five hundred cubic meters of organic material. The docking bay smells like actual fresh earth instead of recycled rocket fuel for once. Tell that farmer to keep 'em coming.'"
+
+[[trigger]]
+id = "mid_scrip_35000"
+kind = "lifetime_scrip_earned"
+value = 35000
+message = "Corporate Finance Notice: 'Account milestone recognized. Sector 4J has accumulated 35,000 lifetime Star-Scrip. Your contractor profile has been updated to \"Senior Agricultural Lead.\" Please find a complimentary requisition voucher for upgraded habitat upholstery in your terminal.'"
+
+[[trigger]]
+id = "mid_raids_10"
+kind = "raids_survived"
+value = 10
+message = "⚠️ Tactical Overwatch Alert: 'Ten swarm incursions successfully repelled in Sector 4J. The local fauna population has officially marked your coordinate grid as a high-casualty zone. Future attack waves may attempt to bypass your perimeter entirely to target vulnerable exterior conduits.'"
+
+[[trigger]]
+id = "mid_fauna_200"
+kind = "fauna_killed_total"
+value = 200
+message = "Kovacs personal note: 'Two hundred confirmed fauna neutralized on your perimeter fence, 4J. I'm actually a little impressed. Most of the corporate desk-jockeys back on the station haven't even seen a live bug, and you're out there clearing out the whole valley. Mind the acid spray. — Kovacs'"
+
+[[trigger]]
+id = "mid_chitin_500"
+kind = "chitin_collected_total"
+value = 500
+message = "STATIC... black market frequency: 'Hey, if you're looking for high-density biological alloys, try skimming the salvage bins near 4J. Word on the comms is that the operator has processed over five hundred units of raw swarm chitin. You could plate a whole shuttle hull with that pile.'"
+
+[[trigger]]
+id = "mid_compost_1000"
+kind = "compost_generated_total"
+value = 1000
+message = "Colony Environmental Control: 'One thousand total units of organic compost recycled by Sector 4J. Your contribution to the planetary waste-diversion model has earned your sector a localized carbon-offset credit. Keep turning that rot into gold.'"
+
+[[trigger]]
+id = "mid_contracts_25"
+kind = "contracts_completed"
+value = 25
+message = "STATIC... automated orbital relay: 'Twenty-five corporate and colony supply contracts fulfilled by Sector 4J. Reliability index has passed the ninety-fifth percentile for all independent planetary contractors. Keep up the good work, 4J.'"

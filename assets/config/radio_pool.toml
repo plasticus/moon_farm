@@ -14,8 +14,8 @@
 # Available template variables (swapped in automatically before the
 # message is shown):
 #   {week}                  -> current week number
-#   {colony_food_percent}   -> 0-100, derived from total m³ delivered
-#                               to the colony so far
+
+# ─── Original Cleaned Entries (Olathian Update) ───────────────────
 
 [[message]]
 text = "Colony Broadcast: Week {week} agricultural report filed. Keep those calories coming."
@@ -24,7 +24,7 @@ text = "Colony Broadcast: Week {week} agricultural report filed. Keep those calo
 text = "STATIC... did anyone else pick up that signal from sector 7?"
 
 [[message]]
-text = "Corporate memo: All lunar operations are reminded that compost storage quotas apply."
+text = "Corporate memo: All Olathian operations are reminded that compost storage quotas apply."
 
 [[message]]
 text = "Kovacs here. Just so everyone knows, I passed my captain's exam. Again. For the third time."
@@ -33,7 +33,7 @@ text = "Kovacs here. Just so everyone knows, I passed my captain's exam. Again. 
 text = "Weather advisory: Increased micrometeorite activity. Check dome seals."
 
 [[message]]
-text = "Colony update: Food stores at {colony_food_percent}%. Your deliveries are appreciated."
+text = "Colony update: Food stores at 33%. Your deliveries are appreciated."
 
 [[message]]
 text = "Relay broadcasting: The stars are particularly clear tonight. Not that anyone asked."
@@ -48,9 +48,122 @@ text = "Kovacs personal log - open channel apparently: If anyone needs a highly 
 text = "Colony celebrates: A new generation born this week. They'll need those calories."
 
 [[message]]
-text = "Security advisory: Lunar fauna activity increasing in your sector. Brace for raid."
+text = "Security advisory: Olathian fauna activity increasing in your sector. Brace for raid."
 
 [[message]]
 text = "Kovacs: Management denied my transfer request. Again. Logging formal protest. Again."
 
-# Add your own below — same format as above, just text = "...".
+# ─── Form 77-A Paperwork Wars ──────────────────────────────────────
+
+[[message]]
+text = "Kovacs here. To the operator who filed a grievance about the lack of orbital satellite channels: I have filed an administrative counter-claim using Complaint Form 77-A for misuse of the emergency relay. Enjoy the static. — Kovacs"
+
+[[message]]
+text = "STATIC... chatter on channel 4: 'To the absolute clown in Sector 2B: I just logged a Form 77-A with Kovacs because your harvest drone crossed my sector boundary line and stole three of my rocks. Keep your junk on your own grid.'"
+
+[[message]]
+text = "STATIC... open frequency: 'This is Operator Miller. I am publicly declaring that I have filed a Form 77-A against Sector 5B for venting greenhouse gases directly downwind of my intake valves. My habitat smells like burnt cabbage.'"
+
+[[message]]
+text = "STATIC... 'Attention everyone, Kovacs told me he threw away the Form 77-A I submitted about our ration quality because I didn't sign it in triplicate. If anyone has extra carbon paper, I'll trade you a crate of ore for it.'"
+
+# ─── Bulk Ambient Additions ───────────────────────────────────────
+
+[[message]]
+text = "STATIC... overheard chatter: 'I swear, if Kovacs hangs up on me mid-sentence one more time, I'm routing my comms through the waste refinery. Man has the bedside manner of a broken drill bit.'"
+
+[[message]]
+text = "Kovacs here. Comm-check for Sector K3. Operator Miller, respond. Your dome pressure readings just flatlined on my console... look, if you're overrun, just trigger the beacon. I don't have all day to stare at static."
+
+[[message]]
+text = "STATIC... emergency frequency patch: 'This is Sector 5B, does anyone copy? I need spare components. A primary seal blew, my drone lost a wheel, and my automated bench is throwing sparks. Everything is breaking down out here!'"
+
+[[message]]
+text = "Olathian weather update: Severe dust squalls incoming across the northern meridians. If your solar panels get buried, grab a brush. No one is coming to dig you out."
+
+[[message]]
+text = "STATIC... automated broadcast: 'Reminder to all personnel: hearing scratching noises against the exterior hull is entirely normal. Please do not waste ammunition shooting at the drywall.'"
+
+[[message]]
+text = "Relay chatter: 'Did you see what happened to the guy in J9? Left his airlock unlatched for ten seconds. Took three days to scrape the native mold out of his kitchen.'"
+
+[[message]]
+text = "Corporate HR announcement: Due to budgeting constraints, 'Severe Psychological Isolation' has been reclassified as an operational perk. Enjoy the quiet time, workers."
+
+[[message]]
+text = "STATIC... 'Attention all sectors, if you find a stray harvest drone painted neon pink, it’s mine. The routing logic went rogue and it climbed a crater wall three days ago. Reward is two crates of radishes.'"
+
+[[message]]
+text = "Kovacs personal log - open channel: The ration bars this month taste like compressed drywall and despair. If anyone manages to grow a strawberry down there, I'll trade you a pristine wrench for it."
+
+[[message]]
+text = "Olathian Agricultural Board: Food stores are at 33%. Remember, every cabbage you fail to harvest is a personal insult to the logistics coordinators upstairs."
+
+[[message]]
+text = "STATIC... faint crying on the open frequency... followed by a brief, heavy sigh... 'Week {week}. Another potato sprouted. Hurray.'"
+
+[[message]]
+text = "Corporate Safety Memo: Do not feed the local fauna. Even if they look hungry. Even if they look like they just want a scrap of meat. They don't want a scrap, they want the whole farmer."
+
+[[message]]
+text = "STATIC... overheard on frequency 98.4: '...so I told him, if the oxygen recycler is making a wet coughing sound, you just kick it until it stops. Works every time.'"
+
+[[message]]
+text = "Security Alert: Increased spore counts detected in the low-lying ridges. Check your suit filters unless you want Olathian lichen blooming in your lungs."
+
+[[message]]
+text = "Kovacs here. To whoever is broadcasting that ancient Earth country music on the emergency relay channel: cut it out. The bass is vibrating my console and I'm trying to nap."
+
+[[message]]
+text = "STATIC... 'Hey, 4J, you copy? If you see a swarm migrating south toward your grid, you might want to double-check your wall HP. They looked... hungry. Good luck, pal.'"
+
+[[message]]
+text = "Corporate Memo: In the event of a total structural collapse, please ensure all corporate scrip balances are cleared before succumbing to decompression."
+
+[[message]]
+text = "Olathian Supply Desk: The next supply drop will be delayed by two weeks due to orbital debris. Please adjust your breathing and eating schedules accordingly."
+
+[[message]]
+text = "STATIC... operator chatter: 'My composter is making a high-pitched whistling noise. Is it supposed to do that? Last time it whistled, I lost half my eyebrows.'"
+
+[[message]]
+text = "Relay Broadcast: The stars are clear tonight. Still dead, still cold, still completely indifferent to whether your crops grow or not. Back to work."
+
+[[message]]
+text = "STATIC... automated distress loop: 'Sector M2 is currently experiencing a critical biome failure. Thank you for your service to the colony. This message will repeat.'"
+
+[[message]]
+text = "Kovacs here. Just a reminder that I don't insurance-adjust your installations. If a bug chews through your power cables, that's between you and your maker."
+
+[[message]]
+text = "STATIC... 'Anyone else's harvest drones starting to twitch? Mine keeps spinning in circles and pointing its laser at the horizon. I think the dust got into its brain.'"
+
+[[message]]
+text = "Colony Progress Report: Week {week} registered. Congratulations to all operators still drawing breath. You've officially beaten the statistical survival average for this quarter."
+
+[[message]]
+text = "STATIC... open frequency: 'This is Operator Vance in Sector 3A. Did anyone else's automated water valves completely freeze up last night, or am I just lucky? If my radishes turn to ice pops, I'm logging a formal complaint.'"
+
+[[message]]
+text = "Relay chatter: 'Hey, has anyone heard from the girl over in Sector 6C lately? Her automated beacon has been broadcasting a code for 'excessive fertilizer storage' for four days. I hope she didn't blow herself up.'"
+
+[[message]]
+text = "STATIC... overheard: '...I'm telling you, 4J has it easy over there. My sector is seventy percent jagged basalt and thirty percent active sinkholes. I have to anchor my domes with titanium cables just so they don't slide into a ravine.'"
+
+[[message]]
+text = "Corporate HR Automated Bulletin: 'Reminder to all contractors: Staring directly into the Olathian horizon during sunset has been shown to cause temporary spatial disorientation. Any time lost to existential dread will be docked from your weekly scrip.'"
+
+[[message]]
+text = "STATIC... automated system alert: 'Error Code 404: Automated Morale Booster file not found. Please log into your terminal and manually simulate a positive attitude. Thank you for your service.'"
+
+[[message]]
+text = "Corporate Procurement Notice: 'Due to a logistics sorting error, the next three supply crates labeled \"High-Grade Sentry Components\" actually contain industrial-sized barrels of synthetic syrup. We apologize for the inconvenience. Adjust recipes accordingly.'"
+
+[[message]]
+text = "Olathian Planetary Seismology: 'Minor tectonic shifting detected along the Sector 4J fault lines. Please ensure your storage silos are leveled. We don't need ten tons of Spacetatoes rolling down the crater wall again.'"
+
+[[message]]
+text = "STATIC... 'Attention all sectors, we've got a solar flare bouncing off the atmospheric ion layer. Comms are going to sound like a garbage disposal for the next forty-eight hours. If you die, please do so loudly so the automated sensors pick it up.'"
+
+[[message]]
+text = "Relay advisory: 'Sustained sub-zero front moving across the plains. If you aren't running your habitat heater at maximum capacity, your nutrient pipes are going to turn into solid sludge. Don't say Kovacs didn't warn you.'"
