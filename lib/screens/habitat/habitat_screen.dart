@@ -707,14 +707,25 @@ class _SentriesSection extends StatelessWidget {
             final idx = entry.key;
             final s = entry.value;
             final nextLevel = s.level + 1;
+            final currentCfg = sentryLevels
+                .where((l) => l['level'] == s.level)
+                .firstOrNull;
             final nextCfg = sentryLevels
                 .where((l) => l['level'] == nextLevel)
                 .firstOrNull;
 
-            final costMetals = nextCfg?['cost_metals'] as int? ?? 0;
-            final costComponents = nextCfg?['cost_components'] as int? ?? 0;
-            final costChitin = nextCfg?['cost_chitin'] as int? ?? 0;
-            final costMycoculture = nextCfg?['cost_mycoculture'] as int? ?? 0;
+            // Upgrade cost = next tier's cost minus current tier's cost —
+            // you're upgrading an existing sentry, not building a new one
+            // from scratch, so you shouldn't pay the new tier's full price.
+            int delta(String key) {
+              final next = nextCfg?[key] as int? ?? 0;
+              final current = currentCfg?[key] as int? ?? 0;
+              return (next - current).clamp(0, next);
+            }
+            final costMetals = delta('cost_metals');
+            final costComponents = delta('cost_components');
+            final costChitin = delta('cost_chitin');
+            final costMycoculture = delta('cost_mycoculture');
             final powerDelta = nextCfg != null
                 ? (nextCfg['power_draw_kwh'] as int) - s.powerDraw
                 : 0;
@@ -760,7 +771,8 @@ class _SentriesSection extends StatelessWidget {
                       if (nextCfg != null)
                         GestureDetector(
                           onTap: canAfford
-                              ? () => _upgradeSentry(context, idx, s, nextCfg)
+                              ? () => _upgradeSentry(context, idx, s, nextCfg,
+                              costMetals, costComponents, costChitin, costMycoculture)
                               : () {
                             final parts = <String>[];
                             if (game.resources.metals < costMetals)
@@ -924,12 +936,8 @@ class _SentriesSection extends StatelessWidget {
   }
 
   void _upgradeSentry(BuildContext context, int idx,
-      LaserSentry sentry, Map<String, dynamic> cfg) {
-    final costMetals = cfg['cost_metals'] as int;
-    final costComponents = cfg['cost_components'] as int? ?? 0;
-    final costChitin = cfg['cost_chitin'] as int? ?? 0;
-    final costMycoculture = cfg['cost_mycoculture'] as int? ?? 0;
-
+      LaserSentry sentry, Map<String, dynamic> cfg,
+      int costMetals, int costComponents, int costChitin, int costMycoculture) {
     final upgraded = LaserSentry(
       id: sentry.id,
       level: cfg['level'] as int,

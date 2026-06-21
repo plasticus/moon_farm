@@ -110,6 +110,20 @@ class _WaterPurifierCard extends StatelessWidget {
     final nextLevel = level + 1;
     final nextConfig = levels.where((l) => l['level'] == nextLevel).firstOrNull;
 
+    // Live demand: sum of waterPerWeek across every currently-planted cell,
+    // across every dome — mirrors exactly what the bot-watering step in
+    // end_week_engine.dart checks against each week.
+    double demand = 0;
+    for (final dome in game.domes) {
+      for (final cell in dome.cells) {
+        if (cell.cropId == null) continue;
+        final crop = config.getCrop(cell.cropId!);
+        if (crop == null) continue;
+        demand += crop.waterPerWeek;
+      }
+    }
+    final net = output - demand;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -132,6 +146,13 @@ class _WaterPurifierCard extends StatelessWidget {
                     Text(
                       '+${output}m³/wk passive  ·  ${currentPowerDraw == 0 ? '0 kW' : '$currentPowerDraw kW'}',
                       style: MFTextStyles.bodySmall.copyWith(color: MFColors.neonCyan),
+                    ),
+                    Text(
+                      'Dome draw: ${demand.toStringAsFixed(0)}m³/wk  ·  '
+                          '${net >= 0 ? 'net +' : 'net '}${net.toStringAsFixed(0)}m³/wk',
+                      style: MFTextStyles.bodySmall.copyWith(
+                        color: net >= 0 ? MFColors.neonGreen : MFColors.neonPink,
+                      ),
                     ),
                   ],
                 ),

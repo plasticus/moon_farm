@@ -10,6 +10,7 @@ import '../config/upgrade_config_service.dart';
 import '../config/raid_config_service.dart';
 import '../config/milestone_config_service.dart';
 import '../engine/radio_trigger_engine.dart';
+import '../config/radio_config_service.dart';
 
 /// Creates a brand new GameState for a given save slot, farm name, and difficulty.
 class GameFactory {
@@ -318,5 +319,178 @@ class GameFactory {
         weekAccepted: currentWeek,
       );
     }).toList();
+  }
+
+  // ─── Dev75 Preset ─────────────────────────────────────────────────────────
+  // A hand-built "week 75, about to start mycoculture" scenario for testing
+  // Vat/Reactor/T5-dome content without grinding a real playthrough.
+  //
+  // Built by taking a normal new game and overriding the fields that matter
+  // for the scenario, rather than constructing a GameState from scratch —
+  // keeps every field GameFactory.createNewGame already gets right (IDs,
+  // starting silo, etc.) instead of re-deriving them by hand.
+  //
+  // Deliberately NOT included: the Mycoculture Vat is at Mk1 (built, not
+  // upgraded) and the Mycovault Reactor is NOT unlocked — the whole point
+  // is to test the climb into mycoculture content, not start past it.
+  // Dome cells are left empty (ready to plant) rather than pre-seeded with
+  // growing crops, to keep the scenario simple to reason about.
+  static GameState createDev75Preset({required int slotNumber}) {
+    final baseline = createNewGame(
+      slotNumber: slotNumber,
+      farmName: 'Dev75 Mycoculture Test',
+      difficulty: Difficulty.normal,
+    );
+
+    const currentWeek = 75;
+
+    // 8x Tier 4 domes, each with a Mk4 Dome Bot, cells empty/ready to plant.
+    final domeBotMk4 = UpgradeConfigService.instance.domeBotLevels
+        .firstWhere((l) => l['level'] == 4);
+    final domes = List.generate(8, (i) {
+      final dome = _createNewDome(name: 'Dome ${i + 1}', tier: 4);
+      return dome.copyWith(
+        domeBot: DomeBot(
+          level: 4,
+          powerDraw: domeBotMk4['power_draw_kwh'] as int,
+        ),
+      );
+    });
+
+    // 10x Mk4 sentries — sourced from the LIVE operations_buildings config,
+    // not GameFactory.createSentry (that reads a dead legacy 3-level block
+    // and would give wrong/missing stats for Mk4+).
+    final sentryMk4 = (_config.getOperationsBuildings()['laser_sentry']['levels'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((l) => l['level'] == 4);
+    final sentries = List.generate(10, (i) => LaserSentry(
+      id: _uuid.v4(),
+      level: 4,
+      health: 100,
+      powerDraw: sentryMk4['power_draw_kwh'] as int,
+      damage: sentryMk4['damage'] as int,
+      fireRate: sentryMk4['fire_rate'] as int,
+      range: sentryMk4['range'] as int,
+    ));
+
+    // Refinery: every machine maxed at its OWN cap (composter caps at 3,
+    // not 10), water purifier at Mk7 specifically (not maxed — by design),
+    // Vat at Mk1 only.
+    int powerFor(String machineKey, int level) {
+      final cfg = UpgradeConfigService.instance.getMachineLevel(machineKey, level);
+      return cfg?['power_draw_kwh'] as int? ?? 0;
+    }
+    final refinery = Refinery(
+      id: 'refinery_dev75',
+      tier: 1,
+      powerDraw: 0,
+      unlockedRecipes: const ['compost_to_zsoil'],
+      machines: [
+        RefineryMachine(type: MachineType.composter, level: 3,
+            powerDraw: powerFor('composter', 3)),
+        RefineryMachine(type: MachineType.smelter, level: 10,
+            powerDraw: powerFor('smelter', 10)),
+        RefineryMachine(type: MachineType.zSoilProcessor, level: 10,
+            powerDraw: powerFor('z_soil_processor', 10)),
+        RefineryMachine(type: MachineType.glassFurnace, level: 10,
+            powerDraw: powerFor('glass_furnace', 10)),
+        RefineryMachine(type: MachineType.componentFabricator, level: 10,
+            powerDraw: powerFor('component_fabricator', 10)),
+        RefineryMachine(type: MachineType.mycocultureVat, level: 1,
+            powerDraw: powerFor('mycoculture_vat', 1)),
+      ],
+    );
+
+    // Power: domes+bots+sentries+refinery add up to roughly 1.45 MW at
+    // these levels. Provisioned generously above that — a mix, not just
+    // taps, since a real 75-week game would have kept its early arrays.
+    final powerSources = [
+      ...List.generate(9, (_) => createPowerSource(PowerSourceType.geothermalTap)),
+      ...List.generate(5, (_) => createPowerSource(PowerSourceType.solarArray)),
+      ...List.generate(3, (_) => createPowerSource(PowerSourceType.windTurbine)),
+    ];
+
+    // A few scavenger drones for ongoing raw-resource income.
+    final drones = List.generate(3, (i) {
+      final cfg = (_config.getOperationsBuildings()['mining_drone']['tiers'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((t) => t['tier'] == 3);
+      return MiningDrone(
+        id: _uuid.v4(),
+        tier: 3,
+        assignedResource: ['moon_dirt', 'ore', 'sand'][i % 3],
+        outputPerWeek: (cfg['output_per_week'] as num).toDouble(),
+        powerDraw: cfg['power_draw_kwh'] as int,
+      );
+    });
+
+    // Generous but not infinite resource stockpile — enough to actually
+    // start upgrading the Vat (now mycoculture-gated from Mk3 on) without
+    // it being a non-decision. mycoculture itself stays at 0 — that's the
+    // whole point of the scenario.
+    final resources = baseline.resources.copyWith(
+      starScrip: 60000,
+      metals: 8000,
+      components: 4000,
+      chemicals: 3000,
+      glass: 2500,
+      chitin: 1000,
+      mycoculture: 0,
+      moonDirt: 800,
+      sand: 800,
+      ore: 800,
+      water: 3000,
+      compost: 500,
+      zSoil: 500,
+      seeds: 60,
+      meat: 150,
+      moss: 300,
+    );
+
+    // All Normal-difficulty milestones marked complete.
+    final milestones = MilestoneConfigService.instance
+        .getMilestones(Difficulty.normal)
+        .map((m) => m.copyWith(status: MilestoneStatus.completed))
+        .toList();
+
+    // Back-fill radio triggers that would realistically have already fired
+    // by week 75, so the player isn't hit with a flood of 75 weeks' worth
+    // of catch-up messages the moment they end a week. Reactor discovery
+    // deliberately left unfired — matches the Vat being fresh/un-upgraded.
+    final radioTriggers = RadioConfigService.instance.triggers;
+    final firedTriggers = <String>{
+      'opening_transmission',
+      'discovery_mycoculture_vat',
+      'discovery_scrap_dealer',
+      for (final t in radioTriggers)
+        if (t['kind'] == 'week' && (t['value'] as num) <= currentWeek)
+          t['id'] as String,
+    }.toList();
+
+    final preset = baseline.copyWith(
+      currentWeek: currentWeek,
+      domes: domes,
+      laserSentries: sentries,
+      refineries: [refinery],
+      powerSources: powerSources,
+      miningDrones: drones,
+      resources: resources,
+      milestones: milestones,
+      totalVolumeDeliveredM3: 4500,
+      lifetimeScripEarned: 80000,
+      totalCropsHarvested: 600,
+      totalRaidsDefended: 15,
+      totalFaunaKilled: 800,
+      totalChitinCollected: 150,
+      totalCompostGenerated: 3000,
+      unlockedFeatures: const ['mycoculture_vat', 'scrap_dealer'],
+      firedRadioTriggers: firedTriggers,
+      relay: baseline.relay.copyWith(mood: 50, conversationDoneThisWeek: true),
+      nextShipWindowWeek: 76,
+      shipmentsThisWindow: 0,
+      waterPurifierLevel: 7,
+    );
+
+    return checkRadioTriggers(preset);
   }
 }

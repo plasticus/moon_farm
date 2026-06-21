@@ -26,8 +26,12 @@ void _powerSnack(BuildContext context, int needed, int surplus) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('⚡ Not enough power. Needs $needed kW, only $surplus kW spare. Build more power first.'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('⚡ Not enough power. Needs $needed kW, only $surplus kW spare. Build more power first.'),
+        ),
       ),
       duration: const Duration(seconds: 3),
     ),
@@ -40,8 +44,12 @@ void _missingSnack(BuildContext context, List<String> missingParts) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('Need: ${missingParts.join(', ')}'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('Need: ${missingParts.join(', ')}'),
+        ),
       ),
       duration: const Duration(seconds: 3),
     ),
@@ -252,8 +260,12 @@ class _PowerSection extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('${b['emoji']} ${b['name']} built! +${b['power_output_kwh']} kW'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('${b['emoji']} ${b['name']} built! +${b['power_output_kwh']} kW'),
+        ),
       )),
     );
   }
@@ -412,8 +424,12 @@ class _DroneSection extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('🤖 ${tier['name']} built!'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('🤖 ${tier['name']} built!'),
+        ),
       )),
     );
   }
@@ -543,8 +559,12 @@ class _UpgradeDroneButton extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('🤖 Drone upgraded to Mk${nextConfig['tier']}!'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('🤖 Drone upgraded to Mk${nextConfig['tier']}!'),
+        ),
       )),
     );
   }
@@ -871,8 +891,12 @@ class _BuildRow extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-          child: Text(missingText),
+          child: SizedBox(
+            width: double.infinity,
+            child: Text(missingText),
+          ),
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -1174,8 +1198,12 @@ class _DomeBotSection extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('🤖 Dome Bot Mk1 installed in ${dome.name}!'),
+        ),
       )),
     );
   }
@@ -1199,9 +1227,13 @@ class _DomeBotSection extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            child: Text(
-                '🤖 ${dome.name} bot upgraded to Mk${cfg['level']}!'),
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                  '🤖 ${dome.name} bot upgraded to Mk${cfg['level']}!'),
+            ),
           )),
     );
   }
@@ -1487,8 +1519,12 @@ class _DomeBuildSection extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                          child: Text('Need: ${missing.join(', ')}'),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Text('Need: ${missing.join(', ')}'),
+                          ),
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -1585,8 +1621,12 @@ class _DomeBuildSection extends StatelessWidget {
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                    child: Text('Need: ${_tierMissing(nextCfg)}'),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text('Need: ${_tierMissing(nextCfg)}'),
+                    ),
                   ),
                       duration: const Duration(seconds: 2)),
                 );
@@ -1693,8 +1733,12 @@ class _DomeBuildSection extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('🏠 ${dome.name} upgraded to Tier $newTier! Now grows T$newTier crops.'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('🏠 ${dome.name} upgraded to Tier $newTier! Now grows T$newTier crops.'),
+        ),
       )),
     );
   }
@@ -1721,8 +1765,12 @@ class _DomeBuildSection extends StatelessWidget {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: Text('🏠 Dome ${game.domes.length + 1} built!'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text('🏠 Dome ${game.domes.length + 1} built!'),
+        ),
       )),
     );
   }

@@ -588,6 +588,12 @@ component_fabricator:
 # ingredient for Tier 5 domes and the upper Sentry tiers. hyper_mycelium is
 # a SILO crop, not a Resources field — recipe_in/out here can reference
 # crop ids directly, same as any resource key.
+#
+# Upgrade costs (Mk2-10) are deliberately steep — multi-resource (metals,
+# components, chemicals, glass) and, from Mk3 onward, gated behind the
+# Vat's own mycoculture output. This is intentionally a slow, late-game
+# grind, not something reachable in full within the same session you
+# unlock it. power_draw_kwh intentionally NOT scaled with this change.
 
 mycoculture_vat:
   name: Mycoculture Vat
@@ -613,8 +619,10 @@ mycoculture_vat:
 
     - level: 2
       upgrade_cost:
-        metals: 30
-        components: 15
+        metals: 150
+        components: 70
+        chemicals: 40
+        glass: 20
       power_draw_kwh: 8
       recipe_in:
         chemicals: 5
@@ -631,9 +639,11 @@ mycoculture_vat:
 
     - level: 3
       upgrade_cost:
-        metals: 40
-        components: 20
-        chitin: 5
+        metals: 280
+        components: 130
+        chemicals: 80
+        glass: 40
+        mycoculture: 2
       power_draw_kwh: 12
       recipe_in:
         chemicals: 4
@@ -650,9 +660,11 @@ mycoculture_vat:
 
     - level: 4
       upgrade_cost:
-        metals: 60
-        components: 25
-        chitin: 8
+        metals: 450
+        components: 210
+        chemicals: 130
+        glass: 70
+        mycoculture: 4
       power_draw_kwh: 16
       recipe_in:
         chemicals: 4
@@ -669,9 +681,11 @@ mycoculture_vat:
 
     - level: 5
       upgrade_cost:
-        metals: 80
-        components: 30
-        chitin: 10
+        metals: 680
+        components: 320
+        chemicals: 200
+        glass: 110
+        mycoculture: 7
       power_draw_kwh: 20
       recipe_in:
         chemicals: 4
@@ -688,9 +702,11 @@ mycoculture_vat:
 
     - level: 6
       upgrade_cost:
-        metals: 100
-        components: 40
-        chitin: 12
+        metals: 980
+        components: 460
+        chemicals: 290
+        glass: 160
+        mycoculture: 11
       power_draw_kwh: 25
       recipe_in:
         chemicals: 3
@@ -707,9 +723,11 @@ mycoculture_vat:
 
     - level: 7
       upgrade_cost:
-        metals: 130
-        components: 50
-        chitin: 15
+        metals: 1380
+        components: 650
+        chemicals: 410
+        glass: 230
+        mycoculture: 16
       power_draw_kwh: 30
       recipe_in:
         chemicals: 3
@@ -726,9 +744,11 @@ mycoculture_vat:
 
     - level: 8
       upgrade_cost:
-        metals: 160
-        components: 60
-        chitin: 18
+        metals: 1900
+        components: 900
+        chemicals: 570
+        glass: 320
+        mycoculture: 22
       power_draw_kwh: 35
       recipe_in:
         chemicals: 3
@@ -745,9 +765,11 @@ mycoculture_vat:
 
     - level: 9
       upgrade_cost:
-        metals: 200
-        components: 80
-        chitin: 22
+        metals: 2550
+        components: 1200
+        chemicals: 770
+        glass: 430
+        mycoculture: 30
       power_draw_kwh: 40
       recipe_in:
         chemicals: 2
@@ -764,9 +786,11 @@ mycoculture_vat:
 
     - level: 10
       upgrade_cost:
-        metals: 250
-        components: 100
-        chitin: 25
+        metals: 3400
+        components: 1600
+        chemicals: 1030
+        glass: 570
+        mycoculture: 40
       power_draw_kwh: 45
       recipe_in:
         chemicals: 2

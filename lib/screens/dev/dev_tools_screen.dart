@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/game_factory.dart';
+import '../../database/database_helper.dart';
 
 class DevToolsScreen extends ConsumerWidget {
   const DevToolsScreen({super.key});
@@ -142,6 +144,25 @@ class DevToolsScreen extends ConsumerWidget {
                   '+10 Hyper-Mycelium (silo)',
                   MFColors.neonPink,
                   () => _addSilo(ref, game, 'hyper_mycelium', 10),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Pre-built scenarios — skip hours of real playthrough to reach
+          // a specific testing state. Loaded into a save slot, not the
+          // active session — back out to the main menu to play it.
+          _DevSection(
+            title: 'DEV PRESETS',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _DevButton(
+                  'Load Dev75 → Slot 4',
+                  MFColors.neonOrange,
+                  () => _loadDev75Preset(context),
                 ),
               ],
             ),
@@ -287,6 +308,21 @@ class DevToolsScreen extends ConsumerWidget {
     if (game.unlockedFeatures.contains(key)) return;
     ref.read(activeGameProvider.notifier).updateGameLocal(
       game.copyWith(unlockedFeatures: [...game.unlockedFeatures, key]),
+    );
+  }
+
+  Future<void> _loadDev75Preset(BuildContext context) async {
+    final preset = GameFactory.createDev75Preset(slotNumber: 4);
+    final db = DatabaseHelper();
+    await db.ensureSlotExists(4);
+    await db.saveGameState(preset);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: const Text('Dev75 preset saved to Slot 4. Back out to the main menu to load it.'),
+      ), duration: const Duration(seconds: 4)),
     );
   }
 

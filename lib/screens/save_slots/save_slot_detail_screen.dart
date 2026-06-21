@@ -402,7 +402,8 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
           const SizedBox(height: 8),
           _InfraCards(game: game),
           const SizedBox(height: 16),
-          if (game.pendingSales.isNotEmpty) ...[
+          if (game.pendingSales.any((s) =>
+          !(s.resourceId.startsWith('contract_') && s.scripValue == 0))) ...[
             const _SectionHeader('OUTGOING SHIPMENTS'),
             const SizedBox(height: 8),
             _PendingSalesCard(sales: game.pendingSales, deliveryWeek: game.nextShipWindowWeek, currentWeek: game.currentWeek),
@@ -666,6 +667,22 @@ class _PendingSalesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pickupLabel = 'pickup W$deliveryWeek';
 
+    // Partial/staged contract submissions ($0 reward, contract not yet
+    // complete) aren't shown here — progress is already visible under
+    // Active Contracts, so this would just be redundant clutter.
+    final visible = sales.where((s) {
+      final (label, _) = _typeFor(s.resourceId);
+      return !(label == 'contract' && s.scripValue == 0);
+    }).toList();
+
+    final scrapSales = visible.where((s) => _typeFor(s.resourceId).$2).toList();
+    final otherSales = visible.where((s) => !_typeFor(s.resourceId).$2).toList();
+    final rowCount = otherSales.length + (scrapSales.isEmpty ? 0 : 1);
+
+    final bulk = GameConfigService.instance.scrapDealerBulkAmount;
+    final scrapTotalScrip = scrapSales.fold(0, (sum, s) => sum + s.scripValue);
+    final scrapDamVolume = (scrapSales.length * bulk) / 1000;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -680,25 +697,30 @@ class _PendingSalesCard extends StatelessWidget {
             children: [
               const Text('📦', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 10),
-              Text('${sales.length} shipment${sales.length == 1 ? '' : 's'} ready for pickup',
+              Text('$rowCount shipment${rowCount == 1 ? '' : 's'} ready for pickup',
                   style: MFTextStyles.labelLarge),
             ],
           ),
           const SizedBox(height: 8),
-          ...sales.map((sale) {
-            final (label, isScrap) = _typeFor(sale.resourceId);
-            final volumeText = isScrap
-                ? '${(GameConfigService.instance.scrapDealerBulkAmount / 1000).toStringAsFixed(1)}dam³'
-                : '${sale.amount.toStringAsFixed(1)}m³';
+          if (scrapSales.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '${scrapDamVolume.toStringAsFixed(1)}dam³  ·  +$scrapTotalScrip 🎫  ·  scrap  ·  $pickupLabel',
+                style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
+              ),
+            ),
+          ...otherSales.map((sale) {
+            final (label, _) = _typeFor(sale.resourceId);
             // Food supply doesn't show a pickup week — it can only ever
             // ship on a Kovacs ship window to begin with, so the reminder
-            // is redundant. Scrap and contracts get it since those are
-            // queued ahead of time and the week is genuinely useful context.
+            // is redundant. Contracts get it since those are queued
+            // ahead of time and the week is genuinely useful context.
             final showWeek = label != 'food supply';
             return Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                '$volumeText  ·  +${sale.scripValue} 🎫  ·  $label'
+                '${sale.amount.toStringAsFixed(1)}m³  ·  +${sale.scripValue} 🎫  ·  $label'
                     '${showWeek ? '  ·  $pickupLabel' : ''}',
                 style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
               ),

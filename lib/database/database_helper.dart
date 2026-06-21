@@ -158,6 +158,23 @@ class DatabaseHelper {
     );
   }
 
+  // Creates a save_slots metadata row for a slot number beyond the normal
+  // 0-3 range if it doesn't already exist (e.g. slot 4 for dev presets).
+  // No-op if the slot already exists. updateSaveSlotMeta/saveGameState
+  // both use UPDATE, not upsert, so a slot has to exist as a row before
+  // either of those will actually write anything to it.
+  Future<void> ensureSlotExists(int slotNumber) async {
+    final db = await database;
+    final existing = await db.query(
+      'save_slots',
+      where: 'slot_number = ?',
+      whereArgs: [slotNumber],
+    );
+    if (existing.isEmpty) {
+      await db.insert('save_slots', {'slot_number': slotNumber, 'is_empty': 1});
+    }
+  }
+
   Future<void> clearSaveSlot(int slotNumber) async {
     final db = await database;
     await db.update(
