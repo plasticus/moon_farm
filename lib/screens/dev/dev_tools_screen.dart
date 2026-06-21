@@ -313,7 +313,7 @@ class DevToolsScreen extends ConsumerWidget {
 
   Future<void> _loadDev75Preset(BuildContext context) async {
     final preset = GameFactory.createDev75Preset(slotNumber: 4);
-    final db = DatabaseHelper();
+    final db = DatabaseHelper.instance;
     await db.ensureSlotExists(4);
     await db.saveGameState(preset);
     if (!context.mounted) return;
