@@ -162,7 +162,7 @@ class DevToolsScreen extends ConsumerWidget {
                 _DevButton(
                   'Load Dev75 → Slot 3',
                   MFColors.neonOrange,
-                  () => _loadDev75Preset(context),
+                  () => _loadDev75Preset(context, ref),
                 ),
               ],
             ),
@@ -311,11 +311,17 @@ class DevToolsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _loadDev75Preset(BuildContext context) async {
+  Future<void> _loadDev75Preset(BuildContext context, WidgetRef ref) async {
     final preset = GameFactory.createDev75Preset(slotNumber: 3);
     final db = DatabaseHelper.instance;
     await db.ensureSlotExists(3);
     await db.saveGameState(preset);
+    // saveGameState writes straight to the DB — the main menu's save-slot
+    // list is a cached AsyncNotifierProvider that has no way to know that
+    // happened, so without this it'll keep showing Slot 3 as it looked
+    // before this write (usually empty) until something else happens to
+    // refresh it.
+    await ref.read(saveSlotsProvider.notifier).refresh();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
