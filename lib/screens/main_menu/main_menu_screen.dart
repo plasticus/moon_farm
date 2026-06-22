@@ -3,12 +3,18 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
 import '../score/score_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
+import '../../database/database_helper.dart';
 import '../new_game/new_game_screen.dart';
 import '../save_slots/save_slot_detail_screen.dart';
 import '../../widgets/space_background.dart';
@@ -106,6 +112,8 @@ class MainMenuScreen extends ConsumerWidget {
                             letterSpacing: 2,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        _ExportImportSection(slots: slots),
                         const SizedBox(height: 12),
                         const _StoryBlurb(),
                       ],
@@ -264,6 +272,172 @@ class _GameTitle extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Export / Import ─────────────────────────────────────────────────────────
+
+class _ExportImportSection extends ConsumerWidget {
+  final List<SaveSlot> slots;
+  const _ExportImportSection({required this.slots});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manualSlots = slots.where((s) => s.slotNumber > 0 && !s.isEmpty).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SAVE DATA',
+            style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.textMuted, letterSpacing: 2)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _MenuButton(
+                label: '📤 Export Save',
+                color: MFColors.neonCyan,
+                onTap: manualSlots.isEmpty
+                    ? null
+                    : () => _showExportPicker(context, manualSlots),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MenuButton(
+                label: '📥 Import Save',
+                color: MFColors.neonGreen,
+                onTap: () => _doImport(context, ref),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showExportPicker(BuildContext context, List<SaveSlot> slots) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MFColors.surfaceElevated,
+        title: const Text('Export which save?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: slots.map((s) => ListTile(
+            title: Text(s.farmName ?? 'Slot ${s.slotNumber}',
+                style: MFTextStyles.bodyLarge),
+            subtitle: Text('W${s.currentWeek}  ·  ${s.difficulty?.name ?? ''}',
+                style: MFTextStyles.bodySmall),
+            onTap: () {
+              Navigator.of(ctx).pop();
+              _doExport(context, s.slotNumber);
+            },
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('CANCEL'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _doExport(BuildContext context, int slotNumber) async {
+    try {
+      final state = await DatabaseHelper.instance.loadGameState(slotNumber);
+      if (state == null) {
+        if (!context.mounted) return;
+        _snack(context, 'Save slot is empty.');
+        return;
+      }
+      final map = DatabaseHelper.instance.exportGameStateToMap(state);
+      final jsonStr = const JsonEncoder.withIndent('  ').convert(map);
+      final dir = await getTemporaryDirectory();
+      final farmName = (state.farmName).replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+      final file = File('${dir.path}/moonfarm_${farmName}_W${state.currentWeek}.json');
+      await file.writeAsString(jsonStr);
+      await SharePlus.instance.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Moon Farm Save — ${state.farmName}',
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      _snack(context, 'Export failed: $e');
+    }
+  }
+
+  Future<void> _doImport(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null) return;
+      final jsonStr = await File(path).readAsString();
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final state = DatabaseHelper.instance.importGameStateFromMap(map);
+      // Import into the slot recorded in the file, defaulting to slot 1
+      // if it's 0 (autosave) to avoid clobbering the autosave slot.
+      final targetSlot = state.slotNumber > 0 ? state.slotNumber : 1;
+      final importedState = state.copyWith(); // gives us the correct slotNumber
+      await DatabaseHelper.instance.ensureSlotExists(targetSlot);
+      await DatabaseHelper.instance.saveGameState(
+          targetSlot == state.slotNumber ? importedState
+              : importedState.copyWith(/* slot already set */));
+      await ref.read(saveSlotsProvider.notifier).refresh();
+      if (!context.mounted) return;
+      _snack(context,
+          '✅ Save imported into Slot $targetSlot (${state.farmName}, W${state.currentWeek})');
+    } catch (e) {
+      if (!context.mounted) return;
+      _snack(context, 'Import failed — file may be corrupted or from an incompatible version.');
+    }
+  }
+
+  void _snack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: SizedBox(width: double.infinity, child: Text(message)),
+      ), duration: const Duration(seconds: 4)),
+    );
+  }
+}
+
+class _MenuButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+  const _MenuButton({required this.label, required this.color, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: onTap != null ? 0.1 : 0.04),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: onTap != null ? 0.5 : 0.2)),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: MFTextStyles.bodySmall.copyWith(
+            color: onTap != null ? color : MFColors.textMuted,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

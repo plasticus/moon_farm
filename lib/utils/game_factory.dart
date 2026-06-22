@@ -479,7 +479,7 @@ class GameFactory {
       totalVolumeDeliveredM3: 4500,
       lifetimeScripEarned: 80000,
       totalCropsHarvested: 600,
-      totalRaidsDefended: 15,
+      totalRaidsDefended: 7,
       totalFaunaKilled: 800,
       totalChitinCollected: 150,
       totalCompostGenerated: 3000,

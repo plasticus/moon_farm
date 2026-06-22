@@ -158,6 +158,19 @@ class DatabaseHelper {
     );
   }
 
+  // ─── Export / Import ─────────────────────────────────────────────────────
+  // Public wrappers around the existing private serializers — lets the
+  // export/import UI on the main menu produce identical JSON to what gets
+  // stored in the SQLite game_states table, keeping the two paths in sync.
+
+  /// Serialise a GameState to a plain Map that can be JSON-encoded.
+  Map<String, dynamic> exportGameStateToMap(GameState state) =>
+      _gameStateToJson(state);
+
+  /// Reconstruct a GameState from a Map produced by exportGameStateToMap.
+  GameState importGameStateFromMap(Map<String, dynamic> map) =>
+      _gameStateFromJson(map);
+
   // Creates a save_slots metadata row for a slot number beyond the normal
   // 0-3 range if it doesn't already exist (e.g. slot 4 for dev presets).
   // No-op if the slot already exists. updateSaveSlotMeta/saveGameState

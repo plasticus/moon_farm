@@ -51,6 +51,13 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   int _chitinDropped = 0;
   int _faunaKilled = 0;
   int _faunaEscaped = 0;
+  // Tracks fauna ids that have already been counted as dead this session,
+  // preventing double-counting between the projectile kill path (which
+  // marks fauna isDead and calls _handleFaunaDeath immediately) and the
+  // movement loop's end-of-tick death sweep (which was calling
+  // _handleFaunaDeath again for the same already-dead fauna that hadn't
+  // been removed from _fauna yet).
+  final Set<String> _handledDeaths = {};
 
   // Spawn tracking
   late List<SpawnInstruction> _spawnQueue;
@@ -242,15 +249,17 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
         }
       }
 
-      updated.add(f.copyWith(
-        x: newX,
-        y: newY,
-        hp: newHp,
-        isStunned: isStunned,
-        isScattered: isScattered,
+      final updatedUnit = f.copyWith(
+        x: newX, y: newY, hp: newHp,
+        isStunned: isStunned, isScattered: isScattered,
         stunTimeRemaining: stunRemaining,
         timeSinceLastHit: f.timeSinceLastHit + dt,
-      ));
+      );
+      // Handle deaths from burn zone here so they're counted exactly once.
+      // The movement-loop death sweep below catches sentry/grenade kills
+      // that weren't yet removed from _fauna.
+      if (updatedUnit.isDead) _handleFaunaDeath(f);
+      updated.add(updatedUnit);
     }
 
     // Process deaths and distribute inventory resource rewards
@@ -264,6 +273,8 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   }
 
   void _handleFaunaDeath(FaunaUnit f) {
+    if (_handledDeaths.contains(f.id)) return;
+    _handledDeaths.add(f.id);
     _faunaKilled++;
     final raidConfig = RaidConfigService.instance;
 
@@ -1219,6 +1230,22 @@ class RaidResultScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // ── Ad banner placeholder (replace with AdMob widget when ready) ─
+            Container(
+              width: double.infinity,
+              height: 50,
+              color: MFColors.surface,
+              child: Center(
+                child: Text(
+                  'AD PLACEHOLDER',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.textMuted,
+                    letterSpacing: 2,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),

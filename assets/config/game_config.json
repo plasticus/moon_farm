@@ -1260,6 +1260,7 @@
         "cost_metals": 200,
         "cost_components": 80,
         "cost_mycoculture": 25,
+        "cost_scrip": 4000,
         "power_output_kwh": 300
       }
     },
