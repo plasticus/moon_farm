@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 import '../score/score_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/game_models.dart';
@@ -105,6 +104,8 @@ class MainMenuScreen extends ConsumerWidget {
                         ],
 
                         const SizedBox(height: 24),
+                        _ExportImportSection(slots: slots),
+                        const SizedBox(height: 24),
                         Text(
                           'THE STORY SO FAR',
                           style: MFTextStyles.bodySmall.copyWith(
@@ -112,8 +113,6 @@ class MainMenuScreen extends ConsumerWidget {
                             letterSpacing: 2,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _ExportImportSection(slots: slots),
                         const SizedBox(height: 12),
                         const _StoryBlurb(),
                       ],
@@ -361,7 +360,7 @@ class _ExportImportSection extends ConsumerWidget {
       final farmName = (state.farmName).replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
       final file = File('${dir.path}/moonfarm_${farmName}_W${state.currentWeek}.json');
       await file.writeAsString(jsonStr);
-      await SharePlus.instance.shareXFiles(
+      await Share.shareXFiles(
         [XFile(file.path)],
         subject: 'Moon Farm Save — ${state.farmName}',
       );
@@ -373,31 +372,76 @@ class _ExportImportSection extends ConsumerWidget {
 
   Future<void> _doImport(BuildContext context, WidgetRef ref) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
+      // Look for moonfarm_*.json files in common Android external storage locations
+      final searchDirs = <Directory>[];
+      try {
+        // Android Downloads folder
+        searchDirs.add(Directory('/storage/emulated/0/Downloads'));
+      } catch (_) {}
+      try {
+        final ext = await getExternalStorageDirectory();
+        if (ext != null) searchDirs.add(ext);
+      } catch (_) {}
+
+      final found = <File>[];
+      for (final dir in searchDirs) {
+        if (!dir.existsSync()) continue;
+        final files = dir.listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.json') &&
+                f.path.contains('moonfarm'))
+            .toList();
+        found.addAll(files);
+      }
+
+      if (found.isEmpty) {
+        if (!context.mounted) return;
+        _snack(context,
+            'No moonfarm_*.json files found in Downloads. Export a save first, then move the JSON file to your Downloads folder.');
+        return;
+      }
+
+      if (!context.mounted) return;
+      // More than one file — show a picker dialog
+      final File? chosen = found.length == 1
+          ? found.first
+          : await showDialog<File>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: MFColors.surfaceElevated,
+          title: const Text('Import which save?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: found.map((f) => ListTile(
+              title: Text(f.path.split('/').last,
+                  style: MFTextStyles.bodyLarge),
+              onTap: () => Navigator.of(ctx).pop(f),
+            )).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('CANCEL'),
+            ),
+          ],
+        ),
       );
-      if (result == null || result.files.isEmpty) return;
-      final path = result.files.single.path;
-      if (path == null) return;
-      final jsonStr = await File(path).readAsString();
+
+      if (chosen == null) return;
+      final jsonStr = await chosen.readAsString();
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       final state = DatabaseHelper.instance.importGameStateFromMap(map);
-      // Import into the slot recorded in the file, defaulting to slot 1
-      // if it's 0 (autosave) to avoid clobbering the autosave slot.
       final targetSlot = state.slotNumber > 0 ? state.slotNumber : 1;
-      final importedState = state.copyWith(); // gives us the correct slotNumber
       await DatabaseHelper.instance.ensureSlotExists(targetSlot);
-      await DatabaseHelper.instance.saveGameState(
-          targetSlot == state.slotNumber ? importedState
-              : importedState.copyWith(/* slot already set */));
+      await DatabaseHelper.instance.saveGameState(state);
       await ref.read(saveSlotsProvider.notifier).refresh();
       if (!context.mounted) return;
       _snack(context,
           '✅ Save imported into Slot $targetSlot (${state.farmName}, W${state.currentWeek})');
     } catch (e) {
       if (!context.mounted) return;
-      _snack(context, 'Import failed — file may be corrupted or from an incompatible version.');
+      _snack(context,
+          'Import failed — file may be corrupted or from an incompatible version.');
     }
   }
 

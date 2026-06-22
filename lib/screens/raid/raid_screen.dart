@@ -1069,11 +1069,37 @@ class _WallWidget extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         border: Border(top: BorderSide(color: color, width: 2)),
       ),
-      child: Center(
-        child: Text(
-          '⣿⣿⣿⣿⣿⣿⣿⣿',
-          style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 10),
-        ),
+      child: Column(
+        children: [
+          // ── Ad banner placeholder ─────────────────────────────────────
+          // Replace this Container with a BannerAd widget when AdMob is
+          // configured. Sits at the very top of the wall strip, above the
+          // HP braille bar, so it's visible but away from the tap field.
+          Container(
+            width: double.infinity,
+            height: 50,
+            color: Colors.black.withValues(alpha: 0.5),
+            child: Center(
+              child: Text(
+                'AD PLACEHOLDER',
+                style: TextStyle(
+                  color: Colors.white24,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+          ),
+          // ── Wall HP indicator ─────────────────────────────────────────
+          Expanded(
+            child: Center(
+              child: Text(
+                '⣿⣿⣿⣿⣿⣿⣿⣿',
+                style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

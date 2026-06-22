@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "monster.oaf.moon_farm"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
