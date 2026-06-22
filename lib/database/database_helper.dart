@@ -480,6 +480,7 @@ class DatabaseHelper {
     'robot_actions': s.robotActions,
     'events': s.events,
     'new_week': s.newWeek,
+    'new_radio_messages': s.newRadioMessages,
   };
 
   WeekSummary _weekSummaryFromJson(Map<String, dynamic> j) => WeekSummary(
@@ -499,6 +500,7 @@ class DatabaseHelper {
     robotActions: List<String>.from(j['robot_actions'] as List? ?? []),
     events: List<String>.from(j['events'] as List? ?? []),
     newWeek: (j['new_week'] as num).toInt(),
+    newRadioMessages: List<String>.from(j['new_radio_messages'] as List? ?? []),
   );
 
   Map<String, dynamic> _domeToJson(Dome d) => {

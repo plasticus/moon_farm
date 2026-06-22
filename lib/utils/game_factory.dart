@@ -489,6 +489,11 @@ class GameFactory {
       nextShipWindowWeek: 76,
       shipmentsThisWindow: 0,
       waterPurifierLevel: 7,
+      // first_raid_week (10) + 7 * normal interval (10) = 80 — matches the
+      // natural cadence a real week-75 playthrough would be on. Left unset
+      // before, which defaulted to the very first raid (week ~10) and
+      // caused a raid almost every single week until it caught back up.
+      nextRaidWeek: 80,
     );
 
     return checkRadioTriggers(preset);

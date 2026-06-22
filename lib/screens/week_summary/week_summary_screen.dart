@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
-import '../../config/game_config_service.dart';
 
 class WeekSummaryScreen extends ConsumerWidget {
   final WeekSummary summary;
@@ -202,7 +201,7 @@ class WeekSummaryScreen extends ConsumerWidget {
                   ],
 
                   // ── Radio transmission ───────────────────────────────────
-                  _RadioTipCard(week: summary.newWeek),
+                  _RadioTipCard(messages: summary.newRadioMessages),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -386,58 +385,51 @@ class _EventRow extends StatelessWidget {
 // ─── Radio Tip Card ───────────────────────────────────────────────────────────
 
 class _RadioTipCard extends StatelessWidget {
-  final int week;
-  const _RadioTipCard({required this.week});
+  final List<String> messages;
+  const _RadioTipCard({required this.messages});
 
   @override
   Widget build(BuildContext context) {
-    final tips = GameConfigService.instance.getRadioTips();
-    // Find the most recent tip at or before this week
-    Map<String, dynamic>? tip;
-    for (final t in tips) {
-      final tWeek = t['week'] as int;
-      if (tWeek <= week) {
-        if (tip == null || tWeek > (tip['week'] as int)) {
-          tip = t;
-        }
-      }
-    }
+    if (messages.isEmpty) return const SizedBox();
 
-    if (tip == null) return const SizedBox();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: messages.map((message) {
+        final isRaidWarning = message.contains('⚠️') ||
+            message.contains('Raid') ||
+            message.contains('raid') ||
+            message.contains('fauna');
 
-    final isRaidWarning = (tip['message'] as String).contains('⚠️') ||
-        (tip['message'] as String).contains('Raid') ||
-        (tip['message'] as String).contains('raid') ||
-        (tip['message'] as String).contains('fauna');
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: MFColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isRaidWarning
-              ? MFColors.neonPink.withValues(alpha: 0.5)
-              : MFColors.neonCyan.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(isRaidWarning ? '📻⚠️' : '📻',
-              style: const TextStyle(fontSize: 14)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              tip['message'] as String,
-              style: MFTextStyles.bodySmall.copyWith(
-                color: isRaidWarning ? MFColors.neonPink : MFColors.textSecondary,
-              ),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: MFColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isRaidWarning
+                  ? MFColors.neonPink.withValues(alpha: 0.5)
+                  : MFColors.neonCyan.withValues(alpha: 0.3),
             ),
           ),
-        ],
-      ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isRaidWarning ? '📻⚠️' : '📻',
+                  style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: isRaidWarning ? MFColors.neonPink : MFColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

@@ -1142,6 +1142,12 @@ class WeekSummary {
   final List<String> robotActions;
   final List<String> events; // full event log for the week
   final int newWeek;
+  // Radio messages that newly fired during THIS week's processing (pool
+  // pick + any radio_triggers.toml entries that fired this pass) — what
+  // the week summary screen should actually show, instead of a derived
+  // "most recent tip so far" lookup that would just repeat forever once
+  // there's nothing left to advance past.
+  final List<String> newRadioMessages;
 
   const WeekSummary({
     required this.week,
@@ -1158,6 +1164,7 @@ class WeekSummary {
     required this.robotActions,
     required this.events,
     required this.newWeek,
+    this.newRadioMessages = const [],
   });
 }
 

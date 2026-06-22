@@ -306,8 +306,19 @@ class EndWeekEngine {
       int earned = 0;
       for (final sale in s.pendingSales) {
         earned += sale.scripValue;
-        if (sale.amount <= 0) continue;
         final isContract = sale.resourceId.startsWith('contract_');
+        final isScrap = sale.resourceId.startsWith('scrap_');
+        if (isScrap) {
+          // Scrap sales carry no m³ (not freighter cargo), so they'd be
+          // silently skipped by the amount<=0 check below — log them here
+          // instead, before that check runs.
+          final idParts = sale.resourceId.split('_');
+          final resKey = idParts.length > 1 ? idParts[1] : 'scrap';
+          final bulk = _config.scrapDealerBulkAmount;
+          events.add('🔧 Scrap pickup: $bulk $resKey → +${sale.scripValue} 🎫');
+          continue;
+        }
+        if (sale.amount <= 0) continue;
         if (isContract) {
           events.add(sale.scripValue > 0
               ? '📦 Contract delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫'
@@ -751,6 +762,7 @@ class EndWeekEngine {
     );
 
     // ── Step 10: Radio transmission ───────────────────────────────────────
+    final radioFeedLengthBeforeThisWeek = s.radioFeed.length;
     final newRadio = _generateRadioTransmission(s);
     if (newRadio != null) {
       s = s.copyWith(
@@ -826,6 +838,16 @@ class EndWeekEngine {
     // in one pass, now that all of this week's state changes are settled.
     s = checkRadioTriggers(s);
 
+    // Whatever's new in radioFeed since the start of Step 10 (pool message
+    // + any triggers that fired this exact pass) is "this week's broadcast"
+    // for the week summary screen — not a TOML lookup of the most recent
+    // tip from however long ago, which would just repeat forever once
+    // there's nothing left to advance past.
+    final newRadioMessages = s.radioFeed
+        .skip(radioFeedLengthBeforeThisWeek)
+        .map((t) => t.message)
+        .toList();
+
     // ── Step 12: Build summary ────────────────────────────────────────────
     final summary = WeekSummary(
       week: state.currentWeek,
@@ -842,6 +864,7 @@ class EndWeekEngine {
       robotActions: robotActions,
       newWeek: nextWeek,
       events: events,
+      newRadioMessages: newRadioMessages,
     );
 
     return (s, summary);
