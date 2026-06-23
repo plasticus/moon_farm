@@ -231,20 +231,23 @@ class GameFactory {
   /// Target cargo volume (m³) for a contract, by crop tier.
   /// Higher-tier crops are worth more per m³, so contracts ask for more
   /// volume rather than a flat unit count — keeps later tiers meaningful.
-  static const Map<int, double> _contractTierTargetM3 = {
+  // Contract unit targets by dome tier — "how many seeds worth of crop"
+  // the colony wants. One seed = one harvest = one unit, so this maps
+  // directly to harvest count. Easier to reason about than m³ since crop
+  // volume varies wildly (Crystalline Beans 0.3m³ vs Fiber-Kelp 1.5m³).
+  static const Map<int, int> _contractTierTargetQty = {
     1: 10,
-    2: 25,
-    3: 50,
-    4: 100,
+    2: 20,
+    3: 30,
+    4: 40,
+    5: 50,
   };
 
-  static double _targetM3ForTier(int tier) {
-    if (_contractTierTargetM3.containsKey(tier)) return _contractTierTargetM3[tier]!;
-    // Future tiers (5+) keep doubling from the tier 4 baseline.
-    final highestKnown = _contractTierTargetM3.keys.reduce((a, b) => a > b ? a : b);
-    final highestValue = _contractTierTargetM3[highestKnown]!;
-    if (tier > highestKnown) return highestValue * (1 << (tier - highestKnown));
-    return _contractTierTargetM3[1]!;
+  static int _targetQtyForTier(int tier) {
+    if (_contractTierTargetQty.containsKey(tier)) return _contractTierTargetQty[tier]!;
+    // Tiers beyond 5: keep adding 10 per tier
+    final highest = _contractTierTargetQty.keys.reduce((a, b) => a > b ? a : b);
+    return _contractTierTargetQty[highest]! + ((tier - highest) * 10);
   }
 
   /// Generate 3 contract options based on what crops the player could plausibly have.
@@ -268,15 +271,14 @@ class GameFactory {
     final picked = shuffled.take(3).toList();
 
     return picked.map((crop) {
-      // Required cargo volume is fixed by crop tier (10/25/50/100m³...).
-      final targetM3 = _targetM3ForTier(crop.tier);
-      final baseQty = (targetM3 / crop.volumeM3).round().clamp(1, 999);
+      final baseQty = _targetQtyForTier(crop.tier);
 
-      // Market value = base price-per-m³ * the m³ actually being delivered.
-      final marketValue = crop.baseScrip * targetM3;
+      // Market value = what the player would get selling this quantity
+      // at Kovacs' regular rate: baseScrip (per m³) × units × m³ per unit.
+      final marketValue = crop.baseScrip * baseQty * crop.volumeM3;
 
-      // Contracts pay 15-25% above market as a bonus for committing early
-      final bonusPct = 0.15 + (_rng.nextDouble() * 0.10); // 15-25%
+      // Contracts pay 15-25% above market as a bonus for committing early.
+      final bonusPct = 0.15 + (_rng.nextDouble() * 0.10);
       final rewardScrip = (marketValue * (1 + bonusPct)).round();
       final bonusDisplay = '${(bonusPct * 100).round()}% above market';
 
@@ -284,9 +286,8 @@ class GameFactory {
         id: _uuid.v4(),
         title: '${crop.name} Order',
         description:
-        'The colony requests $baseQty units of ${crop.name} '
-            '(~${targetM3.round()}m³). Pays $bonusDisplay. '
-            'Deliver before next ship window.',
+        'The colony requests $baseQty units of ${crop.name}. '
+            'Pays $bonusDisplay.',
         cropId: crop.id,
         requiredAmount: baseQty,
         currentAmount: 0,
