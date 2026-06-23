@@ -143,9 +143,6 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
             },
           ),
 
-          // ── Robot status banner ──────────────────────────────────────────
-          if (dome.robot != null) _RobotBanner(dome: dome),
-
           // ── 3x3 Grid with slide animation ───────────────────────────────
           Expanded(
             child: SlideTransition(
@@ -780,65 +777,11 @@ class _ActionToolbar extends StatelessWidget {
   }
 }
 
-// ─── Robot Banner ─────────────────────────────────────────────────────────────
-
-class _RobotBanner extends StatelessWidget {
-  final Dome dome;
-  const _RobotBanner({required this.dome});
-
-  @override
-  Widget build(BuildContext context) {
-    final robot = dome.robot!;
-    final healthColor = MFStatusColor.forPercent(robot.healthPercent);
-    final capabilities = <String>[];
-    if (robot.canWater) capabilities.add('water');
-    if (robot.canFertilize) capabilities.add('fert');
-    if (robot.canHarvest) capabilities.add('harvest');
-    if (robot.canTurnSoil) capabilities.add('soil');
-    if (robot.canPlant) capabilities.add('plant');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: MFColors.surfaceElevated,
-      child: Row(
-        children: [
-          Text(
-            robot.state == RobotState.offline ? '💤' : '🤖',
-            style: const TextStyle(fontSize: 14),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${robot.robotName}  ·  ${capabilities.join(' · ')}',
-              style: MFTextStyles.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              border: Border.all(color: healthColor.withValues(alpha: 0.5)),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              '${robot.health}%',
-              style: MFTextStyles.bodySmall.copyWith(
-                color: healthColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Dome Grid ────────────────────────────────────────────────────────────────
 //
 // Visual layout:
 // [0][1][2]
-// [3][C][4]   C = center robot slot
+// [3][C][4]   C = center bot slot
 // [5][6][7]
 //
 // Cell positions 0-7 map to grid positions:
@@ -1085,7 +1028,6 @@ class _RobotCellState extends State<_RobotCell>
   @override
   Widget build(BuildContext context) {
     final bot = widget.dome.domeBot;
-    final robot = widget.dome.robot;
 
     if (bot != null) {
       final baseColor = mkColor(bot.level);
@@ -1147,40 +1089,26 @@ class _RobotCellState extends State<_RobotCell>
       );
     }
 
-    // Legacy robot or empty
+    // No bot installed — show empty center slot
     return Container(
       decoration: BoxDecoration(
         color: MFColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: robot == null
-              ? MFColors.borderSubtle
-              : MFStatusColor.forPercent(robot.healthPercent).withValues(alpha: 0.5),
-          width: 1.5,
-        ),
+        border: Border.all(color: MFColors.borderSubtle, width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            robot == null ? '⬜' : (robot.state == RobotState.offline ? '💤' : '🤖'),
-            style: const TextStyle(fontSize: 24),
-          ),
+          const Text('⬜', style: TextStyle(fontSize: 24)),
           const SizedBox(height: 2),
           Text(
-            robot == null ? 'NO BOT' : 'MK${robot.level}',
+            'NO BOT',
             style: MFTextStyles.bodySmall.copyWith(
               fontSize: 8,
-              color: robot == null ? MFColors.textMuted : MFColors.neonCyan,
+              color: MFColors.textMuted,
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (robot != null)
-            Text('${robot.health}%',
-                style: MFTextStyles.bodySmall.copyWith(
-                  fontSize: 8,
-                  color: MFStatusColor.forPercent(robot.healthPercent),
-                )),
         ],
       ),
     );

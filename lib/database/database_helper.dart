@@ -519,7 +519,6 @@ class DatabaseHelper {
   Map<String, dynamic> _domeToJson(Dome d) => {
     'id': d.id, 'name': d.name, 'tier': d.tier,
     'cells': d.cells.map(_cellToJson).toList(),
-    'robot': d.robot != null ? _robotToJson(d.robot!) : null,
     'dome_bot': d.domeBot != null ? _domeBotToJson(d.domeBot!) : null,
     'structural_health': d.structuralHealth, 'power_draw': d.powerDraw,
   };
@@ -527,7 +526,6 @@ class DatabaseHelper {
   Dome _domeFromJson(Map<String, dynamic> j) => Dome(
     id: j['id'] as String, name: j['name'] as String, tier: (j['tier'] as num).toInt(),
     cells: (j['cells'] as List).map((c) => _cellFromJson(c as Map<String, dynamic>)).toList(),
-    robot: j['robot'] != null ? _robotFromJson(j['robot'] as Map<String, dynamic>) : null,
     domeBot: j['dome_bot'] != null ? _domeBotFromJson(j['dome_bot'] as Map<String, dynamic>) : null,
     structuralHealth: (j['structural_health'] as num).toInt(),
     powerDraw: (j['power_draw'] as num).toInt(),
@@ -557,17 +555,6 @@ class DatabaseHelper {
     fertilizedThisWeek: j['fertilized'] as bool, healthPercent: (j['health'] as num).toInt(),
     fertilizeCount: (j['fertilize_count'] as num?)?.toInt() ?? 0,
     lastFertilizeWeek: (j['last_fertilize_week'] as num?)?.toInt() ?? -99,
-  );
-
-  Map<String, dynamic> _robotToJson(DomeRobot r) => {
-    'level': r.level, 'health': r.health, 'state': r.state.name,
-    'power_draw': r.powerDraw, 'default_crop_id': r.defaultCropId,
-  };
-
-  DomeRobot _robotFromJson(Map<String, dynamic> j) => DomeRobot(
-    level: (j['level'] as num).toInt(), health: (j['health'] as num).toInt(),
-    state: RobotState.values.firstWhere((e) => e.name == j['state']),
-    powerDraw: (j['power_draw'] as num).toInt(), defaultCropId: j['default_crop_id'] as String?,
   );
 
   Map<String, dynamic> _siloToJson(Silo s) => {

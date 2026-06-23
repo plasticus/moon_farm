@@ -11,36 +11,28 @@ dependencies:
     sdk: flutter
 
   # State management
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
+  flutter_riverpod: ^3.0.0
 
   # Database
   sqflite: ^2.3.3
   path: ^1.9.0
 
-  # Navigation
-  go_router: ^13.2.0
-
   # Utilities
   uuid: ^4.4.0
-  intl: ^0.19.0
+  intl: ^0.20.0
   shared_preferences: ^2.2.3
   yaml: ^3.1.2
   toml: ^0.18.0
-  share_plus: ^10.0.3
-  path_provider: ^2.1.4
 
-  # Ads placeholder (AdMob - configure later)
-#   google_mobile_ads: ^5.1.0
+  # Ads (AdMob - configure app ID and ad unit IDs before enabling)
+  # google_mobile_ads: ^5.1.0
 
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
-  riverpod_generator: ^2.4.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

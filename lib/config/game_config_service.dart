@@ -130,12 +130,6 @@ class GameConfigService {
     return _c['buildings']['dome']['new_dome_cost'] as Map<String, dynamic>;
   }
 
-  Map<String, dynamic> getRobotLevel(int level) {
-    final levels = _c['buildings']['dome_robot']['levels'] as List;
-    return levels.firstWhere((l) => (l as Map)['level'] == level)
-    as Map<String, dynamic>;
-  }
-
   Map<String, dynamic> getSiloTier(int tier) {
     final tiers = _c['buildings']['silo']['tiers'] as List;
     return tiers.firstWhere((t) => (t as Map)['tier'] == tier)

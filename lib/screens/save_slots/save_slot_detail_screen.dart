@@ -393,6 +393,63 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
         padding: const EdgeInsets.all(16),
         children: [
           _AdBannerPlaceholder(),
+          const SizedBox(height: 12),
+          // ── End Week button — at top so it's always reachable ───────────
+          if (game.lastWeekSummary != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => WeekSummaryScreen(summary: game.lastWeekSummary!),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.history, size: 16, color: MFColors.textMuted),
+                label: Text('View last week\'s summary',
+                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
+              ),
+            ),
+          // Raid week: show message directing to Habitat, gray out End Week
+          if (isRaidWeek)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: MFColors.neonPink.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: MFColors.neonPink.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  const Text('🚨', style: TextStyle(fontSize: 24)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('RAID IN PROGRESS',
+                            style: MFTextStyles.labelLarge.copyWith(
+                                color: MFColors.neonPink)),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Go to Habitat → Wall tab to defend before ending the week.',
+                          style: MFTextStyles.bodySmall.copyWith(
+                              color: MFColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          _EndWeekButton(
+            game: game,
+            isLoading: isLoading,
+            isRaidWeek: isRaidWeek,
+            onPressed: widget.onEndWeek,
+          ),
           const SizedBox(height: 16),
           const _SectionHeader('RESOURCES'),
           const SizedBox(height: 8),
@@ -432,64 +489,6 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
           ...game.milestones
               .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
               .map((m) => _MilestoneRow(milestone: m, game: game)),
-          const SizedBox(height: 16),
-          // Raid week: show message directing to Habitat, gray out End Week
-          if (isRaidWeek)
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: MFColors.neonPink.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: MFColors.neonPink.withValues(alpha: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  const Text('🚨', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('RAID IN PROGRESS',
-                            style: MFTextStyles.labelLarge.copyWith(
-                                color: MFColors.neonPink)),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Go to Habitat → Wall tab to defend before ending the week.',
-                          style: MFTextStyles.bodySmall.copyWith(
-                              color: MFColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (game.lastWeekSummary != null) ...[
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WeekSummaryScreen(summary: game.lastWeekSummary!),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.history, size: 16, color: MFColors.textMuted),
-                label: Text('View last week\'s summary',
-                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted)),
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
-          _EndWeekButton(
-            game: game,
-            isLoading: isLoading,
-            isRaidWeek: isRaidWeek,
-            onPressed: widget.onEndWeek,
-          ),
           const SizedBox(height: 24),
         ],
       ), // ListView
@@ -627,7 +626,7 @@ class _InfraCards extends StatelessWidget {
       ('🔵', 'Domes',    '${game.domes.length}'),
       ('⚡',  'Power',    '+${game.powerSurplus} kW'),
       ('🔫', 'Sentries', '${game.laserSentries.length}'),
-      ('🤖', 'Robots',   '${game.domes.where((d) => d.robot != null).length}'),
+      ('🤖', 'Bots',     '${game.domes.where((d) => d.domeBot != null).length}'),
     ];
 
     return Row(

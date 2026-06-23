@@ -3,12 +3,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'dart:io';
-import '../score/score_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import '../score/score_screen.dart';
 import '../../models/game_models.dart';
 import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
@@ -17,6 +15,9 @@ import '../../database/database_helper.dart';
 import '../new_game/new_game_screen.dart';
 import '../save_slots/save_slot_detail_screen.dart';
 import '../../widgets/space_background.dart';
+
+// Top-level so both MainMenuScreen and _ExportImportSection can reach it.
+const _launcher = MethodChannel('monster.oaf.moon_farm/launcher');
 
 class MainMenuScreen extends ConsumerWidget {
   const MainMenuScreen({super.key});
@@ -131,17 +132,27 @@ class MainMenuScreen extends ConsumerWidget {
                       'v${config.gameVersion}',
                       style: MFTextStyles.bodySmall,
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     GestureDetector(
-                      onTap: () {
-                        // URL launch handled in Phase 4 polish
-                      },
+                      onTap: () => _launchUrl('https://${config.websiteUrl}'),
                       child: Text(
                         config.websiteUrl,
                         style: MFTextStyles.bodySmall.copyWith(
                           color: MFColors.neonCyan,
                           decoration: TextDecoration.underline,
                           decorationColor: MFColors.neonCyan,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => _launchUrl('https://${config.websiteUrl}'),
+                      child: Text(
+                        'Privacy Policy',
+                        style: MFTextStyles.bodySmall.copyWith(
+                          color: MFColors.textMuted,
+                          decoration: TextDecoration.underline,
+                          decorationColor: MFColors.textMuted,
                         ),
                       ),
                     ),
@@ -153,6 +164,14 @@ class MainMenuScreen extends ConsumerWidget {
         ), // SafeArea
       ), // SpaceBackground
     );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      await _launcher.invokeMethod('launchUrl', {'url': url});
+    } catch (_) {
+      // If launch fails silently (e.g. no browser), do nothing
+    }
   }
 
   void _handleSlotTap(BuildContext context, WidgetRef ref, SaveSlot slot) {
@@ -356,14 +375,17 @@ class _ExportImportSection extends ConsumerWidget {
       }
       final map = DatabaseHelper.instance.exportGameStateToMap(state);
       final jsonStr = const JsonEncoder.withIndent('  ').convert(map);
-      final dir = await getTemporaryDirectory();
-      final farmName = (state.farmName).replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
-      final file = File('${dir.path}/moonfarm_${farmName}_W${state.currentWeek}.json');
-      await file.writeAsString(jsonStr);
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Moon Farm Save — ${state.farmName}',
-      );
+      final farmName = state.farmName.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+      final fileName = 'moonfarm_${farmName}_W${state.currentWeek}.json';
+      // Use MediaStore via MethodChannel — required for Android 10+ scoped
+      // storage. Direct File writes to /Downloads/ are blocked without
+      // WRITE_EXTERNAL_STORAGE, which Google no longer grants to new apps.
+      await _launcher.invokeMethod('writeToDownloads', {
+        'fileName': fileName,
+        'content': jsonStr,
+      });
+      if (!context.mounted) return;
+      _snack(context, '✅ Exported to Downloads/$fileName');
     } catch (e) {
       if (!context.mounted) return;
       _snack(context, 'Export failed: $e');
@@ -372,48 +394,32 @@ class _ExportImportSection extends ConsumerWidget {
 
   Future<void> _doImport(BuildContext context, WidgetRef ref) async {
     try {
-      // Look for moonfarm_*.json files in common Android external storage locations
-      final searchDirs = <Directory>[];
-      try {
-        // Android Downloads folder
-        searchDirs.add(Directory('/storage/emulated/0/Downloads'));
-      } catch (_) {}
-      try {
-        final ext = await getExternalStorageDirectory();
-        if (ext != null) searchDirs.add(ext);
-      } catch (_) {}
+      // Use MediaStore to list moonfarm_*.json files — direct filesystem
+      // access to /Downloads is blocked on Android 10+ scoped storage.
+      final rawList = await _launcher.invokeMethod<List>('listMoonfarmDownloads');
+      final files = (rawList ?? [])
+          .map((e) => Map<String, String>.from(e as Map))
+          .toList();
 
-      final found = <File>[];
-      for (final dir in searchDirs) {
-        if (!dir.existsSync()) continue;
-        final files = dir.listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.json') &&
-                f.path.contains('moonfarm'))
-            .toList();
-        found.addAll(files);
-      }
-
-      if (found.isEmpty) {
+      if (files.isEmpty) {
         if (!context.mounted) return;
         _snack(context,
-            'No moonfarm_*.json files found in Downloads. Export a save first, then move the JSON file to your Downloads folder.');
+            'No moonfarm_*.json files found in Downloads. Export a save first.');
         return;
       }
 
       if (!context.mounted) return;
-      // More than one file — show a picker dialog
-      final File? chosen = found.length == 1
-          ? found.first
-          : await showDialog<File>(
+      final Map<String, String>? chosen = files.length == 1
+          ? files.first
+          : await showDialog<Map<String, String>>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: MFColors.surfaceElevated,
           title: const Text('Import which save?'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: found.map((f) => ListTile(
-              title: Text(f.path.split('/').last,
+            children: files.map((f) => ListTile(
+              title: Text(f['name'] ?? '',
                   style: MFTextStyles.bodyLarge),
               onTap: () => Navigator.of(ctx).pop(f),
             )).toList(),
@@ -428,7 +434,10 @@ class _ExportImportSection extends ConsumerWidget {
       );
 
       if (chosen == null) return;
-      final jsonStr = await chosen.readAsString();
+      final jsonStr = await _launcher.invokeMethod<String>(
+        'readDownloadsFile', {'uri': chosen['uri']},
+      );
+      if (jsonStr == null) throw Exception('Could not read file');
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       final state = DatabaseHelper.instance.importGameStateFromMap(map);
       final targetSlot = state.slotNumber > 0 ? state.slotNumber : 1;

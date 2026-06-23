@@ -1628,68 +1628,6 @@
       }
     ]
   },
-  "dome_bot": {
-    "levels": [
-      {
-        "level": 1,
-        "name": "Dome Bot Mk1",
-        "description": "Auto-waters all cells each week.",
-        "actions": [
-          "water"
-        ],
-        "cost_metals": 20,
-        "cost_components": 0,
-        "cost_chemicals": 0,
-        "cost_chitin": 0,
-        "power_draw_kwh": 2
-      },
-      {
-        "level": 2,
-        "name": "Dome Bot Mk2",
-        "description": "Auto-waters + auto-harvests ready crops.",
-        "actions": [
-          "water",
-          "harvest"
-        ],
-        "cost_metals": 35,
-        "cost_components": 15,
-        "cost_chemicals": 0,
-        "cost_chitin": 0,
-        "power_draw_kwh": 3
-      },
-      {
-        "level": 3,
-        "name": "Dome Bot Mk3",
-        "description": "Auto-waters + harvests + fertilizes.",
-        "actions": [
-          "water",
-          "harvest",
-          "fertilize"
-        ],
-        "cost_metals": 60,
-        "cost_components": 30,
-        "cost_chemicals": 15,
-        "cost_chitin": 0,
-        "power_draw_kwh": 4
-      },
-      {
-        "level": 4,
-        "name": "Dome Bot Mk4",
-        "description": "Auto-waters + harvests + fertilizes + plants.",
-        "actions": [
-          "water",
-          "harvest",
-          "fertilize",
-          "plant"
-        ],
-        "cost_metals": 100,
-        "cost_components": 60,
-        "cost_chemicals": 30,
-        "cost_chitin": 20,
-        "power_draw_kwh": 6
-      }
-    ]
-  },
   "dome_building": {
     "dome_cost_scaling": {
       "base_scrip_cost": 500,

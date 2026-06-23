@@ -410,6 +410,7 @@ glass_furnace:
       power_draw_kwh: 35
       recipe_in:
         sand: 3
+        water: 1
       recipe_out:
         glass: 10
 
@@ -421,6 +422,7 @@ glass_furnace:
       power_draw_kwh: 40
       recipe_in:
         sand: 2
+        water: 1
       recipe_out:
         glass: 10
 
@@ -433,6 +435,7 @@ glass_furnace:
       power_draw_kwh: 45
       recipe_in:
         sand: 2
+        water: 1
       recipe_out:
         glass: 12
 
@@ -445,6 +448,7 @@ glass_furnace:
       power_draw_kwh: 50
       recipe_in:
         sand: 1
+        water: 1
       recipe_out:
         glass: 12
 

@@ -278,8 +278,11 @@ class _WallSection extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildRepairButton(context, wall, levels),
               ],
-              // Defend raid button
-              if (game.currentWeek >= game.nextRaidWeek - 1 && !game.raidDefendedThisWeek) ...[
+              // Defend raid button — only tappable on the actual raid week.
+              // On the warning week (nextRaidWeek - 1) it's a read-only
+              // info banner so the player can't accidentally trigger the raid
+              // a week early by tapping it.
+              if (game.currentWeek >= game.nextRaidWeek && !game.raidDefendedThisWeek) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -291,12 +294,24 @@ class _WallSection extends StatelessWidget {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => RaidScreen(game: game)),
                     ),
-                    child: Text(
-                      game.currentWeek >= game.nextRaidWeek
-                          ? '🚨 DEFEND RAID NOW'
-                          : '⚠️ RAID INCOMING NEXT WEEK',
-                      style: MFTextStyles.labelLarge.copyWith(color: MFColors.background),
-                    ),
+                    child: Text('🚨 DEFEND RAID NOW',
+                        style: MFTextStyles.labelLarge.copyWith(color: MFColors.background)),
+                  ),
+                ),
+              ] else if (game.currentWeek == game.nextRaidWeek - 1 && !game.raidDefendedThisWeek) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: MFColors.neonOrange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: MFColors.neonOrange.withValues(alpha: 0.5)),
+                  ),
+                  child: Text(
+                    '⚠️ RAID INCOMING NEXT WEEK',
+                    textAlign: TextAlign.center,
+                    style: MFTextStyles.labelLarge.copyWith(color: MFColors.neonOrange),
                   ),
                 ),
               ],

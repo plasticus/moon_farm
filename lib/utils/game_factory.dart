@@ -179,7 +179,6 @@ class GameFactory {
         8,
             (i) => CropCell(position: i, state: CropState.empty),
       ),
-      robot: null,
       structuralHealth: 100,
       powerDraw: powerDraw,
     );
@@ -199,16 +198,6 @@ class GameFactory {
       usedCubicMeters: 0,
       contents: {},
       powerDraw: tierConfig['power_draw_kwh'] as int,
-    );
-  }
-
-  static DomeRobot createRobot({required int level}) {
-    final levelConfig = _config.getRobotLevel(level);
-    return DomeRobot(
-      level: level,
-      health: 100,
-      state: RobotState.healthy,
-      powerDraw: levelConfig['power_draw_kwh'] as int,
     );
   }
 
@@ -236,19 +225,6 @@ class GameFactory {
       id: _uuid.v4(),
       type: type,
       outputKwh: config['power_output_kwh'] as int,
-    );
-  }
-
-  static LaserSentry createSentry({required int level}) {
-    final config = _config.getSentryLevel(level);
-    return LaserSentry(
-      id: _uuid.v4(),
-      level: level,
-      health: 100,
-      powerDraw: config['power_draw_kwh'] as int,
-      damage: config['damage'] as int,
-      fireRate: config['fire_rate'] as int,
-      range: config['range'] as int,
     );
   }
 
@@ -322,145 +298,117 @@ class GameFactory {
   }
 
   // ─── Dev75 Preset ─────────────────────────────────────────────────────────
-  // A hand-built "week 75, about to start mycoculture" scenario for testing
-  // Vat/Reactor/T5-dome content without grinding a real playthrough.
+  // Modelled from a real Normal-difficulty playthrough save: "Apex Acreage W75"
+  // exported by Corey on 2026-06-23. Values taken directly from that save.
   //
-  // Built by taking a normal new game and overriding the fields that matter
-  // for the scenario, rather than constructing a GameState from scratch —
-  // keeps every field GameFactory.createNewGame already gets right (IDs,
-  // starting silo, etc.) instead of re-deriving them by hand.
-  //
-  // Deliberately NOT included: the Mycoculture Vat is at Mk1 (built, not
-  // upgraded) and the Mycovault Reactor is NOT unlocked — the whole point
-  // is to test the climb into mycoculture content, not start past it.
-  // Dome cells are left empty (ready to plant) rather than pre-seeded with
-  // growing crops, to keep the scenario simple to reason about.
+  // Key scenario: 9 domes (8x T3, 1x T4), mixed sentries, no Mycoculture Vat
+  // yet, water purifier Mk6, 10x balanced Mk3 drones. Mycoculture unlock is
+  // the test target — the preset lands you right where the real grind begins.
   static GameState createDev75Preset({required int slotNumber}) {
     final baseline = createNewGame(
       slotNumber: slotNumber,
-      farmName: 'Dev75 Mycoculture Test',
+      farmName: 'Dev75 — Apex Acreage',
       difficulty: Difficulty.normal,
     );
 
     const currentWeek = 75;
 
-    // 8x Tier 4 domes, each with a Mk4 Dome Bot, cells empty/ready to plant.
-    final domeBotMk4 = UpgradeConfigService.instance.domeBotLevels
-        .firstWhere((l) => l['level'] == 4);
-    final domes = List.generate(8, (i) {
-      final dome = _createNewDome(name: 'Dome ${i + 1}', tier: 4);
-      return dome.copyWith(
-        domeBot: DomeBot(
-          level: 4,
-          powerDraw: domeBotMk4['power_draw_kwh'] as int,
-        ),
-      );
-    });
-
-    // 10x Mk4 sentries — sourced from the LIVE operations_buildings config,
-    // not GameFactory.createSentry (that reads a dead legacy 3-level block
-    // and would give wrong/missing stats for Mk4+).
-    final sentryMk4 = (_config.getOperationsBuildings()['laser_sentry']['levels'] as List)
-        .cast<Map<String, dynamic>>()
-        .firstWhere((l) => l['level'] == 4);
-    final sentries = List.generate(10, (i) => LaserSentry(
-      id: _uuid.v4(),
-      level: 4,
-      health: 100,
-      powerDraw: sentryMk4['power_draw_kwh'] as int,
-      damage: sentryMk4['damage'] as int,
-      fireRate: sentryMk4['fire_rate'] as int,
-      range: sentryMk4['range'] as int,
-    ));
-
-    // Refinery: every machine maxed at its OWN cap (composter caps at 3,
-    // not 10), water purifier at Mk7 specifically (not maxed — by design),
-    // Vat at Mk1 only.
     int powerFor(String machineKey, int level) {
       final cfg = UpgradeConfigService.instance.getMachineLevel(machineKey, level);
       return cfg?['power_draw_kwh'] as int? ?? 0;
     }
+
+    LaserSentry makeSentry(int level) {
+      final cfg = (_config.getOperationsBuildings()['laser_sentry']['levels'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((l) => l['level'] == level);
+      return LaserSentry(
+        id: _uuid.v4(), level: level, health: 100,
+        powerDraw: cfg['power_draw_kwh'] as int,
+        damage: cfg['damage'] as int,
+        fireRate: cfg['fire_rate'] as int,
+        range: cfg['range'] as int,
+      );
+    }
+
+    final domeBotMk4 = UpgradeConfigService.instance.domeBotLevels
+        .firstWhere((l) => l['level'] == 4);
+    Dome makeDome(String name, int tier) {
+      return _createNewDome(name: name, tier: tier).copyWith(
+        domeBot: DomeBot(level: 4, powerDraw: domeBotMk4['power_draw_kwh'] as int),
+      );
+    }
+
+    // 8x T3 + 1x T4, all Mk4 bots, cells empty
+    final domes = [
+      ...List.generate(8, (i) => makeDome('Dome ${i + 1}', 3)),
+      makeDome('Dome 9', 4),
+    ];
+
+    // Sentries from real save: Mk2 x2, Mk3 x1, Mk4 x1, Mk5 x1
+    final sentries = [
+      makeSentry(2), makeSentry(2),
+      makeSentry(3),
+      makeSentry(4),
+      makeSentry(5),
+    ];
+
+    // Refinery from real save — no Vat, that is what we are testing
     final refinery = Refinery(
-      id: 'refinery_dev75',
-      tier: 1,
-      powerDraw: 0,
+      id: 'refinery_dev75', tier: 1, powerDraw: 0,
       unlockedRecipes: const ['compost_to_zsoil'],
       machines: [
-        RefineryMachine(type: MachineType.composter, level: 3,
-            powerDraw: powerFor('composter', 3)),
+        RefineryMachine(type: MachineType.composter, level: 2,
+            powerDraw: powerFor('composter', 2)),
         RefineryMachine(type: MachineType.smelter, level: 10,
             powerDraw: powerFor('smelter', 10)),
-        RefineryMachine(type: MachineType.zSoilProcessor, level: 10,
-            powerDraw: powerFor('z_soil_processor', 10)),
+        RefineryMachine(type: MachineType.zSoilProcessor, level: 2,
+            powerDraw: powerFor('z_soil_processor', 2)),
         RefineryMachine(type: MachineType.glassFurnace, level: 10,
             powerDraw: powerFor('glass_furnace', 10)),
         RefineryMachine(type: MachineType.componentFabricator, level: 10,
             powerDraw: powerFor('component_fabricator', 10)),
-        RefineryMachine(type: MachineType.mycocultureVat, level: 1,
-            powerDraw: powerFor('mycoculture_vat', 1)),
       ],
     );
 
-    // Power: domes+bots+sentries+refinery add up to roughly 1.45 MW at
-    // these levels. Provisioned generously above that — a mix, not just
-    // taps, since a real 75-week game would have kept its early arrays.
+    // Power from real save: 11 solar, 8 wind, 5 geothermal
     final powerSources = [
-      ...List.generate(9, (_) => createPowerSource(PowerSourceType.geothermalTap)),
-      ...List.generate(5, (_) => createPowerSource(PowerSourceType.solarArray)),
-      ...List.generate(3, (_) => createPowerSource(PowerSourceType.windTurbine)),
+      ...List.generate(11, (_) => createPowerSource(PowerSourceType.solarArray)),
+      ...List.generate(8,  (_) => createPowerSource(PowerSourceType.windTurbine)),
+      ...List.generate(5,  (_) => createPowerSource(PowerSourceType.geothermalTap)),
     ];
 
-    // A few scavenger drones for ongoing raw-resource income.
-    final drones = List.generate(3, (i) {
-      final cfg = (_config.getOperationsBuildings()['mining_drone']['tiers'] as List)
-          .cast<Map<String, dynamic>>()
-          .firstWhere((t) => t['tier'] == 3);
-      return MiningDrone(
-        id: _uuid.v4(),
-        tier: 3,
-        assignedResource: ['moon_dirt', 'ore', 'sand'][i % 3],
-        outputPerWeek: (cfg['output_per_week'] as num).toDouble(),
-        powerDraw: cfg['power_draw_kwh'] as int,
-      );
-    });
+    // 10x Mk3 balanced drones (no assigned resource = balanced split)
+    final droneCfg = (_config.getOperationsBuildings()['mining_drone']['tiers'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((t) => t['tier'] == 3);
+    final drones = List.generate(10, (_) => MiningDrone(
+      id: _uuid.v4(), tier: 3,
+      outputPerWeek: (droneCfg['output_per_week'] as num).toDouble(),
+      powerDraw: droneCfg['power_draw_kwh'] as int,
+    ));
 
-    // Generous but not infinite resource stockpile — enough to actually
-    // start upgrading the Vat (now mycoculture-gated from Mk3 on) without
-    // it being a non-decision. mycoculture itself stays at 0 — that's the
-    // whole point of the scenario.
+    // Resources from real save (mycoculture stays at 0 — that is the goal)
     final resources = baseline.resources.copyWith(
-      starScrip: 60000,
-      metals: 8000,
-      components: 4000,
-      chemicals: 3000,
-      glass: 2500,
-      chitin: 1000,
-      mycoculture: 0,
-      moonDirt: 800,
-      sand: 800,
-      ore: 800,
-      water: 3000,
-      compost: 500,
-      zSoil: 500,
-      seeds: 60,
-      meat: 150,
-      moss: 300,
+      starScrip: 11990, metals: 4220, components: 53, chemicals: 2121,
+      glass: 2881, chitin: 291, mycoculture: 0,
+      moonDirt: 676, sand: 49, ore: 105, water: 1050,
+      compost: 9, zSoil: 149, seeds: 123, meat: 117, moss: 0,
     );
 
-    // All Normal-difficulty milestones marked complete.
+    // Milestones: m1-m6 complete, m7 pending — matches real save
     final milestones = MilestoneConfigService.instance
         .getMilestones(Difficulty.normal)
-        .map((m) => m.copyWith(status: MilestoneStatus.completed))
+        .map((m) => m.copyWith(
+          status: m.id == 'm7' ? MilestoneStatus.pending : MilestoneStatus.completed,
+        ))
         .toList();
 
-    // Back-fill radio triggers that would realistically have already fired
-    // by week 75, so the player isn't hit with a flood of 75 weeks' worth
-    // of catch-up messages the moment they end a week. Reactor discovery
-    // deliberately left unfired — matches the Vat being fresh/un-upgraded.
+    // Radio: back-fill week triggers up to W75, scrap_dealer discovered.
+    // Mycoculture triggers NOT fired (not unlocked yet in real save).
     final radioTriggers = RadioConfigService.instance.triggers;
     final firedTriggers = <String>{
       'opening_transmission',
-      'discovery_mycoculture_vat',
       'discovery_scrap_dealer',
       for (final t in radioTriggers)
         if (t['kind'] == 'week' && (t['value'] as num) <= currentWeek)
@@ -476,23 +424,19 @@ class GameFactory {
       miningDrones: drones,
       resources: resources,
       milestones: milestones,
-      totalVolumeDeliveredM3: 4500,
-      lifetimeScripEarned: 80000,
-      totalCropsHarvested: 600,
+      siloInventory: {'crystalline_beans': 82.9},
+      totalVolumeDeliveredM3: 2074.75,
+      totalCropsHarvested: 383,
       totalRaidsDefended: 7,
-      totalFaunaKilled: 800,
-      totalChitinCollected: 150,
-      totalCompostGenerated: 3000,
-      unlockedFeatures: const ['mycoculture_vat', 'scrap_dealer'],
+      totalFaunaKilled: 3013,
+      totalChitinCollected: 684,
+      totalCompostGenerated: 0,
+      unlockedFeatures: const ['scrap_dealer'],
       firedRadioTriggers: firedTriggers,
-      relay: baseline.relay.copyWith(mood: 50, conversationDoneThisWeek: true),
+      relay: baseline.relay.copyWith(mood: 99, conversationDoneThisWeek: false),
       nextShipWindowWeek: 76,
       shipmentsThisWindow: 0,
-      waterPurifierLevel: 7,
-      // first_raid_week (10) + 7 * normal interval (10) = 80 — matches the
-      // natural cadence a real week-75 playthrough would be on. Left unset
-      // before, which defaulted to the very first raid (week ~10) and
-      // caused a raid almost every single week until it caught back up.
+      waterPurifierLevel: 6,
       nextRaidWeek: 80,
     );
 

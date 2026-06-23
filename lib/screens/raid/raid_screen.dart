@@ -73,7 +73,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   final _rng = Random();
   late Size _fieldSize;
 
-  static const double _wallY = 0.88;
+  static const double _wallY = 0.82;
   static const double _sentryY = 0.75;
 
   @override
@@ -1069,37 +1069,22 @@ class _WallWidget extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         border: Border(top: BorderSide(color: color, width: 2)),
       ),
-      child: Column(
-        children: [
-          // ── Ad banner placeholder ─────────────────────────────────────
-          // Replace this Container with a BannerAd widget when AdMob is
-          // configured. Sits at the very top of the wall strip, above the
-          // HP braille bar, so it's visible but away from the tap field.
-          Container(
-            width: double.infinity,
-            height: 50,
-            color: Colors.black.withValues(alpha: 0.5),
-            child: Center(
-              child: Text(
-                'AD PLACEHOLDER',
-                style: TextStyle(
-                  color: Colors.white24,
-                  fontSize: 10,
-                  letterSpacing: 2,
-                ),
-              ),
+      // The entire wall strip is the ad slot. HP % is already shown in the
+      // top-bar stat row, so no need to duplicate it here. Replace this
+      // Container with a BannerAd widget when AdMob is configured.
+      child: Container(
+        width: double.infinity,
+        color: Colors.black.withValues(alpha: 0.5),
+        child: Center(
+          child: Text(
+            'AD PLACEHOLDER',
+            style: TextStyle(
+              color: Colors.white24,
+              fontSize: 10,
+              letterSpacing: 2,
             ),
           ),
-          // ── Wall HP indicator ─────────────────────────────────────────
-          Expanded(
-            child: Center(
-              child: Text(
-                '⣿⣿⣿⣿⣿⣿⣿⣿',
-                style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 10),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

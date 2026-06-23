@@ -304,18 +304,16 @@ class EndWeekEngine {
     // ── Step 1: Process pending sales (ship window weeks only) ───────────────
     if (s.pendingSales.isNotEmpty && s.isShipWindowOpen) {
       int earned = 0;
+      int scrapSaleCount = 0;
+      int scrapTotalScrip = 0;
+
       for (final sale in s.pendingSales) {
         earned += sale.scripValue;
         final isContract = sale.resourceId.startsWith('contract_');
         final isScrap = sale.resourceId.startsWith('scrap_');
         if (isScrap) {
-          // Scrap sales carry no m³ (not freighter cargo), so they'd be
-          // silently skipped by the amount<=0 check below — log them here
-          // instead, before that check runs.
-          final idParts = sale.resourceId.split('_');
-          final resKey = idParts.length > 1 ? idParts[1] : 'scrap';
-          final bulk = _config.scrapDealerBulkAmount;
-          events.add('🔧 Scrap pickup: $bulk $resKey → +${sale.scripValue} 🎫');
+          scrapSaleCount++;
+          scrapTotalScrip += sale.scripValue;
           continue;
         }
         if (sale.amount <= 0) continue;
@@ -326,6 +324,14 @@ class EndWeekEngine {
         } else {
           events.add('📦 Shipment delivered: ${sale.amount.toStringAsFixed(1)}m³ → +${sale.scripValue} 🎫');
         }
+      }
+
+      // Combine all scrap pickups into one grouped line using dam³,
+      // matching the dashboard Outgoing Shipments display.
+      if (scrapSaleCount > 0) {
+        final bulk = _config.scrapDealerBulkAmount;
+        final totalDam = (scrapSaleCount * bulk / 1000).toStringAsFixed(1);
+        events.add('🔧 Scrap pickup: ${totalDam}dam³ → +$scrapTotalScrip 🎫');
       }
       // Migration safety net: older saves may still be carrying a
       // pre-existing pendingContractScrip balance from before contract
@@ -346,132 +352,9 @@ class EndWeekEngine {
       resourceChanges['star_scrip'] = earned.toDouble();
     }
 
-    // ── Step 2: Robot actions ──────────────────────────────────────────────
-    final updatedDomesAfterRobots = <Dome>[];
-    var resourcesAfterRobots = s.resources;
-    final siloUpdates = <String, double>{};  // robot harvests → silo
-
-    for (final dome in s.domes) {
-      if (dome.robot == null || dome.robot!.state == RobotState.offline) {
-        updatedDomesAfterRobots.add(dome);
-        continue;
-      }
-
-      final robot = dome.robot!;
-      var updatedCells = List<CropCell>.from(dome.cells);
-      final actions = <String>[];
-
-      for (int i = 0; i < updatedCells.length; i++) {
-        final cell = updatedCells[i];
-
-        // Water
-        if (robot.canWater && cell.state == CropState.growing && !cell.wateredThisWeek) {
-          final crop = _config.getCrop(cell.cropId ?? '');
-          if (crop != null && resourcesAfterRobots.water >= crop.waterPerWeek) {
-            updatedCells[i] = cell.copyWith(wateredThisWeek: true);
-            resourcesAfterRobots = resourcesAfterRobots.copyWith(
-              water: resourcesAfterRobots.water - crop.waterPerWeek,
-            );
-          }
-        }
-
-        // Fertilize
-        if (robot.canFertilize && cell.state == CropState.growing && !cell.fertilizedThisWeek) {
-          if (resourcesAfterRobots.compost >= 1) {
-            updatedCells[i] = cell.copyWith(fertilizedThisWeek: true);
-            resourcesAfterRobots = resourcesAfterRobots.copyWith(
-              compost: resourcesAfterRobots.compost - 1,
-            );
-          }
-        }
-
-        // Harvest ready crops → deposit to silo
-        if (robot.canHarvest && cell.state == CropState.ready) {
-          final cropId = cell.cropId!;
-          final crop = _config.getCrop(cropId);
-          if (crop != null) {
-            final yieldAmount = _cellYield(cell, crop);
-            if (crop.yieldsResource != null) {
-              resourcesAfterRobots = _addResource(resourcesAfterRobots,
-                  crop.yieldsResource!, crop.resourceYieldAmount * yieldAmount);
-            } else {
-              siloUpdates[cropId] = (siloUpdates[cropId] ?? 0) + yieldAmount;
-            }
-            resourcesAfterRobots = resourcesAfterRobots.copyWith(
-              compost: resourcesAfterRobots.compost + crop.compostYield,
-            );
-            cropsHarvested++;
-            actions.add('harvested ${crop.name}');
-          }
-          updatedCells[i] = cell.cleared();
-        }
-      }
-
-      // Plant empty cells (level 5 only)
-      if (robot.canPlant && robot.defaultCropId != null) {
-        final cropId = robot.defaultCropId!;
-        final crop = _config.getCrop(cropId);
-        if (crop != null && crop.domeTierRequired <= dome.tier) {
-          for (int i = 0; i < updatedCells.length; i++) {
-            if (updatedCells[i].state == CropState.empty &&
-                resourcesAfterRobots.seeds >= 1 &&
-                resourcesAfterRobots.zSoil >= 1) {
-              updatedCells[i] = CropCell(
-                position: i,
-                cropId: cropId,
-                state: CropState.growing,
-                weeksGrown: 0,
-                wateredThisWeek: false,
-                fertilizedThisWeek: false,
-                healthPercent: 100,
-              );
-              resourcesAfterRobots = resourcesAfterRobots.copyWith(
-                seeds: resourcesAfterRobots.seeds - 1,
-                zSoil: resourcesAfterRobots.zSoil - 1,
-              );
-              actions.add('planted ${crop.name}');
-            }
-          }
-        }
-      }
-
-      // Robot wear
-      final wearConfig = _config.getRobotLevel(robot.level);
-      final wearPerWeek = wearConfig['wear_per_week'] as int? ?? 10;
-      final newHealth = (robot.health - wearPerWeek).clamp(0, 100);
-      RobotState newRobotState = RobotState.healthy;
-      if (newHealth <= 0) {
-        newRobotState = RobotState.offline;
-        events.add('⚠️ ${dome.name} robot went offline — needs maintenance!');
-      } else if (newHealth <= 25) {
-        newRobotState = RobotState.critical;
-      } else if (newHealth <= 50) {
-        newRobotState = RobotState.warning;
-      }
-
-      final updatedRobot = robot.copyWith(health: newHealth, state: newRobotState);
-
-      if (actions.isNotEmpty) {
-        robotActions.add('${dome.name} bot: ${actions.join(', ')}');
-      }
-
-      updatedDomesAfterRobots.add(dome.copyWith(
-        cells: updatedCells,
-        robot: updatedRobot,
-      ));
-    }
-
-    // Merge robot harvest into silo inventory
-    final siloAfterRobots = Map<String, double>.from(s.siloInventory);
-    for (final entry in siloUpdates.entries) {
-      siloAfterRobots[entry.key] = (siloAfterRobots[entry.key] ?? 0) + entry.value;
-    }
-
-    s = s.copyWith(
-      domes: updatedDomesAfterRobots,
-      resources: resourcesAfterRobots,
-      siloInventory: siloAfterRobots,
-    );
+    // ── Step 2: Robot actions (removed) ───────────────────────────────────────
+    // DomeRobot (the legacy 5-level robot with health/wear) has been removed.
+    // Automation is handled by DomeBot (Steps 4b/4c).
 
     // ── Step 3 & 4: Crop growth + decay ───────────────────────────────────
     final updatedDomesAfterGrowth = <Dome>[];
@@ -892,7 +775,7 @@ class EndWeekEngine {
         case 'five_domes':
           shouldUnlock = s.domes.length >= 5;
         case 'robot_army':
-          shouldUnlock = s.domes.where((d) => d.robot != null && d.robot!.state != RobotState.offline).length >= 3;
+          shouldUnlock = s.domes.where((d) => d.domeBot != null).length >= 3;
         case 'compost_king':
           shouldUnlock = s.totalCompostGenerated >= 1000;
         case 'relay_friend':

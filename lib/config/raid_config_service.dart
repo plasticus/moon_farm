@@ -99,8 +99,6 @@ class RaidConfigService {
 
   int get faunaPerWeekDivisor => 3;
 
-  int get maxFaunaCount => 60;
-
   double get spawnIntervalBase =>
       (_scaling['spawn_interval_base'] as num?)?.toDouble() ?? 3.0;
 

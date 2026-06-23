@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'; // StateProvider moved to legacy in Riverpod 3
 import '../models/game_models.dart';
 import '../database/database_helper.dart';
 import '../config/game_config_service.dart';

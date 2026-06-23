@@ -12,8 +12,6 @@ enum GameStatus { active, terminated, won }
 
 enum CropState { empty, planted, growing, ready, dead }
 
-enum RobotState { none, healthy, warning, critical, offline }
-
 enum ResourceType {
   moonDirt,
   chemicals,
@@ -37,7 +35,6 @@ enum BuildingType { dome, silo, refinery, laserSentry, powerSource }
 enum TrophyStatus { locked, unlocked }
 
 enum ContractStatus { available, active, completed, failed }
-
 enum MilestoneStatus { pending, completed, failed, warned }
 
 // ─── Save Slot ────────────────────────────────────────────────────────────────
@@ -277,9 +274,6 @@ class GameState {
     int draw = 0;
     for (final dome in domes) {
       draw += dome.powerDraw;
-      if (dome.robot != null && dome.robot!.state != RobotState.offline) {
-        draw += dome.robot!.powerDraw;
-      }
       if (dome.domeBot != null) {
         draw += dome.domeBot!.powerDraw;
       }
@@ -431,7 +425,6 @@ class Dome {
   final String name;
   final int tier; // 1-5
   final List<CropCell> cells; // always 8 cells (positions 0-7, center reserved)
-  final DomeRobot? robot;
   final DomeBot? domeBot;
   final int structuralHealth; // 0-100
   final int powerDraw;
@@ -441,7 +434,6 @@ class Dome {
     required this.name,
     required this.tier,
     required this.cells,
-    this.robot,
     this.domeBot,
     required this.structuralHealth,
     required this.powerDraw,
@@ -467,7 +459,6 @@ class Dome {
     String? name,
     int? tier,
     List<CropCell>? cells,
-    DomeRobot? robot,
     DomeBot? domeBot,
     int? structuralHealth,
     int? powerDraw,
@@ -477,7 +468,6 @@ class Dome {
       name: name ?? this.name,
       tier: tier ?? this.tier,
       cells: cells ?? this.cells,
-      robot: robot,
       domeBot: domeBot ?? this.domeBot,
       structuralHealth: structuralHealth ?? this.structuralHealth,
       powerDraw: powerDraw ?? this.powerDraw,
@@ -542,59 +532,6 @@ class CropCell {
   CropCell cleared() {
     return const CropCell(position: 0, state: CropState.empty).copyWith(
       position: position,
-    );
-  }
-}
-
-// ─── Dome Robot ───────────────────────────────────────────────────────────────
-
-class DomeRobot {
-  final int level; // 1-5
-  final int health; // 0-100
-  final RobotState state;
-  final int powerDraw;
-  final String? defaultCropId; // for level 5 auto-plant
-
-  const DomeRobot({
-    required this.level,
-    required this.health,
-    required this.state,
-    required this.powerDraw,
-    this.defaultCropId,
-  });
-
-  bool get canWater => level >= 1;
-  bool get canFertilize => level >= 2;
-  bool get canHarvest => level >= 3;
-  bool get canTurnSoil => level >= 4;
-  bool get canPlant => level >= 5;
-
-  double get healthPercent => health / 100.0;
-
-  String get robotName {
-    switch (level) {
-      case 1: return 'Domebot Mk1';
-      case 2: return 'Domebot Mk2';
-      case 3: return 'Domebot Mk3';
-      case 4: return 'Domebot Mk4';
-      case 5: return 'Domebot Mk5';
-      default: return 'Domebot';
-    }
-  }
-
-  DomeRobot copyWith({
-    int? level,
-    int? health,
-    RobotState? state,
-    int? powerDraw,
-    String? defaultCropId,
-  }) {
-    return DomeRobot(
-      level: level ?? this.level,
-      health: health ?? this.health,
-      state: state ?? this.state,
-      powerDraw: powerDraw ?? this.powerDraw,
-      defaultCropId: defaultCropId ?? this.defaultCropId,
     );
   }
 }
@@ -1478,7 +1415,7 @@ class FaunaUnit {
   });
 
   bool get isDead => hp <= 0;
-  bool get isAtWall => y >= 0.85;
+  bool get isAtWall => y >= 0.81;
 
   FaunaUnit copyWith({
     double? hp,
