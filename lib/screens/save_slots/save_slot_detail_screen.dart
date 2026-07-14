@@ -18,6 +18,7 @@ import '../main_menu/main_menu_screen.dart';
 import '../relay/relay_screen.dart';
 import '../operations/operations_screen.dart';
 import '../habitat/habitat_screen.dart';
+import '../../widgets/ad_banner.dart';
 import '../refinery/refinery_screen.dart';
 import '../../widgets/space_background.dart';
 
@@ -392,8 +393,11 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
         children: [
-          _AdBannerPlaceholder(),
-          const SizedBox(height: 12),
+          const _SectionHeader('ADVERTISEMENT'),
+          const SizedBox(height: 8),
+          const Center(child: AdBannerWidget()),
+          const SizedBox(height: 16),
+          const Divider(color: MFColors.borderSubtle, height: 32),
           // ── End Week button — at top so it's always reachable ───────────
           if (game.lastWeekSummary != null)
             Align(
@@ -493,29 +497,6 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
         ],
       ), // ListView
     ); // SpaceBackground
-  }
-}
-
-class _AdBannerPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 52,
-      decoration: BoxDecoration(
-        color: MFColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: MFColors.borderSubtle),
-      ),
-      child: Center(
-        child: Text(
-          'AD BANNER — AdMob goes here',
-          style: MFTextStyles.bodySmall.copyWith(
-            color: MFColors.textMuted, fontSize: 10, letterSpacing: 1,
-          ),
-        ),
-      ),
-    );
   }
 }
 

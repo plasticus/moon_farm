@@ -18,6 +18,7 @@ import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../config/raid_config_service.dart';
 import '../../config/milestone_config_service.dart';
+import '../../widgets/ad_banner.dart';
 import '../score/score_screen.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
@@ -1069,22 +1070,14 @@ class _WallWidget extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         border: Border(top: BorderSide(color: color, width: 2)),
       ),
-      // The entire wall strip is the ad slot. HP % is already shown in the
-      // top-bar stat row, so no need to duplicate it here. Replace this
-      // Container with a BannerAd widget when AdMob is configured.
+      // The wall strip's height is a fixed fraction of the battlefield
+      // (see _wallY), not tied to HP — only the border color above shifts
+      // with damage — so it's safe to seat a real fixed-size banner ad
+      // here. HP % is already shown in the top-bar stat row.
       child: Container(
         width: double.infinity,
         color: Colors.black.withValues(alpha: 0.5),
-        child: Center(
-          child: Text(
-            'AD PLACEHOLDER',
-            style: TextStyle(
-              color: Colors.white24,
-              fontSize: 10,
-              letterSpacing: 2,
-            ),
-          ),
-        ),
+        child: const Center(child: AdBannerWidget()),
       ),
     );
   }
@@ -1241,22 +1234,7 @@ class RaidResultScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Ad banner placeholder (replace with AdMob widget when ready) ─
-            Container(
-              width: double.infinity,
-              height: 50,
-              color: MFColors.surface,
-              child: Center(
-                child: Text(
-                  'AD PLACEHOLDER',
-                  style: MFTextStyles.bodySmall.copyWith(
-                    color: MFColors.textMuted,
-                    letterSpacing: 2,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ),
+            const AdBannerWidget(),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),

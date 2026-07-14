@@ -24,8 +24,8 @@ dependencies:
   yaml: ^3.1.2
   toml: ^0.18.0
 
-  # Ads (AdMob - configure app ID and ad unit IDs before enabling)
-  # google_mobile_ads: ^5.1.0
+  # Ads (test ad units for now — swap for real AdMob app/unit IDs before publishing)
+  google_mobile_ads: ^9.0.0
 
   cupertino_icons: ^1.0.6
 

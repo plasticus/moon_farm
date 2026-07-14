@@ -9,11 +9,12 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- AdMob App ID — REPLACE with real ID before publishing -->
-        <!-- The value below is Google's test app ID, safe for development -->
+        <!-- Real Moon Farm AdMob App ID. Safe to ship as-is: ad unit IDs
+             (see lib/widgets/ad_banner.dart) control whether test or real
+             creatives are served, independent of this App ID. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-3075619018847314~8619750254"/>
 
         <activity
             android:name=".MainActivity"

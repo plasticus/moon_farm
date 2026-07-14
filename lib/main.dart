@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'theme/app_theme.dart';
 import 'config/game_config_service.dart';
 import 'config/upgrade_config_service.dart';
@@ -39,6 +40,10 @@ void main() async {
   await KovacsConfigService.instance.load();
   await MilestoneConfigService.instance.load();
   await RadioConfigService.instance.load();
+
+  // Manifest currently ships Google's public test App ID, so this always
+  // serves test ads — safe to leave running through dev/QA builds.
+  await MobileAds.instance.initialize();
 
   runApp(
     const ProviderScope(
