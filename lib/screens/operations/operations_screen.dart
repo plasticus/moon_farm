@@ -438,8 +438,8 @@ class _DroneSection extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: MFColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         side: BorderSide(color: MFColors.borderDefault),
       ),
       builder: (ctx) => _DroneAssignmentSheet(game: game, ref: ref),
@@ -696,7 +696,7 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
                   const SizedBox(width: 8),
                   Expanded(child: Text(label, style: MFTextStyles.bodyLarge)),
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: MFColors.neonPink),
+                    icon: Icon(Icons.remove_circle_outline, color: MFColors.neonPink),
                     onPressed: count > 0
                         ? () => setState(() {
                       _assignmentsByTier[_selectedTier]![key] = count - 1;
@@ -705,7 +705,7 @@ class _DroneAssignmentSheetState extends State<_DroneAssignmentSheet> {
                   ),
                   Text('$count', style: MFTextStyles.labelLarge),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline, color: MFColors.neonGreen),
+                    icon: Icon(Icons.add_circle_outline, color: MFColors.neonGreen),
                     onPressed: assigned < total
                         ? () => setState(() {
                       _assignmentsByTier[_selectedTier]![key] =
@@ -1262,8 +1262,8 @@ class _DomeBotSection extends StatelessWidget {
       context: context,
       backgroundColor: MFColors.surface,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         side: BorderSide(color: MFColors.borderDefault),
       ),
       builder: (_) => _BotConfigSheet(
@@ -1378,7 +1378,7 @@ class _BotConfigSheet extends StatelessWidget {
                                 ),
                               ),
                               if (isNoneSelected)
-                                const Text('✓', style: TextStyle(
+                                Text('✓', style: TextStyle(
                                     color: MFColors.neonOrange, fontSize: 16)),
                             ],
                           ),
@@ -1421,7 +1421,7 @@ class _BotConfigSheet extends StatelessWidget {
                               Expanded(child: Text(crop.name,
                                   style: MFTextStyles.bodyLarge)),
                               if (isSelected)
-                                const Text('✓', style: TextStyle(
+                                Text('✓', style: TextStyle(
                                     color: MFColors.neonGreen, fontSize: 16)),
                             ],
                           ),

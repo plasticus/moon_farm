@@ -32,7 +32,7 @@ Future<bool> confirmIfNeeded(
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
-          child: Text(confirmLabel, style: const TextStyle(color: MFColors.neonPink)),
+          child: Text(confirmLabel, style: TextStyle(color: MFColors.neonPink)),
         ),
       ],
     ),

@@ -67,7 +67,7 @@ class _HabitatTabBar extends StatelessWidget {
     ];
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Row(
@@ -148,9 +148,9 @@ class _RadioSection extends StatelessWidget {
     messages.sort((a, b) => b.week.compareTo(a.week));
 
     return messages.isEmpty
-        ? const Center(
+        ? Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Text(
           '📻\n\nNo transmissions yet.',
           style: MFTextStyles.bodyMedium,

@@ -49,7 +49,7 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     final gameAsync = ref.watch(activeGameProvider);
 
     return gameAsync.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: MFColors.background,
         body: Center(child: CircularProgressIndicator(color: MFColors.neonCyan)),
       ),
@@ -59,7 +59,7 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
       ),
       data: (game) {
         if (game == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: MFColors.background,
             body: Center(child: Text('No game loaded.')),
           );
@@ -118,15 +118,15 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                         iconColor: MFColors.textSecondary,
                         padding: EdgeInsets.zero,
                         itemBuilder: (_) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'save',
                             child: Text('Save Game', style: MFTextStyles.bodyLarge),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'settings',
                             child: Text('Settings', style: MFTextStyles.bodyLarge),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'mainmenu',
                             child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
                           ),
@@ -884,7 +884,7 @@ class _EndWeekButton extends StatelessWidget {
         ),
         onPressed: (isLoading || isRaidWeek) ? null : onPressed,
         child: isLoading
-            ? const CircularProgressIndicator(color: MFColors.background, strokeWidth: 2)
+            ? CircularProgressIndicator(color: MFColors.background, strokeWidth: 2)
             : Text(
           '⏭  END WEEK ${game.currentWeek}',
           style: MFTextStyles.labelLarge.copyWith(

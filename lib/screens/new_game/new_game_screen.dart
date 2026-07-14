@@ -92,7 +92,7 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
       appBar: AppBar(
         title: const Text('NEW GAME'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MFColors.textSecondary),
+          icon: Icon(Icons.arrow_back, color: MFColors.textSecondary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -135,7 +135,7 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.shuffle, color: MFColors.neonCyan, size: 14),
+                      Icon(Icons.shuffle, color: MFColors.neonCyan, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         'SUGGEST',
@@ -192,7 +192,7 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
               child: ElevatedButton(
                 onPressed: _canCreate ? _createGame : null,
                 child: _isCreating
-                    ? const SizedBox(
+                    ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(

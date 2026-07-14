@@ -459,7 +459,7 @@ class _KovacsHeader extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Row(
@@ -545,7 +545,7 @@ class _RelayTabBar extends StatelessWidget {
     ];
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Row(
@@ -611,7 +611,7 @@ class _ConversationTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (conversation == null) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(color: MFColors.neonCyan, strokeWidth: 2),
       );
     }
@@ -724,7 +724,7 @@ class _PlayerOptions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Column(
@@ -759,7 +759,7 @@ class _ConvComplete extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: MFColors.borderSubtle)),
         color: MFColors.surfaceElevated,
       ),
@@ -1305,7 +1305,7 @@ class _ShipmentSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: MFColors.borderSubtle)),
         color: MFColors.surface,
       ),
@@ -1347,16 +1347,16 @@ class _ShipmentSummary extends StatelessWidget {
 class _EmptySiloMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('📦', style: TextStyle(fontSize: 48)),
-            SizedBox(height: 12),
+            const Text('📦', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
             Text('Silo is empty.', style: MFTextStyles.headlineMedium),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Harvest crops in your domes,\nthen come back to ship them.',
               style: MFTextStyles.bodyMedium,

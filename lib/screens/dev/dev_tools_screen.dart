@@ -27,7 +27,7 @@ class DevToolsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('⚙️ DEV TOOLS'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MFColors.textSecondary),
+          icon: Icon(Icons.arrow_back, color: MFColors.textSecondary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

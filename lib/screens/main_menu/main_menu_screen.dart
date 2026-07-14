@@ -43,7 +43,7 @@ class MainMenuScreen extends ConsumerWidget {
               // ── Save Slots ──────────────────────────────────────────────────
               Expanded(
                 child: slotsAsync.when(
-                  loading: () => const Center(
+                  loading: () => Center(
                     child: CircularProgressIndicator(
                       color: MFColors.neonCyan,
                       strokeWidth: 2,
@@ -180,7 +180,7 @@ class MainMenuScreen extends ConsumerWidget {
                 top: 4,
                 right: 4,
                 child: IconButton(
-                  icon: const Icon(Icons.settings, color: MFColors.textSecondary),
+                  icon: Icon(Icons.settings, color: MFColors.textSecondary),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   ),
@@ -244,8 +244,8 @@ class MainMenuScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: MFColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
           side: BorderSide(color: MFColors.neonPink, width: 1),
         ),
         title: Text(
@@ -291,7 +291,7 @@ class _GameTitle extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: MFColors.borderSubtle, width: 1),
         ),
@@ -877,7 +877,7 @@ class _FilledSlotContent extends StatelessWidget {
             onTap: onDelete,
             child: Container(
               padding: const EdgeInsets.all(8),
-              child: const Icon(
+              child: Icon(
                 Icons.delete_outline,
                 color: MFColors.neonPink,
                 size: 18,

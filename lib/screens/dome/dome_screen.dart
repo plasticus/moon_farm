@@ -519,8 +519,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: MFColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         side: BorderSide(color: MFColors.borderDefault),
       ),
       builder: (ctx) => _CropPickerSheet(
@@ -552,8 +552,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: MFColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
           side: BorderSide(color: MFColors.borderDefault),
         ),
         title: Row(
@@ -657,7 +657,7 @@ class _DomeNavigator extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Row(
@@ -737,7 +737,7 @@ class _ActionToolbar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: Row(
@@ -1180,7 +1180,7 @@ class _DomeInfoFooter extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: MFColors.borderSubtle)),
       ),
       child: allGood
@@ -1278,7 +1278,7 @@ class _CropPickerSheet extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: MFColors.borderSubtle)),
           ),
           child: Row(
@@ -1397,14 +1397,14 @@ class _InfoRow extends StatelessWidget {
 class _NoDomesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('🔵', style: TextStyle(fontSize: 64)),
-            SizedBox(height: 16),
+            const Text('🔵', style: TextStyle(fontSize: 64)),
+            const SizedBox(height: 16),
             Text('No domes built yet.',
                 style: MFTextStyles.headlineMedium),
           ],

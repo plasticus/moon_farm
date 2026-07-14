@@ -61,10 +61,28 @@ class MoonFarmApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textScale = ref.watch(settingsProvider.select((s) => s.textScale));
+    final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
+    final isLight = themeMode == AppThemeMode.light;
+    MFColors.setMode(isLight: isLight);
+
+    // Status bar icons need to flip alongside the theme — light icons read
+    // fine on the dark background, dark icons are needed once it's light.
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: isLight ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+      ),
+    );
+
     return MaterialApp(
+      // Changing theme mode remounts the whole app (fresh Navigator, back to
+      // Main Menu) rather than reskinning in place — acceptable for now
+      // since this is a rarely-touched Settings action, not a live toggle.
+      key: ValueKey(themeMode),
       title: 'Moon Farm',
       debugShowCheckedModeBanner: false,
-      theme: MFTheme.dark,
+      theme: MFTheme.current,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
           textScaler: TextScaler.linear(textScale),

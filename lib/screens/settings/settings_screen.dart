@@ -21,7 +21,7 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('SETTINGS'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: MFColors.textSecondary),
+          icon: Icon(Icons.arrow_back, color: MFColors.textSecondary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -41,10 +41,8 @@ class SettingsScreen extends ConsumerWidget {
                 value: settings.themeMode,
                 options: AppThemeMode.values,
                 labelOf: (v) => v.label,
-                onChanged: null, // coming soon — see caption
-                caption: 'Most screens use a fixed dark palette — a real '
-                    'light theme is a bigger job for later. This choice is '
-                    'saved for when it lands.',
+                onChanged: notifier.setThemeMode,
+                caption: 'Switching reopens the app to the Main Menu.',
               ),
             ],
           ),

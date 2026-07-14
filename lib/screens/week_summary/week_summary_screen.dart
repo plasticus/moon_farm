@@ -26,7 +26,7 @@ class WeekSummaryScreen extends ConsumerWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: MFColors.borderSubtle),
                 ),
