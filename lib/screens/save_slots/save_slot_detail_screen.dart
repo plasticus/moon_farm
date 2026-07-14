@@ -21,6 +21,8 @@ import '../habitat/habitat_screen.dart';
 import '../../widgets/ad_banner.dart';
 import '../refinery/refinery_screen.dart';
 import '../../widgets/space_background.dart';
+import '../settings/settings_screen.dart';
+import '../../providers/settings_providers.dart';
 
 class SaveSlotDetailScreen extends ConsumerStatefulWidget {
   const SaveSlotDetailScreen({super.key});
@@ -121,6 +123,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                             child: Text('Save Game', style: MFTextStyles.bodyLarge),
                           ),
                           const PopupMenuItem(
+                            value: 'settings',
+                            child: Text('Settings', style: MFTextStyles.bodyLarge),
+                          ),
+                          const PopupMenuItem(
                             value: 'mainmenu',
                             child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
                           ),
@@ -137,6 +143,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                                 )),
                               );
                             }
+                          } else if (val == 'settings') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                            );
                           } else if (val == 'mainmenu') {
                             ref.read(activeGameProvider.notifier).clearGame();
                             if (context.mounted) {
@@ -265,8 +275,14 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
       debugPrint('[EndWeek] Engine done. New week: ${newState.currentWeek}, '
           'summary events: ${summary.events.length}');
 
-      // Persist
-      await ref.read(activeGameProvider.notifier).updateGame(newState);
+      // Persist. The autosave-slot mirror only gets refreshed on the
+      // cadence set in Settings > Auto-Save Frequency; the manual slot
+      // itself is always written above regardless.
+      final autoSaveFrequency = ref.read(settingsProvider).autoSaveFrequency;
+      final syncAutosave = autoSaveFrequency.weeks > 0 &&
+          newState.currentWeek % autoSaveFrequency.weeks == 0;
+      await ref.read(activeGameProvider.notifier)
+          .updateGame(newState, syncAutosave: syncAutosave);
       debugPrint('[EndWeek] State persisted.');
 
       // Reset Kovacs conversation for next week

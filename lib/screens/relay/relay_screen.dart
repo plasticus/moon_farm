@@ -11,6 +11,8 @@ import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/kovacs_engine.dart';
 import '../../utils/game_factory.dart';
+import '../../providers/settings_providers.dart';
+import '../../widgets/confirm_dialog.dart';
 
 // ─── Relay Tab Enum ───────────────────────────────────────────────────────────
 
@@ -222,7 +224,16 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     _showMsg('"Cargo received. ${totalVolume.toStringAsFixed(1)}m³. Scrip transfers next cycle."');
   }
 
-  void _doSellAll(GameState game) {
+  Future<void> _doSellAll(GameState game) async {
+    final confirmed = await confirmIfNeeded(
+      context, ref,
+      title: 'Sell All?',
+      message: 'Queue your entire silo and any spare meat for shipment. '
+          'You can still review before confirming the shipment.',
+      confirmLabel: 'SELL ALL',
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() {
       _saleQueue.clear();
       _saleQueue.addAll(Map.from(game.siloInventory));
@@ -1540,7 +1551,7 @@ class _BuyButton extends StatelessWidget {
 
 // ─── Contracts Tab ────────────────────────────────────────────────────────────
 
-class _ContractsTab extends StatelessWidget {
+class _ContractsTab extends ConsumerWidget {
   final GameState game;
   final Function(Contract, GameState) onAcceptContract;
   final Function(String, double, GameState) onSubmitToContract;
@@ -1554,7 +1565,7 @@ class _ContractsTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final available = GameFactory.generateContractOptions(
       domes: game.domes,
       currentWeek: game.currentWeek,
@@ -1579,7 +1590,7 @@ class _ContractsTab extends StatelessWidget {
               final amt = inSilo.clamp(0, remaining).toDouble();
               onSubmitToContract(c.id, amt, game);
             },
-            onCancel: () => _confirmCancel(context, c, game),
+            onCancel: () => _confirmCancel(context, ref, c, game),
           )),
           const SizedBox(height: 16),
         ],
@@ -1623,7 +1634,11 @@ class _ContractsTab extends StatelessWidget {
     );
   }
 
-  void _confirmCancel(BuildContext context, Contract contract, GameState game) {
+  void _confirmCancel(BuildContext context, WidgetRef ref, Contract contract, GameState game) {
+    if (!ref.read(settingsProvider).confirmDialogs) {
+      onCancelContract(contract, game);
+      return;
+    }
     final penalty = (contract.rewardScrip * 0.1).round();
     showDialog(
       context: context,

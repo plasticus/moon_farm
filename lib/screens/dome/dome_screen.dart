@@ -9,6 +9,7 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/radio_trigger_engine.dart';
+import '../../widgets/confirm_dialog.dart';
 
 /// Mk-level quality color. Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5+=orange
 Color mkColor(int level) => switch (level) {
@@ -428,7 +429,7 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     );
   }
 
-  void _doClearDead(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) {
+  Future<void> _doClearDead(WidgetRef ref, GameState game, Dome dome, CropCell cell, int domeIndex) async {
     if (cell.state == CropState.empty) {
       _snack(ref.context, 'Nothing to clear here.');
       return;
@@ -438,7 +439,19 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       return;
     }
 
-    // Clearing dead cells gives compost; clearing live/planted cells loses seeds.
+    // Clearing dead cells gives compost (pure upside, no confirm needed);
+    // clearing a live/planted cell forfeits its seeds, so that path asks first.
+    if (cell.state != CropState.dead) {
+      final confirmed = await confirmIfNeeded(
+        context, ref,
+        title: 'Clear Crop?',
+        message: 'This crop hasn\'t died or finished growing yet. Clearing it '
+            'now forfeits the seeds you planted.',
+        confirmLabel: 'CLEAR',
+      );
+      if (!confirmed) return;
+    }
+
     final compostGain = cell.state == CropState.dead ? 1 : 0;
     final message = cell.state == CropState.dead
         ? 'Cleared. +1 compost.'

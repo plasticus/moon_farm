@@ -15,6 +15,7 @@ import '../../database/database_helper.dart';
 import '../new_game/new_game_screen.dart';
 import '../save_slots/save_slot_detail_screen.dart';
 import '../../widgets/space_background.dart';
+import '../settings/settings_screen.dart';
 
 // Top-level so both MainMenuScreen and _ExportImportSection can reach it.
 const _launcher = MethodChannel('monster.oaf.moon_farm/launcher');
@@ -31,7 +32,9 @@ class MainMenuScreen extends ConsumerWidget {
       backgroundColor: MFColors.background,
       body: SpaceBackground(
         child: SafeArea(
-          child: Column(
+          child: Stack(
+            children: [
+              Column(
             children: [
               // ── Header / Title ──────────────────────────────────────────────
               const _GameTitle(),
@@ -173,6 +176,18 @@ class MainMenuScreen extends ConsumerWidget {
               ),
             ],
           ), // Column
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: MFColors.textSecondary),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  ),
+                ),
+              ),
+            ],
+          ), // Stack
         ), // SafeArea
       ), // SpaceBackground
     );

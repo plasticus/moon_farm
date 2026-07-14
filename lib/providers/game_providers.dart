@@ -64,14 +64,20 @@ class ActiveGameNotifier extends AsyncNotifier<GameState?> {
     state = AsyncValue.data(newGame);
   }
 
-  /// Update game state and persist (call after every meaningful action)
-  Future<void> updateGame(GameState updatedState) async {
+  /// Update game state and persist (call after every meaningful action).
+  ///
+  /// [syncAutosave] controls whether the slot-0 autosave mirror is written
+  /// alongside the real slot — the manual slot itself is always written
+  /// regardless, this only gates the redundant backup copy. End Week uses
+  /// this to honor Settings > Auto-Save Frequency; every other call site
+  /// keeps the autosave mirror in sync as before.
+  Future<void> updateGame(GameState updatedState, {bool syncAutosave = true}) async {
     final saved = updatedState.copyWith(lastSaved: DateTime.now());
     state = AsyncValue.data(saved);
     await DatabaseHelper.instance.saveGameState(saved);
 
     // Also write to autosave slot (slot 0) if this is a manual slot
-    if (saved.slotNumber != 0) {
+    if (saved.slotNumber != 0 && syncAutosave) {
       final autoSave = saved.copyWith(slotNumber: 0);
       await DatabaseHelper.instance.saveGameState(autoSave);
     }

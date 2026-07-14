@@ -13,6 +13,8 @@ import 'config/raid_config_service.dart';
 import 'config/kovacs_config_service.dart';
 import 'config/milestone_config_service.dart';
 import 'config/radio_config_service.dart';
+import 'config/settings_service.dart';
+import 'providers/settings_providers.dart';
 import 'screens/main_menu/main_menu_screen.dart';
 
 void main() async {
@@ -40,6 +42,7 @@ void main() async {
   await KovacsConfigService.instance.load();
   await MilestoneConfigService.instance.load();
   await RadioConfigService.instance.load();
+  await SettingsService.instance.initialize();
 
   // Manifest currently ships Google's public test App ID, so this always
   // serves test ads — safe to leave running through dev/QA builds.
@@ -52,15 +55,22 @@ void main() async {
   );
 }
 
-class MoonFarmApp extends StatelessWidget {
+class MoonFarmApp extends ConsumerWidget {
   const MoonFarmApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textScale = ref.watch(settingsProvider.select((s) => s.textScale));
     return MaterialApp(
       title: 'Moon Farm',
       debugShowCheckedModeBanner: false,
       theme: MFTheme.dark,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: child!,
+      ),
       home: const MainMenuScreen(),
     );
   }

@@ -19,6 +19,7 @@ import '../../config/game_config_service.dart';
 import '../../config/raid_config_service.dart';
 import '../../config/milestone_config_service.dart';
 import '../../widgets/ad_banner.dart';
+import '../../providers/settings_providers.dart';
 import '../score/score_screen.dart';
 
 class RaidScreen extends ConsumerStatefulWidget {
@@ -70,6 +71,9 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   // Timer
   Timer? _gameTimer;
   bool _raidOver = false;
+  // Read once at raid start per Settings > Raid Speed — a mid-raid change
+  // shouldn't yank the sim speed out from under the player.
+  double _speedMultiplier = 1.0;
 
   final _rng = Random();
   late Size _fieldSize;
@@ -93,6 +97,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     final raidConfig = RaidConfigService.instance;
     final config = GameConfigService.instance;
     final game = widget.game;
+    _speedMultiplier = ref.read(settingsProvider).raidSpeed.multiplier;
 
     // Wall HP
     final wallLevels = config.getDefenseWallLevels();
@@ -132,7 +137,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
 
   void _tick(Timer timer) {
     if (_raidOver) return;
-    const dt = 0.033; // ~30fps
+    final dt = 0.033 * _speedMultiplier; // ~30fps, scaled by Raid Speed setting
 
     setState(() {
       _updateFauna(dt);
