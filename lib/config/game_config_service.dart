@@ -156,22 +156,6 @@ class GameConfigService {
     as Map<String, dynamic>;
   }
 
-  // ─── Refinery Recipes ─────────────────────────────────────────────────────
-
-  List<Map<String, dynamic>> getAllRecipes() {
-    return (_c['refinery_recipes'] as List).cast<Map<String, dynamic>>();
-  }
-
-  Map<String, dynamic>? getRecipe(String id) {
-    final recipes = _c['refinery_recipes'] as List;
-    try {
-      return recipes.firstWhere((r) => (r as Map)['id'] == id)
-      as Map<String, dynamic>;
-    } catch (_) {
-      return null;
-    }
-  }
-
   // ─── Milestones ───────────────────────────────────────────────────────────
 
   List<Milestone> getMilestones(Difficulty difficulty) =>
@@ -383,15 +367,6 @@ class GameConfigService {
   Map<String, dynamic> getDifficultyConfig(Difficulty difficulty) {
     final settings = _c['difficulty_settings'] as Map<String, dynamic>;
     return settings[difficulty.name] as Map<String, dynamic>;
-  }
-
-  Map<String, dynamic> getMachineConfigs() {
-    return _c['refinery_machines'] as Map<String, dynamic>? ?? {};
-  }
-
-  Map<String, dynamic>? getMachineConfig(String key) {
-    final machines = getMachineConfigs();
-    return machines[key] as Map<String, dynamic>?;
   }
 
   Map<String, dynamic> getOperationsBuildings() {

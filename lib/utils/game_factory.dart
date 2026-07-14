@@ -243,11 +243,21 @@ class GameFactory {
     5: 50,
   };
 
-  static int _targetQtyForTier(int tier) {
+  static int _baseTargetQtyForTier(int tier) {
     if (_contractTierTargetQty.containsKey(tier)) return _contractTierTargetQty[tier]!;
     // Tiers beyond 5: keep adding 10 per tier
     final highest = _contractTierTargetQty.keys.reduce((a, b) => a > b ? a : b);
     return _contractTierTargetQty[highest]! + ((tier - highest) * 10);
+  }
+
+  /// Randomized target quantity for a contract, ±20% of the tier's base
+  /// amount (e.g. T1 base 10 → 8-12, T2 base 20 → 16-24), rounded to a
+  /// whole number so contracts feel less identical week to week.
+  static int _targetQtyForTier(int tier) {
+    final base = _baseTargetQtyForTier(tier);
+    final low = (base * 0.8).round();
+    final high = (base * 1.2).round();
+    return low + _rng.nextInt(high - low + 1);
   }
 
   /// Generate 3 contract options based on what crops the player could plausibly have.

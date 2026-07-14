@@ -365,6 +365,36 @@ class _ExportImportSection extends ConsumerWidget {
     );
   }
 
+  Future<int?> _showImportSlotPicker(BuildContext context) {
+    final targetSlots = slots.where((s) => s.slotNumber > 0).toList()
+      ..sort((a, b) => a.slotNumber.compareTo(b.slotNumber));
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MFColors.surfaceElevated,
+        title: const Text('Import into which slot?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: targetSlots.map((s) => ListTile(
+            title: Text(s.isEmpty ? 'Slot ${s.slotNumber} (empty)' : s.farmName ?? 'Slot ${s.slotNumber}',
+                style: MFTextStyles.bodyLarge),
+            subtitle: s.isEmpty
+                ? null
+                : Text('W${s.currentWeek}  ·  ${s.difficulty?.name ?? ''}  ·  will be overwritten',
+                    style: MFTextStyles.bodySmall),
+            onTap: () => Navigator.of(ctx).pop(s.slotNumber),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('CANCEL'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _doExport(BuildContext context, int slotNumber) async {
     try {
       final state = await DatabaseHelper.instance.loadGameState(slotNumber);
@@ -440,9 +470,13 @@ class _ExportImportSection extends ConsumerWidget {
       if (jsonStr == null) throw Exception('Could not read file');
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       final state = DatabaseHelper.instance.importGameStateFromMap(map);
-      final targetSlot = state.slotNumber > 0 ? state.slotNumber : 1;
+
+      if (!context.mounted) return;
+      final targetSlot = await _showImportSlotPicker(context);
+      if (targetSlot == null) return;
+
       await DatabaseHelper.instance.ensureSlotExists(targetSlot);
-      await DatabaseHelper.instance.saveGameState(state);
+      await DatabaseHelper.instance.saveGameState(state.copyWith(slotNumber: targetSlot));
       await ref.read(saveSlotsProvider.notifier).refresh();
       if (!context.mounted) return;
       _snack(context,
