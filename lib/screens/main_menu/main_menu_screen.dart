@@ -58,6 +58,17 @@ class MainMenuScreen extends ConsumerWidget {
                     final autoSave =
                         slots.where((s) => s.slotNumber == 0).firstOrNull;
 
+                    // Highlight whichever manual slot was saved most recently, so
+                    // returning players see at a glance where to continue. If
+                    // every manual slot is empty (first launch), point at Slot 1.
+                    final savedManualSlots = manualSlots.where((s) => !s.isEmpty).toList();
+                    final highlightSlot = savedManualSlots.isEmpty
+                        ? 1
+                        : savedManualSlots.reduce((a, b) =>
+                            (a.lastSaved ?? DateTime(0)).isAfter(b.lastSaved ?? DateTime(0))
+                                ? a
+                                : b).slotNumber;
+
                     return ListView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -77,6 +88,7 @@ class MainMenuScreen extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _SaveSlotCard(
                               slot: slot,
+                              highlighted: slot.slotNumber == highlightSlot,
                               onTap: () => _handleSlotTap(context, ref, slot),
                               onDelete: slot.isEmpty
                                   ? null
@@ -271,8 +283,18 @@ class _GameTitle extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Moon emoji as logo placeholder
-          const Text('🌕', style: TextStyle(fontSize: 64)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                border: Border.all(color: MFColors.neonCyan.withValues(alpha: 0.4)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Image.asset('assets/icon/app_icon.png', fit: BoxFit.cover),
+            ),
+          ),
           const SizedBox(height: 12),
           Text(
             'MOON FARM',
@@ -326,7 +348,7 @@ class _ExportImportSection extends ConsumerWidget {
             Expanded(
               child: _MenuButton(
                 label: '📥 Import Save',
-                color: MFColors.neonGreen,
+                color: MFColors.neonCyan,
                 onTap: () => _doImport(context, ref),
               ),
             ),
@@ -602,15 +624,39 @@ class _StoryBlurb extends StatelessWidget {
 
 // ─── Save Slot Card ───────────────────────────────────────────────────────────
 
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _Badge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: MFTextStyles.bodySmall.copyWith(color: color, fontSize: 10),
+      ),
+    );
+  }
+}
+
 class _SaveSlotCard extends StatelessWidget {
   final SaveSlot slot;
   final bool isAutoSave;
+  final bool highlighted;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
 
   const _SaveSlotCard({
     required this.slot,
     this.isAutoSave = false,
+    this.highlighted = false,
     required this.onTap,
     required this.onDelete,
   });
@@ -625,20 +671,24 @@ class _SaveSlotCard extends StatelessWidget {
           color: MFColors.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: slot.isEmpty
-                ? MFColors.borderSubtle
-                : MFColors.borderDefault,
-            width: 1,
+            color: highlighted
+                ? MFColors.neonGreen
+                : slot.isEmpty
+                    ? MFColors.borderSubtle
+                    : MFColors.borderDefault,
+            width: highlighted ? 2 : 1,
           ),
         ),
         child: slot.isEmpty
             ? _EmptySlotContent(
           slotNumber: slot.slotNumber,
           isAutoSave: isAutoSave,
+          highlighted: highlighted,
         )
             : _FilledSlotContent(
           slot: slot,
           isAutoSave: isAutoSave,
+          highlighted: highlighted,
           onDelete: onDelete,
         ),
       ),
@@ -649,10 +699,12 @@ class _SaveSlotCard extends StatelessWidget {
 class _EmptySlotContent extends StatelessWidget {
   final int slotNumber;
   final bool isAutoSave;
+  final bool highlighted;
 
   const _EmptySlotContent({
     required this.slotNumber,
     required this.isAutoSave,
+    this.highlighted = false,
   });
 
   @override
@@ -663,24 +715,38 @@ class _EmptySlotContent extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            border: Border.all(color: MFColors.borderDefault),
+            border: Border.all(
+              color: highlighted ? MFColors.neonGreen : MFColors.borderDefault,
+            ),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Center(
-            child: Icon(Icons.add, color: MFColors.textMuted, size: 20),
+          child: Center(
+            child: Icon(
+              Icons.add,
+              color: highlighted ? MFColors.neonGreen : MFColors.textMuted,
+              size: 20,
+            ),
           ),
         ),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isAutoSave
-                  ? 'NO AUTOSAVE'
-                  : 'SLOT ${slotNumber} — EMPTY',
-              style: MFTextStyles.labelLarge.copyWith(
-                color: MFColors.textMuted,
-              ),
+            Row(
+              children: [
+                Text(
+                  isAutoSave
+                      ? 'NO AUTOSAVE'
+                      : 'SLOT ${slotNumber} — EMPTY',
+                  style: MFTextStyles.labelLarge.copyWith(
+                    color: MFColors.textMuted,
+                  ),
+                ),
+                if (highlighted && !isAutoSave) ...[
+                  const SizedBox(width: 8),
+                  _Badge(label: 'START HERE', color: MFColors.neonGreen),
+                ],
+              ],
             ),
             const SizedBox(height: 2),
             Text(
@@ -697,11 +763,13 @@ class _EmptySlotContent extends StatelessWidget {
 class _FilledSlotContent extends StatelessWidget {
   final SaveSlot slot;
   final bool isAutoSave;
+  final bool highlighted;
   final VoidCallback? onDelete;
 
   const _FilledSlotContent({
     required this.slot,
     required this.isAutoSave,
+    this.highlighted = false,
     required this.onDelete,
   });
 
@@ -728,7 +796,9 @@ class _FilledSlotContent extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            border: Border.all(color: MFColors.neonCyan),
+            border: Border.all(
+              color: highlighted ? MFColors.neonGreen : MFColors.neonCyan,
+            ),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(
@@ -754,24 +824,12 @@ class _FilledSlotContent extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (highlighted && !isAutoSave) ...[
+                    _Badge(label: 'CONTINUE', color: MFColors.neonGreen),
+                    const SizedBox(width: 6),
+                  ],
                   if (isAutoSave)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: MFColors.neonYellow),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'AUTO',
-                        style: MFTextStyles.bodySmall.copyWith(
-                          color: MFColors.neonYellow,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
+                    _Badge(label: 'AUTO', color: MFColors.neonYellow),
                 ],
               ),
               const SizedBox(height: 3),
