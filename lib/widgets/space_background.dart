@@ -10,6 +10,7 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 // ─── Star data ────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,11 @@ class _SpacePainter extends CustomPainter {
 
   void _drawStars(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
+    // Night sky: bright stars on black. Lunar daylight: no visible stars —
+    // there's no atmosphere to scatter light, but direct sun washes out
+    // anything this dim, so these read as faint dust motes catching glare
+    // instead, muted enough not to fight the pale sky.
+    final isLight = MFColors.isLight;
 
     for (final star in stars) {
       // Parallax: far stars (layer≈0) barely move, close stars (layer≈1) shift more
@@ -68,14 +74,22 @@ class _SpacePainter extends CustomPainter {
 
       // Twinkle: each star has a unique phase so they don't sync
       final twinkle = sin((twinkleValue * 2 * pi * star.speed) + star.phase);
-      final opacity = (star.opacity + twinkle * 0.15).clamp(0.05, 0.9);
+      final baseOpacity = (star.opacity + twinkle * 0.15).clamp(0.05, 0.9);
+      final opacity = isLight ? baseOpacity * 0.35 : baseOpacity;
 
-      // Color: most stars are white/blue-white, occasional warm star
-      final color = star.phase % 1.2 < 0.15
+      // Color: most stars are white/blue-white, occasional warm star. In
+      // light mode these become muted dust motes instead of bright points.
+      final color = isLight
+          ? (star.phase % 1.2 < 0.15
+          ? Color.fromRGBO(150, 130, 95, opacity)
+          : star.phase % 0.7 < 0.1
+          ? Color.fromRGBO(120, 125, 140, opacity)
+          : Color.fromRGBO(130, 128, 120, opacity))
+          : (star.phase % 1.2 < 0.15
           ? Color.fromRGBO(255, 220, 180, opacity) // warm
           : star.phase % 0.7 < 0.1
           ? Color.fromRGBO(180, 210, 255, opacity) // blue-white
-          : Color.fromRGBO(255, 255, 255, opacity); // white
+          : Color.fromRGBO(255, 255, 255, opacity)); // white
 
       paint.color = color;
       canvas.drawCircle(Offset(px, py), star.size, paint);
@@ -83,6 +97,8 @@ class _SpacePainter extends CustomPainter {
   }
 
   void _drawHorizon(Canvas canvas, Size size) {
+    final isLight = MFColors.isLight;
+
     // Bottom nav is ~60px. Arc should peek above it even at scroll 0,
     // then rise further as you scroll down.
     const bottomNavHeight = 60.0;
@@ -102,19 +118,29 @@ class _SpacePainter extends CustomPainter {
     final arcRadiusY = size.width * 0.55;
     final arcCenter = Offset(size.width / 2, arcCenterY);
 
-    // ── Atmospheric haze ───────────────────────────────────────────────────
+    // ── Horizon glow ────────────────────────────────────────────────────────
+    // Night: violet nebula haze. Daylight: no atmosphere to scatter light
+    // into a glow, but harsh direct sun blows out the horizon — same visual
+    // beat (a bright band low in frame), warm-white instead of violet.
     final hazeBottom = size.height - bottomNavHeight;
     final hazeOpacity = 0.08 + (revealProgress * 0.12);
     final hazeRect = Rect.fromLTWH(0, hazeBottom - 180, size.width, 180);
+    final hazeColors = isLight
+        ? [
+      const Color(0xFFFFF6E0).withValues(alpha: 0),
+      const Color(0xFFFFEFC4).withValues(alpha: hazeOpacity * 0.6),
+      const Color(0xFFFFE9AE).withValues(alpha: hazeOpacity * 1.2),
+    ]
+        : [
+      const Color(0xFF7B2FBE).withValues(alpha: 0),
+      const Color(0xFF9B4DCA).withValues(alpha: hazeOpacity * 0.5),
+      const Color(0xFFB06EE0).withValues(alpha: hazeOpacity),
+    ];
     final hazePaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF7B2FBE).withValues(alpha: 0),
-          const Color(0xFF9B4DCA).withValues(alpha: hazeOpacity * 0.5),
-          const Color(0xFFB06EE0).withValues(alpha: hazeOpacity),
-        ],
+        colors: hazeColors,
       ).createShader(hazeRect);
     canvas.drawRect(hazeRect, hazePaint);
 
@@ -127,28 +153,30 @@ class _SpacePainter extends CustomPainter {
       height: arcRadiusY * 2,
     );
 
-    // Surface fill
+    // Surface fill — dark rim silhouette at night, pale sunlit regolith by day
     canvas.drawOval(
       ovalRect,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = const Color(0xFF1A1520).withValues(alpha: surfaceOpacity),
+        ..color = (isLight ? const Color(0xFFCAC3B3) : const Color(0xFF1A1520))
+            .withValues(alpha: surfaceOpacity),
     );
 
-    // Rim glow
+    // Rim glow — cool violet starlight at night, warm sun glare by day
     canvas.drawOval(
       ovalRect,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8)
-        ..color = const Color(0xFFCC88FF).withValues(alpha: surfaceOpacity),
+        ..color = (isLight ? const Color(0xFFFFE9AE) : const Color(0xFFCC88FF))
+            .withValues(alpha: surfaceOpacity),
     );
 
     // ── Surface details ──────────────────────────────────────────────────────
     if (revealProgress > 0.2) {
       final detailOpacity = ((revealProgress - 0.2) / 0.8).clamp(0.0, 1.0) * 0.45;
-      _drawSurfaceDetails(canvas, size, arcCenter, arcRadiusX, arcRadiusY, detailOpacity);
+      _drawSurfaceDetails(canvas, size, arcCenter, arcRadiusX, arcRadiusY, detailOpacity, isLight);
     }
   }
 
@@ -159,13 +187,18 @@ class _SpacePainter extends CustomPainter {
       double rx,
       double ry,
       double opacity,
+      bool isLight,
       ) {
     final paint = Paint()..style = PaintingStyle.stroke;
+    // Craters read as shadow lines against the pale daylit surface, so they
+    // need to go darker (not lighter) in light mode to stay visible.
+    final craterColor = isLight ? const Color(0xFF8A8070) : const Color(0xFF6A5080);
+    final rockColor = isLight ? const Color(0xFF8A8070) : const Color(0xFF1A1520);
 
     // Crater 1 — left side, shallow
     paint
       ..strokeWidth = 1.0
-      ..color = const Color(0xFF6A5080).withValues(alpha: opacity);
+      ..color = craterColor.withValues(alpha: opacity);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(size.width * 0.22, arcCenter.dy - ry * 0.15),
@@ -178,7 +211,7 @@ class _SpacePainter extends CustomPainter {
     // Crater 2 — right-center, slightly deeper
     paint
       ..strokeWidth = 0.8
-      ..color = const Color(0xFF6A5080).withValues(alpha: opacity * 0.8);
+      ..color = craterColor.withValues(alpha: opacity * 0.8);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(size.width * 0.68, arcCenter.dy - ry * 0.08),
@@ -200,7 +233,7 @@ class _SpacePainter extends CustomPainter {
       rock1,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = const Color(0xFF1A1520).withValues(alpha: opacity * 0.9),
+        ..color = rockColor.withValues(alpha: opacity * 0.9),
     );
 
     // Rock silhouette 2 — right edge
@@ -215,7 +248,7 @@ class _SpacePainter extends CustomPainter {
       rock2,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = const Color(0xFF1A1520).withValues(alpha: opacity * 0.9),
+        ..color = rockColor.withValues(alpha: opacity * 0.9),
     );
   }
 
