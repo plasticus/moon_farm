@@ -65,8 +65,9 @@ class MilestoneConfigService {
         id: map['id'] as String,
         name: map['name'] as String,
         description: map['description'] as String,
-        targetVolumeM3: (map['target_volume_m3'] as num).toDouble(),
-        byWeek: map['by_week'] as int,
+        checkType: map['check_type'] as String? ?? 'volume_delivered',
+        target: (map['target'] as num).toDouble(),
+        byWeek: map['by_week'] as int?,
         rewardScrip: map['reward_scrip'] as int,
         failureMessage: map['failure_message'] as String? ?? '',
         failureDetail: map['failure_detail'] as String? ?? '',
@@ -76,11 +77,12 @@ class MilestoneConfigService {
   }
 
   /// Returns the failure message for a specific milestone, with
-  /// {actual} and {target} substituted.
+  /// {actual} and {target} substituted. Only ever called for deadline
+  /// milestones (byWeek != null) — achievement-style ones never fail.
   String formatFailureDetail(Milestone m, double actualM3) {
     return m.failureDetail
         .replaceAll('{actual}', actualM3.toStringAsFixed(1))
-        .replaceAll('{target}', m.targetVolumeM3.toStringAsFixed(0));
+        .replaceAll('{target}', m.target.toStringAsFixed(0));
   }
 
   String formatTerminationMessage(Difficulty d, {int? week, int? strikes}) {

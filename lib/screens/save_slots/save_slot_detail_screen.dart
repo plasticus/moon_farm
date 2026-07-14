@@ -796,11 +796,38 @@ class _MilestoneRow extends StatelessWidget {
   final GameState game;
   const _MilestoneRow({required this.milestone, required this.game});
 
+  /// (progress 0.0-1.0, "current / target" label) — shape depends on
+  /// checkType, since "current" means something different for each.
+  (double, String) _progress(Milestone m, GameState game) {
+    switch (m.checkType) {
+      case 'power_capacity':
+        final current = game.totalPowerProduction.toDouble();
+        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} kW');
+      case 'contracts_completed':
+        final current = game.completedContracts.length.toDouble();
+        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} contracts');
+      case 'fauna_killed':
+        final current = game.totalFaunaKilled.toDouble();
+        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} fauna');
+      case 'crop_diversity':
+        final tierCrops = GameConfigService.instance.getCropsByTier(m.target.toInt());
+        final discovered = tierCrops.where((c) => (game.cropHarvestCounts[c.id] ?? 0) > 0).length;
+        final total = tierCrops.isEmpty ? 1 : tierCrops.length;
+        return (discovered / total, 'Tier ${m.target.toInt()}: $discovered / $total crops');
+      case 'volume_delivered':
+      default:
+        final current = game.totalVolumeDeliveredM3;
+        return (current / m.target, '${current.toStringAsFixed(1)} / ${m.target.toStringAsFixed(0)}m³');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final progress = game.totalVolumeDeliveredM3 / milestone.targetVolumeM3;
-    final weeksLeft = milestone.byWeek - game.currentWeek;
-    final isLate = weeksLeft <= 0;
+    final (progressRaw, progressLabel) = _progress(milestone, game);
+    final progress = progressRaw.clamp(0.0, 1.0);
+    final hasDeadline = milestone.byWeek != null;
+    final weeksLeft = hasDeadline ? milestone.byWeek! - game.currentWeek : 0;
+    final isLate = hasDeadline && weeksLeft <= 0;
     final isWarned = milestone.status == MilestoneStatus.warned;
 
     return Container(
@@ -829,7 +856,7 @@ class _MilestoneRow extends StatelessWidget {
           Text(milestone.description, style: MFTextStyles.bodyMedium),
           const SizedBox(height: 8),
           LinearProgressIndicator(
-            value: progress.clamp(0.0, 1.0),
+            value: progress,
             backgroundColor: MFColors.borderSubtle,
             valueColor: AlwaysStoppedAnimation(
               isLate ? MFColors.neonPink : MFColors.neonGreen,
@@ -839,12 +866,11 @@ class _MilestoneRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text(progressLabel, style: MFTextStyles.bodySmall),
               Text(
-                '${game.totalVolumeDeliveredM3.toStringAsFixed(1)} / ${milestone.targetVolumeM3}m³',
-                style: MFTextStyles.bodySmall,
-              ),
-              Text(
-                isLate ? 'OVERDUE' : 'Due Wk ${milestone.byWeek} ($weeksLeft left)',
+                hasDeadline
+                    ? (isLate ? 'OVERDUE' : 'Due Wk ${milestone.byWeek} ($weeksLeft left)')
+                    : 'No deadline',
                 style: MFTextStyles.bodySmall.copyWith(
                   color: isLate ? MFColors.neonPink : MFColors.textMuted,
                 ),

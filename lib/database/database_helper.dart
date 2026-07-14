@@ -596,16 +596,21 @@ class DatabaseHelper {
 
   Map<String, dynamic> _milestoneToJson(Milestone m) => {
     'id': m.id, 'name': m.name, 'description': m.description,
-    'target_volume_m3': m.targetVolumeM3, 'by_week': m.byWeek,
+    'check_type': m.checkType, 'target': m.target, 'by_week': m.byWeek,
     'reward_scrip': m.rewardScrip, 'status': m.status.name,
+    'failure_message': m.failureMessage, 'failure_detail': m.failureDetail,
   };
 
   Milestone _milestoneFromJson(Map<String, dynamic> j) => Milestone(
     id: j['id'] as String, name: j['name'] as String,
     description: j['description'] as String,
-    targetVolumeM3: (j['target_volume_m3'] as num).toDouble(), byWeek: (j['by_week'] as num).toInt(),
+    checkType: j['check_type'] as String? ?? 'volume_delivered',
+    target: (j['target'] as num).toDouble(),
+    byWeek: (j['by_week'] as num?)?.toInt(),
     rewardScrip: (j['reward_scrip'] as num).toInt(),
     status: MilestoneStatus.values.firstWhere((e) => e.name == j['status']),
+    failureMessage: j['failure_message'] as String? ?? '',
+    failureDetail: j['failure_detail'] as String? ?? '',
   );
 
   Map<String, dynamic> _logEntryToJson(WeeklyLogEntry l) => {

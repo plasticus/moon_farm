@@ -570,7 +570,7 @@ class EndWeekEngine {
       }
 
       // Check completion
-      if (s.totalVolumeDeliveredM3 >= milestone.targetVolumeM3) {
+      if (_isMilestoneComplete(s, milestone)) {
         updatedMilestones.add(milestone.copyWith(status: MilestoneStatus.completed));
         final scripReward = milestone.rewardScrip;
         s = s.copyWith(
@@ -584,8 +584,15 @@ class EndWeekEngine {
         continue;
       }
 
+      // Achievement-style milestones have no deadline — they just keep
+      // waiting to be met, never warned/failed/terminated.
+      if (milestone.byWeek == null) {
+        updatedMilestones.add(milestone);
+        continue;
+      }
+
       // Check overdue
-      if (s.currentWeek >= milestone.byWeek) {
+      if (s.currentWeek >= milestone.byWeek!) {
         switch (s.difficulty) {
           case Difficulty.easy:
             updatedMilestones.add(milestone.copyWith(status: MilestoneStatus.warned));
@@ -747,6 +754,28 @@ class EndWeekEngine {
 
 
   // ─── Radio transmission generator ────────────────────────────────────────
+
+  // ─── Milestone completion checker ────────────────────────────────────────
+
+  bool _isMilestoneComplete(GameState s, Milestone m) {
+    switch (m.checkType) {
+      case 'power_capacity':
+        return s.totalPowerProduction >= m.target;
+      case 'contracts_completed':
+        return s.completedContracts.length >= m.target;
+      case 'fauna_killed':
+        return s.totalFaunaKilled >= m.target;
+      case 'crop_diversity':
+        // target holds the tier number here, not a magnitude — complete
+        // once every crop in that tier has been harvested at least once.
+        final tierCrops = _config.getCropsByTier(m.target.toInt());
+        if (tierCrops.isEmpty) return false;
+        return tierCrops.every((c) => (s.cropHarvestCounts[c.id] ?? 0) > 0);
+      case 'volume_delivered':
+      default:
+        return s.totalVolumeDeliveredM3 >= m.target;
+    }
+  }
 
   RadioTransmission? _generateRadioTransmission(GameState state) {
     // Generate a transmission every 3-5 weeks

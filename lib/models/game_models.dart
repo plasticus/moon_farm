@@ -868,8 +868,14 @@ class Milestone {
   final String id;
   final String name;
   final String description;
-  final double targetVolumeM3;
-  final int byWeek;
+  // 'volume_delivered' | 'power_capacity' | 'contracts_completed' |
+  // 'fauna_killed' | 'crop_diversity'. See EndWeekEngine._isMilestoneComplete
+  // for what `target` means for each type.
+  final String checkType;
+  final double target;
+  // Deadline week, inclusive. Null = achievement-style milestone with no
+  // deadline — it just waits until completed, never warned/failed/terminated.
+  final int? byWeek;
   final int rewardScrip;
   final MilestoneStatus status;
   final String failureMessage;
@@ -879,8 +885,9 @@ class Milestone {
     required this.id,
     required this.name,
     required this.description,
-    required this.targetVolumeM3,
-    required this.byWeek,
+    this.checkType = 'volume_delivered',
+    required this.target,
+    this.byWeek,
     required this.rewardScrip,
     required this.status,
     this.failureMessage = '',
@@ -892,7 +899,8 @@ class Milestone {
       id: id,
       name: name,
       description: description,
-      targetVolumeM3: targetVolumeM3,
+      checkType: checkType,
+      target: target,
       byWeek: byWeek,
       rewardScrip: rewardScrip,
       status: status ?? this.status,

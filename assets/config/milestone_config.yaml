@@ -3,16 +3,28 @@
 # ═══════════════════════════════════════════════════════════════
 # All milestone and difficulty configuration.
 # Edit this file to rebalance goals, deadlines, and failure messages.
-# Milestones are checked in order — failing any one terminates the contract.
 #
 # MILESTONE FIELDS:
 #   id:                 unique string key
+#   check_type:         'volume_delivered' | 'power_capacity' |
+#                        'contracts_completed' | 'fauna_killed' |
+#                        'crop_diversity' — see EndWeekEngine._isMilestoneComplete
+#                        for what `target` means for each type. Omit for
+#                        volume_delivered (that's the default).
 #   name:               display name
 #   description:        shown in milestone list
-#   target_volume_m3:   cumulative m³ to deliver
-#   by_week:            deadline week (inclusive)
+#   target:             meaning depends on check_type — m³ for
+#                        volume_delivered, kW for power_capacity, a count
+#                        for contracts_completed/fauna_killed, or the crop
+#                        tier number (1-5) for crop_diversity
+#   by_week:             deadline week (inclusive). OMIT this field entirely
+#                        for achievement-style milestones (anything other
+#                        than volume_delivered) — no deadline means no
+#                        warned/failed/terminated path, it just waits until
+#                        completed. Only volume_delivered milestones are
+#                        checked in order and terminate the contract on miss.
 #   reward_scrip:       scrip paid on completion
-#   failure_message:    shown on score screen if missed
+#   failure_message:    shown on score screen if missed (deadline milestones only)
 #   failure_detail:     secondary line (e.g. "delivered {actual}/{target}m³")
 #
 # DIFFICULTY SETTINGS:
@@ -51,192 +63,381 @@ difficulty:
 milestones:
   easy:
     - id: m1
+      check_type: volume_delivered
       name: First Shipment
       description: Deliver 10m³ of cargo to the colony
-      target_volume_m3: 10
+      target: 10
       by_week: 20
       reward_scrip: 100
       failure_message: "The colony expected an initial shipment by Week 20."
       failure_detail: "You delivered {actual}m³ of the required 10m³."
 
     - id: m2
+      check_type: volume_delivered
       name: Steady Supply
       description: Deliver 50m³ of cargo to the colony
-      target_volume_m3: 50
+      target: 50
       by_week: 60
       reward_scrip: 300
       failure_message: "Your supply rate fell below colony expectations by Week 60."
       failure_detail: "You delivered {actual}m³ of the required 50m³."
 
     - id: m3
+      check_type: volume_delivered
       name: Established Yield
       description: Deliver 120m³ of cargo to the colony
-      target_volume_m3: 120
+      target: 120
       by_week: 100
       reward_scrip: 600
       failure_message: "The colony's expanding population required 120m³ by Week 100."
       failure_detail: "You delivered {actual}m³ of the required 120m³."
 
     - id: m4
+      check_type: volume_delivered
       name: Colony Cornerstone
       description: Deliver 250m³ of cargo to the colony
-      target_volume_m3: 250
+      target: 250
       by_week: 150
       reward_scrip: 1200
       failure_message: "The colony's core infrastructure was not sustained at Week 150."
       failure_detail: "You delivered {actual}m³ of the required 250m³."
 
     - id: m5
+      check_type: volume_delivered
       name: Market Pillar
       description: Deliver 500m³ of cargo to the colony
-      target_volume_m3: 500
+      target: 500
       by_week: 200
       reward_scrip: 2500
       failure_message: "The commercial trade targets fell short at Week 200."
       failure_detail: "You delivered {actual}m³ of the required 500m³."
 
     - id: m6
+      check_type: volume_delivered
       name: Biosphere Engine
       description: Deliver 1,000m³ of cargo to the colony
-      target_volume_m3: 1000
+      target: 1000
       by_week: 260
       reward_scrip: 5000
       failure_message: "The high-volume export demands were unmet by Week 260."
       failure_detail: "You delivered {actual}m³ of the required 1,000m³."
 
     - id: m7
+      check_type: volume_delivered
       name: Agricultural Titan
       description: Deliver 2,500m³ of cargo to the colony
-      target_volume_m3: 2500
+      target: 2500
       by_week: 320
       reward_scrip: 12000
       failure_message: "The ultimate production contract was not fulfilled by Week 320."
       failure_detail: "You delivered {actual}m³ of the required 2,500m³."
 
+    - id: m8
+      check_type: power_capacity
+      name: Power Grid
+      description: Reach 150 kW of total power production
+      target: 150
+      reward_scrip: 500
+
+    - id: m9
+      check_type: contracts_completed
+      name: Trusted Supplier
+      description: Complete 10 contracts for Kovacs
+      target: 10
+      reward_scrip: 500
+
+    - id: m10
+      check_type: fauna_killed
+      name: Perimeter Defender
+      description: Defeat 100 fauna in raids
+      target: 100
+      reward_scrip: 500
+
+    - id: m11
+      check_type: crop_diversity
+      name: Tier 1 Cultivator
+      description: Harvest every Tier 1 crop at least once
+      target: 1
+      reward_scrip: 200
+
+    - id: m12
+      check_type: crop_diversity
+      name: Tier 2 Cultivator
+      description: Harvest every Tier 2 crop at least once
+      target: 2
+      reward_scrip: 400
+
+    - id: m13
+      check_type: crop_diversity
+      name: Tier 3 Cultivator
+      description: Harvest every Tier 3 crop at least once
+      target: 3
+      reward_scrip: 600
+
+    - id: m14
+      check_type: crop_diversity
+      name: Tier 4 Cultivator
+      description: Harvest every Tier 4 crop at least once
+      target: 4
+      reward_scrip: 900
+
+    - id: m15
+      check_type: crop_diversity
+      name: Tier 5 Cultivator
+      description: Harvest every Tier 5 crop at least once
+      target: 5
+      reward_scrip: 1200
+
   normal:
     - id: m1
+      check_type: volume_delivered
       name: First Shipment
       description: Deliver 10m³ of cargo to the colony
-      target_volume_m3: 10
+      target: 10
       by_week: 12
       reward_scrip: 100
       failure_message: "No initial shipment received by Week 12."
       failure_detail: "You delivered {actual}m³ of the required 10m³."
 
     - id: m2
+      check_type: volume_delivered
       name: Steady Supply
       description: Deliver 50m³ of cargo to the colony
-      target_volume_m3: 50
+      target: 50
       by_week: 40
       reward_scrip: 300
       failure_message: "Supply quotas were not met by Week 40."
       failure_detail: "You delivered {actual}m³ of the required 50m³."
 
     - id: m3
+      check_type: volume_delivered
       name: Colony Cornerstone
       description: Deliver 150m³ of cargo to the colony
-      target_volume_m3: 150
+      target: 150
       by_week: 80
       reward_scrip: 1000
       failure_message: "The primary supply contract was not fulfilled by Week 80."
       failure_detail: "You delivered {actual}m³ of the required 150m³."
 
     - id: m4
+      check_type: volume_delivered
       name: Operational Hub
       description: Deliver 350m³ of cargo to the colony
-      target_volume_m3: 350
+      target: 350
       by_week: 120
       reward_scrip: 2000
       failure_message: "Logistics pipelines suffered a deficit at Week 120."
       failure_detail: "You delivered {actual}m³ of the required 350m³."
 
     - id: m5
+      check_type: volume_delivered
       name: Freight Magnate
       description: Deliver 750m³ of cargo to the colony
-      target_volume_m3: 750
+      target: 750
       by_week: 170
       reward_scrip: 4500
       failure_message: "The mid-tier commercial quota was missed at Week 170."
       failure_detail: "You delivered {actual}m³ of the required 750m³."
 
     - id: m6
+      check_type: volume_delivered
       name: Planetary Breadbasket
       description: Deliver 1,500m³ of cargo to the colony
-      target_volume_m3: 1500
+      target: 1500
       by_week: 220
       reward_scrip: 8000
       failure_message: "The colony's core reserve targets were abandoned at Week 220."
       failure_detail: "You delivered {actual}m³ of the required 1,500m³."
 
     - id: m7
+      check_type: volume_delivered
       name: Total Sector Dominance
       description: Deliver 4,000m³ of cargo to the colony
-      target_volume_m3: 4000
+      target: 4000
       by_week: 280
       reward_scrip: 20000
       failure_message: "The grand master industrial milestone collapsed at Week 280."
       failure_detail: "You delivered {actual}m³ of the required 4,000m³."
 
+    - id: m8
+      check_type: power_capacity
+      name: Power Grid
+      description: Reach 150 kW of total power production
+      target: 150
+      reward_scrip: 500
+
+    - id: m9
+      check_type: contracts_completed
+      name: Trusted Supplier
+      description: Complete 10 contracts for Kovacs
+      target: 10
+      reward_scrip: 500
+
+    - id: m10
+      check_type: fauna_killed
+      name: Perimeter Defender
+      description: Defeat 100 fauna in raids
+      target: 100
+      reward_scrip: 500
+
+    - id: m11
+      check_type: crop_diversity
+      name: Tier 1 Cultivator
+      description: Harvest every Tier 1 crop at least once
+      target: 1
+      reward_scrip: 200
+
+    - id: m12
+      check_type: crop_diversity
+      name: Tier 2 Cultivator
+      description: Harvest every Tier 2 crop at least once
+      target: 2
+      reward_scrip: 400
+
+    - id: m13
+      check_type: crop_diversity
+      name: Tier 3 Cultivator
+      description: Harvest every Tier 3 crop at least once
+      target: 3
+      reward_scrip: 600
+
+    - id: m14
+      check_type: crop_diversity
+      name: Tier 4 Cultivator
+      description: Harvest every Tier 4 crop at least once
+      target: 4
+      reward_scrip: 900
+
+    - id: m15
+      check_type: crop_diversity
+      name: Tier 5 Cultivator
+      description: Harvest every Tier 5 crop at least once
+      target: 5
+      reward_scrip: 1200
+
   hard:
     - id: m1
+      check_type: volume_delivered
       name: First Shipment
       description: Deliver 10m³ of cargo to the colony
-      target_volume_m3: 10
+      target: 10
       by_week: 8
       reward_scrip: 100
       failure_message: "No cargo received within the first 8 weeks. Unacceptable."
       failure_detail: "You delivered {actual}m³ of the required 10m³."
 
     - id: m2
+      check_type: volume_delivered
       name: Steady Supply
       description: Deliver 60m³ of cargo to the colony
-      target_volume_m3: 60
+      target: 60
       by_week: 25
       reward_scrip: 400
       failure_message: "Supply targets missed at Week 25. The colony is losing patience."
       failure_detail: "You delivered {actual}m³ of the required 60m³."
 
     - id: m3
+      check_type: volume_delivered
       name: Colony Cornerstone
       description: Deliver 200m³ of cargo to the colony
-      target_volume_m3: 200
+      target: 200
       by_week: 55
       reward_scrip: 1200
       failure_message: "The elite production pace faltered at Week 55."
       failure_detail: "You delivered {actual}m³ of the required 200m³."
 
     - id: m4
+      check_type: volume_delivered
       name: Breakneck Outward
       description: Deliver 500m³ of cargo to the colony
-      target_volume_m3: 500
+      target: 500
       by_week: 90
       reward_scrip: 3000
       failure_message: "Industrial development schedule breached at Week 90."
       failure_detail: "You delivered {actual}m³ of the required 500m³."
 
     - id: m5
+      check_type: volume_delivered
       name: Imperial Supplier
       description: Deliver 1,200m³ of cargo to the colony
-      target_volume_m3: 1200
+      target: 1200
       by_week: 130
       reward_scrip: 7000
       failure_message: "Corporate high-priority manifest unfulfilled at Week 130."
       failure_detail: "You delivered {actual}m³ of the required 1,200m³."
 
     - id: m6
+      check_type: volume_delivered
       name: Sovereign Monopoly
       description: Deliver 2,500m³ of cargo to the colony
-      target_volume_m3: 2500
+      target: 2500
       by_week: 180
       reward_scrip: 15000
       failure_message: "Critical planetary baseline supply failed at Week 180."
       failure_detail: "You delivered {actual}m³ of the required 2,500m³."
 
     - id: m7
+      check_type: volume_delivered
       name: Apex Megastructure
       description: Deliver 6,000m³ of cargo to the colony
-      target_volume_m3: 6000
+      target: 6000
       by_week: 240
       reward_scrip: 35000
       failure_message: "The absolute limits of agricultural speed failed at Week 240."
       failure_detail: "You delivered {actual}m³ of the required 6000m³."
+
+    - id: m8
+      check_type: power_capacity
+      name: Power Grid
+      description: Reach 150 kW of total power production
+      target: 150
+      reward_scrip: 500
+
+    - id: m9
+      check_type: contracts_completed
+      name: Trusted Supplier
+      description: Complete 10 contracts for Kovacs
+      target: 10
+      reward_scrip: 500
+
+    - id: m10
+      check_type: fauna_killed
+      name: Perimeter Defender
+      description: Defeat 100 fauna in raids
+      target: 100
+      reward_scrip: 500
+
+    - id: m11
+      check_type: crop_diversity
+      name: Tier 1 Cultivator
+      description: Harvest every Tier 1 crop at least once
+      target: 1
+      reward_scrip: 200
+
+    - id: m12
+      check_type: crop_diversity
+      name: Tier 2 Cultivator
+      description: Harvest every Tier 2 crop at least once
+      target: 2
+      reward_scrip: 400
+
+    - id: m13
+      check_type: crop_diversity
+      name: Tier 3 Cultivator
+      description: Harvest every Tier 3 crop at least once
+      target: 3
+      reward_scrip: 600
+
+    - id: m14
+      check_type: crop_diversity
+      name: Tier 4 Cultivator
+      description: Harvest every Tier 4 crop at least once
+      target: 4
+      reward_scrip: 900
+
+    - id: m15
+      check_type: crop_diversity
+      name: Tier 5 Cultivator
+      description: Harvest every Tier 5 crop at least once
+      target: 5
+      reward_scrip: 1200
