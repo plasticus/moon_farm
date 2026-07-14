@@ -81,16 +81,16 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
 
     final topPad = MediaQuery.of(context).padding.top;
     return PreferredSize(
-      // +58 ad banner height, +8 breathing room below it.
-      preferredSize: Size.fromHeight(58 + 66 + topPad),
+      // Ad (50) + tight gap (4) + farm name/menu row (~32, PopupMenuButton
+      // is the tallest thing in it) + stats row (~20) + bottom pad (4).
+      preferredSize: Size.fromHeight(50 + 4 + 32 + 20 + 4 + topPad),
       child: Container(
         color: MFColors.background,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: topPad),
             const Center(child: AdBannerWidget()),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 4, 4),
               child: Column(
