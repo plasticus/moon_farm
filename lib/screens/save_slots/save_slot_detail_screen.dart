@@ -79,114 +79,125 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
 
     final topPad = MediaQuery.of(context).padding.top;
     return PreferredSize(
-      preferredSize: Size.fromHeight(58 + topPad),
+      // +58 ad banner height, +8 breathing room below it.
+      preferredSize: Size.fromHeight(58 + 66 + topPad),
       child: Container(
         color: MFColors.background,
-        padding: EdgeInsets.fromLTRB(16, topPad + 4, 4, 4),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Row 1: Farm name full width + menu
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onLongPress: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const DevToolsScreen()),
-                    ),
-                    child: Text(
-                      game.farmName.toUpperCase(),
-                      style: MFTextStyles.labelLarge,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  color: MFColors.surface,
-                  iconColor: MFColors.textSecondary,
-                  padding: EdgeInsets.zero,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'save',
-                      child: Text('Save Game', style: MFTextStyles.bodyLarge),
-                    ),
-                    const PopupMenuItem(
-                      value: 'mainmenu',
-                      child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
-                    ),
-                  ],
-                  onSelected: (val) async {
-                    if (val == 'save') {
-                      await ref.read(activeGameProvider.notifier).persistCurrentState();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).clearSnackBars();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: GestureDetector(
-                            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                            child: Text('Game saved.'),
-                          )),
-                        );
-                      }
-                    } else if (val == 'mainmenu') {
-                      ref.read(activeGameProvider.notifier).clearGame();
-                      if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-                              (route) => false,
-                        );
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
-            // Row 2: W67 · N  ⚡+236  🎫1893  🌱23  ⚠️2w  📡1
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+            SizedBox(height: topPad),
+            const Center(child: AdBannerWidget()),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 4, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'W${game.currentWeek} · ${game.difficulty.name[0].toUpperCase()}  ',
-                    style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+                  // Row 1: Farm name full width + menu
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onLongPress: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const DevToolsScreen()),
+                          ),
+                          child: Text(
+                            game.farmName.toUpperCase(),
+                            style: MFTextStyles.labelLarge,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                      PopupMenuButton<String>(
+                        color: MFColors.surface,
+                        iconColor: MFColors.textSecondary,
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'save',
+                            child: Text('Save Game', style: MFTextStyles.bodyLarge),
+                          ),
+                          const PopupMenuItem(
+                            value: 'mainmenu',
+                            child: Text('Main Menu', style: TextStyle(color: MFColors.neonPink)),
+                          ),
+                        ],
+                        onSelected: (val) async {
+                          if (val == 'save') {
+                            await ref.read(activeGameProvider.notifier).persistCurrentState();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: GestureDetector(
+                                  onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                                  child: Text('Game saved.'),
+                                )),
+                              );
+                            }
+                          } else if (val == 'mainmenu') {
+                            ref.read(activeGameProvider.notifier).clearGame();
+                            if (context.mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+                                    (route) => false,
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  _StatusChip(
-                    label: '${powerSurplus >= 0 ? '+' : ''}$powerSurplus',
-                    color: powerSurplus >= 0 ? MFColors.statusOptimal : MFColors.statusCritical,
-                    icon: '⚡',
-                  ),
-                  const SizedBox(width: 4),
-                  _StatusChip(
-                    label: '${game.resources.starScrip}',
-                    color: MFColors.starScrip,
-                    icon: '🎫',
-                  ),
-                  const SizedBox(width: 4),
-                  _StatusChip(
-                    label: '${game.resources.seeds}',
-                    color: MFColors.neonGreen,
-                    icon: '🌱',
-                  ),
-                  // Raid beacon — always show countdown when within 2 weeks
-                  if (isRaidWeek) ...[
-                    const SizedBox(width: 4),
-                    _StatusChip(label: 'R-0w', color: MFColors.neonPink, icon: '🚨'),
-                  ] else if (raidWarning) ...[
-                    const SizedBox(width: 4),
-                    _StatusChip(
-                      label: 'R-${game.nextRaidWeek - game.currentWeek}w',
-                      color: (game.nextRaidWeek - game.currentWeek) <= 1
-                          ? MFColors.neonPink
-                          : MFColors.neonOrange,
-                      icon: '🚨',
+                  // Row 2: W67 · N  ⚡+236  🎫1893  🌱23  ⚠️2w  📡1
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Text(
+                          'W${game.currentWeek} · ${game.difficulty.name[0].toUpperCase()}  ',
+                          style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
+                        ),
+                        _StatusChip(
+                          label: '${powerSurplus >= 0 ? '+' : ''}$powerSurplus',
+                          color: powerSurplus >= 0 ? MFColors.statusOptimal : MFColors.statusCritical,
+                          icon: '⚡',
+                        ),
+                        const SizedBox(width: 4),
+                        _StatusChip(
+                          label: '${game.resources.starScrip}',
+                          color: MFColors.starScrip,
+                          icon: '🎫',
+                        ),
+                        const SizedBox(width: 4),
+                        _StatusChip(
+                          label: '${game.resources.seeds}',
+                          color: MFColors.neonGreen,
+                          icon: '🌱',
+                        ),
+                        // Raid beacon — always show countdown when within 2 weeks
+                        if (isRaidWeek) ...[
+                          const SizedBox(width: 4),
+                          _StatusChip(label: 'R-0w', color: MFColors.neonPink, icon: '🚨'),
+                        ] else if (raidWarning) ...[
+                          const SizedBox(width: 4),
+                          _StatusChip(
+                            label: 'R-${game.nextRaidWeek - game.currentWeek}w',
+                            color: (game.nextRaidWeek - game.currentWeek) <= 1
+                                ? MFColors.neonPink
+                                : MFColors.neonOrange,
+                            icon: '🚨',
+                          ),
+                        ],
+                        // Kovacs pickup — show spaceship when ship window is open
+                        if (game.isShipWindowOpen) ...[
+                          const SizedBox(width: 4),
+                          _StatusChip(label: '', color: MFColors.neonCyan, icon: '🚀'),
+                        ],
+                      ],
                     ),
-                  ],
-                  // Kovacs pickup — show spaceship when ship window is open
-                  if (game.isShipWindowOpen) ...[
-                    const SizedBox(width: 4),
-                    _StatusChip(label: '', color: MFColors.neonCyan, icon: '🚀'),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -393,11 +404,6 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
         children: [
-          const _SectionHeader('ADVERTISEMENT'),
-          const SizedBox(height: 8),
-          const Center(child: AdBannerWidget()),
-          const SizedBox(height: 16),
-          const Divider(color: MFColors.borderSubtle, height: 32),
           // ── End Week button — at top so it's always reachable ───────────
           if (game.lastWeekSummary != null)
             Align(
