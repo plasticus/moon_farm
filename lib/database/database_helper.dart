@@ -31,14 +31,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 16,
+      version: 17,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         // During development, just wipe and recreate on any version change.
         // Replace this with proper migrations before publishing.
         await db.execute('DROP TABLE IF EXISTS game_states');
         await db.execute('DROP TABLE IF EXISTS save_slots');
-        await db.execute('DROP TABLE IF EXISTS trophies');
+        await db.execute('DROP TABLE IF EXISTS trophies'); // legacy, no longer created
         await db.execute('DROP TABLE IF EXISTS weekly_log');
         await _createDB(db, newVersion);
       },
@@ -80,17 +80,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // ── Trophies (denormalized for quick lookup across saves) ────────────────
-    await db.execute('''
-      CREATE TABLE trophies (
-        id TEXT NOT NULL,
-        slot_number INTEGER NOT NULL,
-        unlocked INTEGER DEFAULT 0,
-        week_earned INTEGER,
-        PRIMARY KEY (id, slot_number)
-      )
-    ''');
-
     // ── Weekly Log ───────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE weekly_log (
@@ -111,9 +100,6 @@ class DatabaseHelper {
     // ── Indexes ──────────────────────────────────────────────────────────────
     await db.execute(
       'CREATE INDEX idx_log_slot ON weekly_log (slot_number, week DESC)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_trophies_slot ON trophies (slot_number)',
     );
   }
 
@@ -209,11 +195,6 @@ class DatabaseHelper {
       whereArgs: [slotNumber],
     );
     await db.delete(
-      'trophies',
-      where: 'slot_number = ?',
-      whereArgs: [slotNumber],
-    );
-    await db.delete(
       'weekly_log',
       where: 'slot_number = ?',
       whereArgs: [slotNumber],
@@ -238,7 +219,6 @@ class DatabaseHelper {
     );
 
     await updateSaveSlotMeta(state);
-    await _syncTrophies(db, state);
   }
 
   Future<GameState?> loadGameState(int slotNumber) async {
@@ -254,23 +234,6 @@ class DatabaseHelper {
     final json = jsonDecode(results.first['state_json'] as String)
     as Map<String, dynamic>;
     return _gameStateFromJson(json);
-  }
-
-  Future<void> _syncTrophies(Database db, GameState state) async {
-    for (final trophy in state.trophies) {
-      if (trophy.status == TrophyStatus.unlocked) {
-        await db.insert(
-          'trophies',
-          {
-            'id': trophy.id,
-            'slot_number': state.slotNumber,
-            'unlocked': 1,
-            'week_earned': trophy.weekEarned,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-    }
   }
 
   // ─── Weekly Log ───────────────────────────────────────────────────────────
@@ -346,7 +309,6 @@ class DatabaseHelper {
       'pending_deliveries':
       state.pendingDeliveries.map((d) => d.toJson()).toList(),
       'milestones': state.milestones.map(_milestoneToJson).toList(),
-      'trophies': state.trophies.map(_trophyToJson).toList(),
       'log': state.log.map(_logEntryToJson).toList(),
       'radio_feed': state.radioFeed.map(_radioToJson).toList(),
       'relay': _relayToJson(state.relay),
@@ -400,7 +362,6 @@ class DatabaseHelper {
           ?.map((d) => PendingDelivery.fromJson(d as Map<String, dynamic>))
           .toList() ?? const [],
       milestones: (json['milestones'] as List).map((m) => _milestoneFromJson(m as Map<String, dynamic>)).toList(),
-      trophies: (json['trophies'] as List).map((t) => _trophyFromJson(t as Map<String, dynamic>)).toList(),
       log: (json['log'] as List).map((l) => _logEntryFromJson(l as Map<String, dynamic>)).toList(),
       radioFeed: (json['radio_feed'] as List).map((r) => _radioFromJson(r as Map<String, dynamic>)).toList(),
       relay: _relayFromJson(json['relay'] as Map<String, dynamic>),
@@ -485,7 +446,6 @@ class DatabaseHelper {
     'crops_harvested': s.cropsHarvested,
     'crops_died': s.cropsDied,
     'volume_to_colony_m3': s.volumeToColonyM3,
-    'new_trophies': s.newTrophies,
     'milestone_updates': s.milestoneUpdates,
     'contract_updates': s.contractUpdates,
     'raid_occurred': s.raidOccurred,
@@ -503,7 +463,6 @@ class DatabaseHelper {
     cropsHarvested: (j['crops_harvested'] as num).toInt(),
     cropsDied: (j['crops_died'] as num).toInt(),
     volumeToColonyM3: (j['volume_to_colony_m3'] as num).toDouble(),
-    newTrophies: List<String>.from(j['new_trophies'] as List? ?? []),
     milestoneUpdates: List<String>.from(j['milestone_updates'] as List? ?? []),
     contractUpdates: List<String>.from(j['contract_updates'] as List? ?? []),
     raidOccurred: j['raid_occurred'] as bool? ?? false,
@@ -647,20 +606,6 @@ class DatabaseHelper {
     targetVolumeM3: (j['target_volume_m3'] as num).toDouble(), byWeek: (j['by_week'] as num).toInt(),
     rewardScrip: (j['reward_scrip'] as num).toInt(),
     status: MilestoneStatus.values.firstWhere((e) => e.name == j['status']),
-  );
-
-  Map<String, dynamic> _trophyToJson(Trophy t) => {
-    'id': t.id, 'name': t.name, 'description': t.description,
-    'emoji': t.emoji, 'category': t.category, 'status': t.status.name,
-    'week_earned': t.weekEarned,
-  };
-
-  Trophy _trophyFromJson(Map<String, dynamic> j) => Trophy(
-    id: j['id'] as String, name: j['name'] as String,
-    description: j['description'] as String, emoji: j['emoji'] as String,
-    category: j['category'] as String,
-    status: TrophyStatus.values.firstWhere((e) => e.name == j['status']),
-    weekEarned: _iN(j['week_earned']),
   );
 
   Map<String, dynamic> _logEntryToJson(WeeklyLogEntry l) => {

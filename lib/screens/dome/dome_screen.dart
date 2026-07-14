@@ -365,13 +365,8 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       updatedGame = checkRadioTriggers(updatedGame);
     }
 
-    // Check first harvest trophy
+    // First harvest of the game gets a special callout
     if (newHarvestCount == 1) {
-      final updatedTrophies = updatedGame.trophies.map((t) {
-        if (t.id == 'first_harvest') return t.unlock(game.currentWeek);
-        return t;
-      }).toList();
-      updatedGame = updatedGame.copyWith(trophies: updatedTrophies);
       _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
       _snack(ref.context, '🏆 First Harvest! ${crop.name} stored in silo.');
       return;

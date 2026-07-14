@@ -32,8 +32,6 @@ enum PowerSourceType { solarArray, windTurbine, geothermalTap, mycovaultReactor 
 
 enum BuildingType { dome, silo, refinery, laserSentry, powerSource }
 
-enum TrophyStatus { locked, unlocked }
-
 enum ContractStatus { available, active, completed, failed }
 enum MilestoneStatus { pending, completed, failed, warned }
 
@@ -85,7 +83,6 @@ class GameState {
   final List<Contract> completedContracts;
   final List<PendingDelivery> pendingDeliveries;
   final List<Milestone> milestones;
-  final List<Trophy> trophies;
   final List<WeeklyLogEntry> log;
   final List<RadioTransmission> radioFeed;
   final RelayTechnicianState relay;
@@ -141,7 +138,6 @@ class GameState {
     required this.completedContracts,
     this.pendingDeliveries = const [],
     required this.milestones,
-    required this.trophies,
     required this.log,
     required this.radioFeed,
     required this.relay,
@@ -189,7 +185,6 @@ class GameState {
     List<Contract>? activeContracts,
     List<Contract>? completedContracts,
     List<Milestone>? milestones,
-    List<Trophy>? trophies,
     List<WeeklyLogEntry>? log,
     List<RadioTransmission>? radioFeed,
     RelayTechnicianState? relay,
@@ -238,7 +233,6 @@ class GameState {
       completedContracts: completedContracts ?? this.completedContracts,
       pendingDeliveries: pendingDeliveries ?? this.pendingDeliveries,
       milestones: milestones ?? this.milestones,
-      trophies: trophies ?? this.trophies,
       log: log ?? this.log,
       radioFeed: radioFeed ?? this.radioFeed,
       relay: relay ?? this.relay,
@@ -908,40 +902,6 @@ class Milestone {
   }
 }
 
-// ─── Trophy ───────────────────────────────────────────────────────────────────
-
-class Trophy {
-  final String id;
-  final String name;
-  final String description;
-  final String emoji;
-  final String category;
-  final TrophyStatus status;
-  final int? weekEarned;
-
-  const Trophy({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.emoji,
-    required this.category,
-    required this.status,
-    this.weekEarned,
-  });
-
-  Trophy unlock(int week) {
-    return Trophy(
-      id: id,
-      name: name,
-      description: description,
-      emoji: emoji,
-      category: category,
-      status: TrophyStatus.unlocked,
-      weekEarned: week,
-    );
-  }
-}
-
 // ─── Relay Technician ─────────────────────────────────────────────────────────
 
 class RelayTechnicianState {
@@ -1071,7 +1031,6 @@ class WeekSummary {
   final int cropsHarvested;
   final int cropsDied;
   final double volumeToColonyM3;
-  final List<String> newTrophies;
   final List<String> milestoneUpdates;
   final List<String> contractUpdates;
   final bool raidOccurred;
@@ -1093,7 +1052,6 @@ class WeekSummary {
     required this.cropsHarvested,
     required this.cropsDied,
     required this.volumeToColonyM3,
-    required this.newTrophies,
     required this.milestoneUpdates,
     required this.contractUpdates,
     required this.raidOccurred,

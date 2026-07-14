@@ -156,19 +156,6 @@ final pendingMilestonesProvider = Provider<List<Milestone>>((ref) {
       [];
 });
 
-/// Trophies
-final trophiesProvider = Provider<List<Trophy>>((ref) {
-  return ref.watch(activeGameProvider).value?.trophies ?? [];
-});
-
-/// Unlocked trophy count
-final unlockedTrophyCountProvider = Provider<int>((ref) {
-  return ref
-      .watch(trophiesProvider)
-      .where((t) => t.status == TrophyStatus.unlocked)
-      .length;
-});
-
 /// Is raid coming soon?
 final raidWarningProvider = Provider<bool>((ref) {
   final game = ref.watch(activeGameProvider).value;

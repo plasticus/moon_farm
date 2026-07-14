@@ -215,11 +215,6 @@ class DevToolsScreen extends ConsumerWidget {
                   MFColors.neonPink,
                       () => _killAll(ref, game),
                 ),
-                _DevButton(
-                  'Unlock All Trophies 🏆',
-                  MFColors.neonGold,
-                      () => _unlockAllTrophies(ref, game),
-                ),
               ],
             ),
           ),
@@ -432,16 +427,6 @@ class DevToolsScreen extends ConsumerWidget {
     );
   }
 
-  void _unlockAllTrophies(WidgetRef ref, GameState game) {
-    final updatedTrophies = game.trophies.map((t) {
-      if (t.status == TrophyStatus.locked) return t.unlock(game.currentWeek);
-      return t;
-    }).toList();
-
-    ref.read(activeGameProvider.notifier).updateGameLocal(
-      game.copyWith(trophies: updatedTrophies),
-    );
-  }
 }
 
 // ─── Sub-widgets ──────────────────────────────────────────────────────────────

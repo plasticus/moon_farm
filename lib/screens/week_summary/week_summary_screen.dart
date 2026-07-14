@@ -127,16 +127,6 @@ class WeekSummaryScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                   ],
 
-                  // New trophies
-                  if (summary.newTrophies.isNotEmpty) ...[
-                    _SectionLabel('TROPHIES'),
-                    const SizedBox(height: 6),
-                    ...summary.newTrophies.map(
-                          (t) => _EventRow(text: t, color: MFColors.neonGold),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
                   // All events log
                   if (summary.events.isNotEmpty) ...[
                     _SectionLabel('WEEK LOG'),

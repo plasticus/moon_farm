@@ -161,11 +161,6 @@ class GameConfigService {
   List<Milestone> getMilestones(Difficulty difficulty) =>
       MilestoneConfigService.instance.getMilestones(difficulty);
 
-  // ─── Trophies ─────────────────────────────────────────────────────────────
-
-  List<Trophy> getAllTrophies() =>
-      MilestoneConfigService.instance.getAllTrophies();
-
   // ─── Relay / Technician ───────────────────────────────────────────────────
 
   Map<String, dynamic> get relayConfig {

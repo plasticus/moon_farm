@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  lib/config/milestone_config_service.dart
 // ═══════════════════════════════════════════════════════════════
-// Loads all milestone, trophy, and difficulty configuration from
+// Loads all milestone and difficulty configuration from
 // assets/config/milestone_config.yaml.
 // Edit that file to rebalance goals without touching Dart code.
 
@@ -89,22 +89,4 @@ class MilestoneConfigService {
         .replaceAll('{strikes}', '${strikes ?? '?'}');
   }
 
-  // ─── Trophies ──────────────────────────────────────────────────────────────
-
-  List<Trophy> getAllTrophies() {
-    final trophies = _data['trophies'] as List?;
-    if (trophies == null) return [];
-
-    return trophies.map((t) {
-      final map = t as Map<String, dynamic>;
-      return Trophy(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        description: map['description'] as String,
-        emoji: map['emoji'] as String,
-        category: map['category'] as String,
-        status: TrophyStatus.locked,
-      );
-    }).toList();
-  }
 }

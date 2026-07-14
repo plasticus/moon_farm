@@ -11,12 +11,11 @@
 //   5. Neon Berry special decay (die if ready and not harvested)
 //   6. Silo overflow → compost
 //   7. Milestone checks
-//   8. Trophy checks
-//   9. Relay mood decay
-//  10. Generate radio transmission
-//  11. Advance week counter
-//  12. Generate week summary
-//  13. Persist to DB
+//   8. Relay mood decay
+//   9. Generate radio transmission
+//  10. Advance week counter
+//  11. Generate week summary
+//  12. Persist to DB
 
 import '../models/game_models.dart';
 import '../config/game_config_service.dart';
@@ -88,7 +87,6 @@ class EndWeekEngine {
     int cropsHarvested = 0;
     int cropsDied = 0;
     double volumeToColony = 0;
-    final newTrophies = <String>[];
     final milestoneUpdates = <String>[];
     final contractUpdates = <String>[];
     final resourceChanges = <String, double>{};
@@ -630,11 +628,6 @@ class EndWeekEngine {
       terminationReason: newTermReason,
     );
 
-    // ── Step 8: Trophy checks ─────────────────────────────────────────────
-    final trophyResult = _checkTrophies(s, newTrophies);
-    s = trophyResult.$1;
-    newTrophies.addAll(trophyResult.$2);
-
     // ── Step 9: Relay reset ───────────────────────────────────────────────────
     // Mood only changes via conversation — no automated decay.
     s = s.copyWith(
@@ -739,7 +732,6 @@ class EndWeekEngine {
       cropsHarvested: cropsHarvested,
       cropsDied: cropsDied,
       volumeToColonyM3: volumeToColony,
-      newTrophies: newTrophies,
       milestoneUpdates: milestoneUpdates,
       contractUpdates: contractUpdates,
       raidOccurred: false,
@@ -753,51 +745,6 @@ class EndWeekEngine {
     return (s, summary);
   }
 
-
-  // ─── Trophy checker ───────────────────────────────────────────────────────
-
-  (GameState, List<String>) _checkTrophies(GameState state, List<String> alreadyEarned) {
-    var s = state;
-    final earned = <String>[];
-
-    for (final trophy in s.trophies) {
-      if (trophy.status == TrophyStatus.unlocked) continue;
-
-      bool shouldUnlock = false;
-
-      switch (trophy.id) {
-        case 'first_harvest':
-          shouldUnlock = s.totalCropsHarvested >= 1;
-        case 'century_farmer':
-          shouldUnlock = s.currentWeek >= 100;
-        case 'solar_millionaire':
-          shouldUnlock = s.lifetimeScripEarned >= 10000;
-        case 'five_domes':
-          shouldUnlock = s.domes.length >= 5;
-        case 'robot_army':
-          shouldUnlock = s.domes.where((d) => d.domeBot != null).length >= 3;
-        case 'compost_king':
-          shouldUnlock = s.totalCompostGenerated >= 1000;
-        case 'relay_friend':
-          shouldUnlock = s.completedContracts.length >= 10;
-        case 'no_miss_10':
-        // Checked via events — skip for now, Phase 4
-          break;
-        case 'speed_harvest':
-        // 5 crops in one week — tracked in summary
-          break;
-      }
-
-      if (shouldUnlock) {
-        final updated = trophy.unlock(s.currentWeek);
-        earned.add('🏆 Trophy unlocked: ${trophy.name}');
-        final updatedTrophies = s.trophies.map((t) => t.id == trophy.id ? updated : t).toList();
-        s = s.copyWith(trophies: updatedTrophies);
-      }
-    }
-
-    return (s, earned);
-  }
 
   // ─── Radio transmission generator ────────────────────────────────────────
 

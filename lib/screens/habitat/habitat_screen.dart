@@ -1290,14 +1290,6 @@ class _StatsSection extends StatelessWidget {
         ]),
         const SizedBox(height: 16),
 
-        _StatCard('TROPHIES', [
-          _StatRow(
-            'Unlocked',
-            '${game.trophies.where((t) => t.status == TrophyStatus.unlocked).length} / ${game.trophies.length}',
-          ),
-        ]),
-        const SizedBox(height: 16),
-
         if (game.radioFeed.isNotEmpty) ...[
           Text('RADIO LOG',
               style: MFTextStyles.bodySmall.copyWith(

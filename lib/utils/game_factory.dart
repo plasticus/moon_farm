@@ -62,9 +62,8 @@ class GameFactory {
       outputKwh: 45,
     );
 
-    // Load milestones and trophies from config
+    // Load milestones from config
     final milestones = MilestoneConfigService.instance.getMilestones(difficulty);
-    final trophies = MilestoneConfigService.instance.getAllTrophies();
 
     // Starting wall and grenades from difficulty config
     final wallLevel = diffSettings['starting_wall_level'] as int? ?? 1;
@@ -116,7 +115,6 @@ class GameFactory {
       activeContracts: [],
       completedContracts: [],
       milestones: milestones,
-      trophies: trophies,
       log: [],
       radioFeed: const [],
       relay: RelayTechnicianState(
