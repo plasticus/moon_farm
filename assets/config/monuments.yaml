@@ -1,0 +1,119 @@
+# ═══════════════════════════════════════════════════════════════
+#  assets/config/monuments.yaml
+# ═══════════════════════════════════════════════════════════════
+# The 10 monument types (Mk1-Mk10), built from the Habitat > Monuments
+# tab. Each one is a fixed design in a catalog, not something you level
+# up — "repeatable" means you can build the same mk_level again if you
+# want more than one. Late-game scrip sink: costs deliberately overlap
+# with things you'd otherwise sell as scrap (moon dirt, metals, water).
+#
+# FIELDS:
+#   mk_level:        1-10, also doubles as the display tier
+#   id:              unique string key
+#   name:            display name
+#   lore:            one-line Olathian-setting flavor text
+#   emoji:           icon shown in the build list and viewing room
+#   cost_moon_dirt / cost_metals / cost_water: build cost
+#   score_value:     contribution to the (future) end-game score —
+#                    not consumed anywhere yet, just recorded per build
+
+monuments:
+  - mk_level: 1
+    id: settlers_cairn
+    name: Settler's Cairn
+    lore: A stack of bare moon rock, the first thing every colonist builds. Ugly, honest, permanent.
+    emoji: 🪨
+    cost_moon_dirt: 50
+    cost_metals: 20
+    cost_water: 10
+    score_value: 100
+
+  - mk_level: 2
+    id: furrow_marker
+    name: Furrow Marker
+    lore: Etched with the coordinates of your first successful harvest. The colony surveys still reference it.
+    emoji: 🗿
+    cost_moon_dirt: 100
+    cost_metals: 40
+    cost_water: 20
+    score_value: 250
+
+  - mk_level: 3
+    id: water_reliquary
+    name: Water Reliquary
+    lore: A sealed vessel holding the first liter of purified water ever drawn on this claim.
+    emoji: 💧
+    cost_moon_dirt: 180
+    cost_metals: 70
+    cost_water: 35
+    score_value: 450
+
+  - mk_level: 4
+    id: static_antenna
+    name: Static Antenna
+    lore: A decommissioned relay dish, repurposed as sculpture. Kovacs still complains about the paperwork.
+    emoji: 📡
+    cost_moon_dirt: 300
+    cost_metals: 120
+    cost_water: 60
+    score_value: 700
+
+  - mk_level: 5
+    id: olathian_sundial
+    name: Olathian Sundial
+    lore: Casts no shadow without an atmosphere, but the engineering held anyway. A quiet joke for future colonists.
+    emoji: ⏱️
+    cost_moon_dirt: 480
+    cost_metals: 190
+    cost_water: 95
+    score_value: 1000
+
+  - mk_level: 6
+    id: compost_spire
+    name: Compost Spire
+    lore: Built from decades of reclaimed biomass, compacted into something almost beautiful.
+    emoji: 🌱
+    cost_moon_dirt: 750
+    cost_metals: 300
+    cost_water: 150
+    score_value: 1400
+
+  - mk_level: 7
+    id: glass_garden
+    name: The Glass Garden
+    lore: A greenhouse that grows nothing but light — refined sand shaped into something the colony calls art.
+    emoji: 🏛️
+    cost_moon_dirt: 1150
+    cost_metals: 460
+    cost_water: 230
+    score_value: 1900
+
+  - mk_level: 8
+    id: chitin_colossus
+    name: Chitin Colossus
+    lore: Fauna carapace, lacquered and stacked three stories high. Equal parts trophy and warning.
+    emoji: 🦴
+    cost_moon_dirt: 1750
+    cost_metals: 700
+    cost_water: 350
+    score_value: 2500
+
+  - mk_level: 9
+    id: mycovault_cathedral
+    name: Mycovault Cathedral
+    lore: A monument to the fungal networks that quietly kept the colony alive through the hardest years.
+    emoji: ⛪
+    cost_moon_dirt: 2600
+    cost_metals: 1050
+    cost_water: 525
+    score_value: 3200
+
+  - mk_level: 10
+    id: apex_acreage_monolith
+    name: The Apex Acreage Monolith
+    lore: "The colony's official record of your operation: this is what one farm, run long enough, becomes."
+    emoji: 🗽
+    cost_moon_dirt: 3800
+    cost_metals: 1550
+    cost_water: 775
+    score_value: 4000

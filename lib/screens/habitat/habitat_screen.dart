@@ -9,6 +9,7 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../widgets/animated_action_button.dart';
+import '../../config/monument_config_service.dart';
 import '../raid/raid_screen.dart';
 
 class HabitatScreen extends ConsumerStatefulWidget {
@@ -19,7 +20,7 @@ class HabitatScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitatScreenState extends ConsumerState<HabitatScreen> {
-  int _section = 0; // 0=wall, 1=sentries, 2=grenades, 3=radio, 4=stats
+  int _section = 0; // 0=wall, 1=sentries, 2=grenades, 3=radio, 4=monuments, 5=stats
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,8 @@ class _HabitatScreenState extends ConsumerState<HabitatScreen> {
       case 1: return _SentriesSection(game: game, ref: ref);
       case 2: return _GrenadeSection(game: game, ref: ref);
       case 3: return _RadioSection(game: game);
-      case 4: return _StatsSection(game: game);
+      case 4: return _MonumentsSection(game: game, ref: ref);
+      case 5: return _StatsSection(game: game);
       default: return const SizedBox();
     }
   }
@@ -63,6 +65,7 @@ class _HabitatTabBar extends StatelessWidget {
       ('🔫', 'SENTRIES'),
       ('💥', 'GRENADES'),
       ('📻', 'RADIO'),
+      ('🗿', 'MONUMENTS'),
       ('📊', 'STATS'),
     ];
 
@@ -211,6 +214,205 @@ class _RadioMessage {
   final String text;
   final bool isHint;
   const _RadioMessage({required this.week, required this.text, required this.isHint});
+}
+
+// ─── Monuments Section ─────────────────────────────────────────────────────────
+
+class _MonumentsSection extends StatelessWidget {
+  final GameState game;
+  final WidgetRef ref;
+
+  const _MonumentsSection({required this.game, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final catalog = MonumentConfigService.instance.getAllMonuments();
+    final builtCounts = <int, int>{};
+    for (final m in game.monuments) {
+      builtCounts[m.mkLevel] = (builtCounts[m.mkLevel] ?? 0) + 1;
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (game.monuments.isNotEmpty) ...[
+          Text('MONUMENT VIEWING ROOM',
+              style: MFTextStyles.bodySmall.copyWith(
+                  color: MFColors.textMuted, letterSpacing: 2)),
+          const SizedBox(height: 8),
+          ...catalog.where((c) => builtCounts.containsKey(c.mkLevel)).map(
+                (c) => _BuiltMonumentRow(config: c, count: builtCounts[c.mkLevel]!),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Text('BUILD',
+            style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.textMuted, letterSpacing: 2)),
+        const SizedBox(height: 8),
+        ...catalog.map((cfg) => _MonumentBuildRow(
+          config: cfg,
+          game: game,
+          onBuild: () => _buildMonument(context, cfg),
+        )),
+      ],
+    );
+  }
+
+  void _buildMonument(BuildContext context, MonumentConfig cfg) {
+    final newMonument = Monument(
+      id: 'monument_${DateTime.now().millisecondsSinceEpoch}',
+      mkLevel: cfg.mkLevel,
+      weekBuilt: game.currentWeek,
+    );
+    ref.read(activeGameProvider.notifier).updateGameLocal(
+      game.copyWith(
+        monuments: [...game.monuments, newMonument],
+        resources: game.resources.copyWith(
+          moonDirt: game.resources.moonDirt - cfg.costMoonDirt,
+          metals: game.resources.metals - cfg.costMetals,
+          water: game.resources.water - cfg.costWater,
+        ),
+      ),
+    );
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: GestureDetector(
+        onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        child: Text('${cfg.emoji} ${cfg.name} built!'),
+      )),
+    );
+  }
+}
+
+class _BuiltMonumentRow extends StatelessWidget {
+  final MonumentConfig config;
+  final int count;
+
+  const _BuiltMonumentRow({required this.config, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MFColors.neonGold.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.neonGold.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Text(config.emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Mk${config.mkLevel} — ${config.name}',
+                          style: MFTextStyles.labelLarge.copyWith(color: MFColors.neonGold)),
+                    ),
+                    if (count > 1)
+                      Text('×$count',
+                          style: MFTextStyles.bodyMedium.copyWith(color: MFColors.neonGold)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(config.lore, style: MFTextStyles.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonumentBuildRow extends StatelessWidget {
+  final MonumentConfig config;
+  final GameState game;
+  final VoidCallback onBuild;
+
+  const _MonumentBuildRow({
+    required this.config,
+    required this.game,
+    required this.onBuild,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canAfford = game.resources.moonDirt >= config.costMoonDirt &&
+        game.resources.metals >= config.costMetals &&
+        game.resources.water >= config.costWater;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MFColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MFColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(config.emoji, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mk${config.mkLevel} — ${config.name}', style: MFTextStyles.labelLarge),
+                    Text(config.lore, style: MFTextStyles.bodySmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${config.costMoonDirt.toInt()} dirt · ${config.costMetals.toInt()} metals · '
+                      '${config.costWater.toInt()} water',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: canAfford ? MFColors.textMuted : MFColors.neonPink,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: canAfford ? onBuild : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: canAfford
+                        ? MFColors.neonGold.withValues(alpha: 0.15)
+                        : MFColors.borderSubtle.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: canAfford ? MFColors.neonGold : MFColors.borderSubtle,
+                    ),
+                  ),
+                  child: Text(
+                    'BUILD',
+                    style: MFTextStyles.bodySmall.copyWith(
+                      color: canAfford ? MFColors.neonGold : MFColors.textMuted,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Wall Section ─────────────────────────────────────────────────────────────

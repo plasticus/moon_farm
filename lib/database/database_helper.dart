@@ -309,6 +309,7 @@ class DatabaseHelper {
       'pending_deliveries':
       state.pendingDeliveries.map((d) => d.toJson()).toList(),
       'milestones': state.milestones.map(_milestoneToJson).toList(),
+      'monuments': state.monuments.map(_monumentToJson).toList(),
       'log': state.log.map(_logEntryToJson).toList(),
       'radio_feed': state.radioFeed.map(_radioToJson).toList(),
       'relay': _relayToJson(state.relay),
@@ -362,6 +363,9 @@ class DatabaseHelper {
           ?.map((d) => PendingDelivery.fromJson(d as Map<String, dynamic>))
           .toList() ?? const [],
       milestones: (json['milestones'] as List).map((m) => _milestoneFromJson(m as Map<String, dynamic>)).toList(),
+      monuments: (json['monuments'] as List?)
+          ?.map((m) => _monumentFromJson(m as Map<String, dynamic>))
+          .toList() ?? const [],
       log: (json['log'] as List).map((l) => _logEntryFromJson(l as Map<String, dynamic>)).toList(),
       radioFeed: (json['radio_feed'] as List).map((r) => _radioFromJson(r as Map<String, dynamic>)).toList(),
       relay: _relayFromJson(json['relay'] as Map<String, dynamic>),
@@ -611,6 +615,16 @@ class DatabaseHelper {
     status: MilestoneStatus.values.firstWhere((e) => e.name == j['status']),
     failureMessage: j['failure_message'] as String? ?? '',
     failureDetail: j['failure_detail'] as String? ?? '',
+  );
+
+  Map<String, dynamic> _monumentToJson(Monument m) => {
+    'id': m.id, 'mk_level': m.mkLevel, 'week_built': m.weekBuilt,
+  };
+
+  Monument _monumentFromJson(Map<String, dynamic> j) => Monument(
+    id: j['id'] as String,
+    mkLevel: (j['mk_level'] as num).toInt(),
+    weekBuilt: (j['week_built'] as num).toInt(),
   );
 
   Map<String, dynamic> _logEntryToJson(WeeklyLogEntry l) => {

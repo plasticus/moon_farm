@@ -13,6 +13,7 @@ import 'config/raid_config_service.dart';
 import 'config/kovacs_config_service.dart';
 import 'config/milestone_config_service.dart';
 import 'config/radio_config_service.dart';
+import 'config/monument_config_service.dart';
 import 'config/settings_service.dart';
 import 'providers/settings_providers.dart';
 import 'screens/main_menu/main_menu_screen.dart';
@@ -42,6 +43,7 @@ void main() async {
   await KovacsConfigService.instance.load();
   await MilestoneConfigService.instance.load();
   await RadioConfigService.instance.load();
+  await MonumentConfigService.instance.load();
   await SettingsService.instance.initialize();
 
   // Manifest currently ships Google's public test App ID, so this always

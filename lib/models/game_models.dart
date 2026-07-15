@@ -83,6 +83,7 @@ class GameState {
   final List<Contract> completedContracts;
   final List<PendingDelivery> pendingDeliveries;
   final List<Milestone> milestones;
+  final List<Monument> monuments;
   final List<WeeklyLogEntry> log;
   final List<RadioTransmission> radioFeed;
   final RelayTechnicianState relay;
@@ -138,6 +139,7 @@ class GameState {
     required this.completedContracts,
     this.pendingDeliveries = const [],
     required this.milestones,
+    this.monuments = const [],
     required this.log,
     required this.radioFeed,
     required this.relay,
@@ -185,6 +187,7 @@ class GameState {
     List<Contract>? activeContracts,
     List<Contract>? completedContracts,
     List<Milestone>? milestones,
+    List<Monument>? monuments,
     List<WeeklyLogEntry>? log,
     List<RadioTransmission>? radioFeed,
     RelayTechnicianState? relay,
@@ -233,6 +236,7 @@ class GameState {
       completedContracts: completedContracts ?? this.completedContracts,
       pendingDeliveries: pendingDeliveries ?? this.pendingDeliveries,
       milestones: milestones ?? this.milestones,
+      monuments: monuments ?? this.monuments,
       log: log ?? this.log,
       radioFeed: radioFeed ?? this.radioFeed,
       relay: relay ?? this.relay,
@@ -908,6 +912,24 @@ class Milestone {
       failureDetail: failureDetail,
     );
   }
+}
+
+// ─── Monument ─────────────────────────────────────────────────────────────────
+// A single built monument. Repeatable — the same mkLevel can be built more
+// than once, each becoming its own entry here. All display data (name,
+// lore, cost, score value) lives in assets/config/monuments.yaml, keyed by
+// mkLevel — this just records what was actually built and when.
+
+class Monument {
+  final String id;
+  final int mkLevel; // 1-10
+  final int weekBuilt;
+
+  const Monument({
+    required this.id,
+    required this.mkLevel,
+    required this.weekBuilt,
+  });
 }
 
 // ─── Relay Technician ─────────────────────────────────────────────────────────
