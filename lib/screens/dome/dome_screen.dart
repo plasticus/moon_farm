@@ -818,27 +818,43 @@ class _DomeGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // Map 8 cell positions to 3x3 grid (center = robot)
     // Grid index 0-8, center = index 4
-    return GridView.count(
-      crossAxisCount: 3,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: List.generate(9, (gridIndex) {
-        if (gridIndex == 4) {
-          // Center = robot slot
-          return _RobotCell(dome: dome, game: game);
-        }
-        // Map grid index to cell position
-        final cellPos = gridIndex < 4 ? gridIndex : gridIndex - 1;
-        final cell = dome.cells[cellPos];
-        return _CropCell(
-          cell: cell,
-          dome: dome,
-          selectedAction: selectedAction,
-          onTap: () => onCellTap(cellPos),
+    //
+    // Fills whatever height its Expanded parent actually has, instead of
+    // insisting on square cells sized purely from width (shrinkWrap +
+    // default aspect ratio) — that used to overflow off the bottom of the
+    // screen whenever the header/toolbar/footer grew taller at larger text
+    // sizes, since a width-driven grid never shrinks to make room.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const crossAxisCount = 3;
+        const spacing = 8.0;
+        final cellWidth = (constraints.maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
+        final cellHeight = (constraints.maxHeight - spacing * (crossAxisCount - 1)) / crossAxisCount;
+        final aspectRatio = cellHeight > 0 ? cellWidth / cellHeight : 1.0;
+
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+          childAspectRatio: aspectRatio,
+          physics: const NeverScrollableScrollPhysics(),
+          children: List.generate(9, (gridIndex) {
+            if (gridIndex == 4) {
+              // Center = robot slot
+              return _RobotCell(dome: dome, game: game);
+            }
+            // Map grid index to cell position
+            final cellPos = gridIndex < 4 ? gridIndex : gridIndex - 1;
+            final cell = dome.cells[cellPos];
+            return _CropCell(
+              cell: cell,
+              dome: dome,
+              selectedAction: selectedAction,
+              onTap: () => onCellTap(cellPos),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 }

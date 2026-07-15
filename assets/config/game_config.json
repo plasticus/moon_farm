@@ -564,17 +564,6 @@
     ]
   },
   "market_prices": {
-    "buy": {
-      "seeds_tier1": 10,
-      "seeds_tier2": 25,
-      "seeds_tier3": 60,
-      "seeds_tier4": 150,
-      "water": 3,
-      "chemicals": 8,
-      "components": 50,
-      "ore": 15
-    },
-    "sell_modifier": 0.6,
     "scrap_dealer": {
       "bulk_amount": 1000,
       "metals_price": 150,

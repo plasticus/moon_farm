@@ -34,6 +34,10 @@ class SaveSlotDetailScreen extends ConsumerStatefulWidget {
 
 class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
   int _currentTab = 0;
+  // Nudges the player to actually go check on things before ending the
+  // week blind — End Week is orange until they've looked at another tab,
+  // then settles into its normal color. Resets every new week.
+  bool _hasVisitedOtherTab = false;
 
   static const _tabs = [
     _TabItem(icon: Icons.dashboard, label: 'Dashboard'),
@@ -221,7 +225,11 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
     // SpaceBackground wraps all tabs — dashboard gets parallax via its own
     // scroll controller; other tabs get twinkling stars + horizon with no parallax.
     final body = switch (_currentTab) {
-      0 => _DashboardTab(game: game, onEndWeek: () => _doEndWeek(game)),
+      0 => _DashboardTab(
+          game: game,
+          onEndWeek: () => _doEndWeek(game),
+          hasVisitedOtherTab: _hasVisitedOtherTab,
+        ),
       1 => const DomeScreen(),
       2 => const RefineryScreen(),
       3 => const OperationsScreen(),
@@ -238,7 +246,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _currentTab,
-      onTap: (i) => setState(() => _currentTab = i),
+      onTap: (i) => setState(() {
+        _currentTab = i;
+        if (i != 0) _hasVisitedOtherTab = true;
+      }),
       items: _tabs
           .map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
           .toList(),
@@ -314,7 +325,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
 
       debugPrint('[EndWeek] context.mounted = ${context.mounted}');
       if (context.mounted) {
-        setState(() => _currentTab = 0);
+        setState(() {
+          _currentTab = 0;
+          _hasVisitedOtherTab = false;
+        });
         debugPrint('[EndWeek] Pushing WeekSummaryScreen...');
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -392,8 +406,13 @@ class _StatusChip extends StatelessWidget {
 class _DashboardTab extends ConsumerStatefulWidget {
   final GameState game;
   final VoidCallback onEndWeek;
+  final bool hasVisitedOtherTab;
 
-  const _DashboardTab({required this.game, required this.onEndWeek});
+  const _DashboardTab({
+    required this.game,
+    required this.onEndWeek,
+    required this.hasVisitedOtherTab,
+  });
 
   @override
   ConsumerState<_DashboardTab> createState() => _DashboardTabState();
@@ -474,6 +493,7 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
             game: game,
             isLoading: isLoading,
             isRaidWeek: isRaidWeek,
+            hasVisitedOtherTab: widget.hasVisitedOtherTab,
             onPressed: widget.onEndWeek,
           ),
           const SizedBox(height: 16),
@@ -510,10 +530,30 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
             _DashboardContractsCard(game: game),
             const SizedBox(height: 16),
           ],
-          const _SectionHeader('MILESTONES'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const _SectionHeader('MILESTONES'),
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => MilestonesTableScreen(game: game)),
+                ),
+                child: Text(
+                  'VIEW ALL →',
+                  style: MFTextStyles.bodySmall.copyWith(
+                    color: MFColors.neonCyan, letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
-          ...game.milestones
-              .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
+          ...(game.milestones
+                  .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
+                  .toList()
+                ..sort((a, b) =>
+                    milestoneProgress(b, game).$1.compareTo(milestoneProgress(a, game).$1)))
+              .take(5)
               .map((m) => _MilestoneRow(milestone: m, game: game)),
           const SizedBox(height: 24),
         ],
@@ -791,44 +831,54 @@ class _PendingDeliveriesCard extends StatelessWidget {
   }
 }
 
+/// (progress 0.0-1.0, "current / target" label) — shape depends on
+/// checkType, since "current" means something different for each. Shared
+/// by the Dashboard summary (for "closest to done" sorting) and both
+/// milestone list widgets below.
+(double, String) milestoneProgress(Milestone m, GameState game) {
+  switch (m.checkType) {
+    case 'power_capacity':
+      final current = game.totalPowerProduction.toDouble();
+      return (current / m.target, '${current.toInt()} / ${m.target.toInt()} kW');
+    case 'contracts_completed':
+      final current = game.completedContracts.length.toDouble();
+      return (current / m.target, '${current.toInt()} / ${m.target.toInt()} contracts');
+    case 'fauna_killed':
+      final current = game.totalFaunaKilled.toDouble();
+      return (current / m.target, '${current.toInt()} / ${m.target.toInt()} fauna');
+    case 'crop_diversity':
+      final tierCrops = GameConfigService.instance.getCropsByTier(m.target.toInt());
+      final discovered = tierCrops.where((c) => (game.cropHarvestCounts[c.id] ?? 0) > 0).length;
+      final total = tierCrops.isEmpty ? 1 : tierCrops.length;
+      return (discovered / total, 'Tier ${m.target.toInt()}: $discovered / $total crops');
+    case 'volume_delivered':
+    default:
+      final current = game.totalVolumeDeliveredM3;
+      return (current / m.target, '${current.toStringAsFixed(1)} / ${m.target.toStringAsFixed(0)}m³');
+  }
+}
+
 class _MilestoneRow extends StatelessWidget {
   final Milestone milestone;
   final GameState game;
   const _MilestoneRow({required this.milestone, required this.game});
 
-  /// (progress 0.0-1.0, "current / target" label) — shape depends on
-  /// checkType, since "current" means something different for each.
-  (double, String) _progress(Milestone m, GameState game) {
-    switch (m.checkType) {
-      case 'power_capacity':
-        final current = game.totalPowerProduction.toDouble();
-        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} kW');
-      case 'contracts_completed':
-        final current = game.completedContracts.length.toDouble();
-        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} contracts');
-      case 'fauna_killed':
-        final current = game.totalFaunaKilled.toDouble();
-        return (current / m.target, '${current.toInt()} / ${m.target.toInt()} fauna');
-      case 'crop_diversity':
-        final tierCrops = GameConfigService.instance.getCropsByTier(m.target.toInt());
-        final discovered = tierCrops.where((c) => (game.cropHarvestCounts[c.id] ?? 0) > 0).length;
-        final total = tierCrops.isEmpty ? 1 : tierCrops.length;
-        return (discovered / total, 'Tier ${m.target.toInt()}: $discovered / $total crops');
-      case 'volume_delivered':
-      default:
-        final current = game.totalVolumeDeliveredM3;
-        return (current / m.target, '${current.toStringAsFixed(1)} / ${m.target.toStringAsFixed(0)}m³');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final (progressRaw, progressLabel) = _progress(milestone, game);
+    final (progressRaw, progressLabel) = milestoneProgress(milestone, game);
     final progress = progressRaw.clamp(0.0, 1.0);
     final hasDeadline = milestone.byWeek != null;
     final weeksLeft = hasDeadline ? milestone.byWeek! - game.currentWeek : 0;
     final isLate = hasDeadline && weeksLeft <= 0;
     final isWarned = milestone.status == MilestoneStatus.warned;
+    final isCompleted = milestone.status == MilestoneStatus.completed;
+    final isFailed = milestone.status == MilestoneStatus.failed;
+
+    final borderColor = isCompleted
+        ? MFColors.neonGreen
+        : (isFailed || isLate || isWarned)
+            ? MFColors.neonPink
+            : MFColors.borderSubtle;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -836,19 +886,24 @@ class _MilestoneRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: MFColors.surface,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isLate || isWarned ? MFColors.neonPink : MFColors.borderSubtle,
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              if (isCompleted) ...[
+                const Text('✅ ', style: TextStyle(fontSize: 13)),
+              ] else if (isFailed) ...[
+                const Text('❌ ', style: TextStyle(fontSize: 13)),
+              ],
               Expanded(child: Text(milestone.name, style: MFTextStyles.labelLarge)),
               Text(
                 '${milestone.rewardScrip} 🎫',
-                style: MFTextStyles.bodySmall.copyWith(color: MFColors.starScrip),
+                style: MFTextStyles.bodySmall.copyWith(
+                  color: isCompleted ? MFColors.neonGreen : MFColors.starScrip,
+                ),
               ),
             ],
           ),
@@ -856,23 +911,31 @@ class _MilestoneRow extends StatelessWidget {
           Text(milestone.description, style: MFTextStyles.bodyMedium),
           const SizedBox(height: 8),
           LinearProgressIndicator(
-            value: progress,
+            value: isCompleted ? 1.0 : progress,
             backgroundColor: MFColors.borderSubtle,
             valueColor: AlwaysStoppedAnimation(
-              isLate ? MFColors.neonPink : MFColors.neonGreen,
+              isCompleted ? MFColors.neonGreen : (isLate ? MFColors.neonPink : MFColors.neonGreen),
             ),
           ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(progressLabel, style: MFTextStyles.bodySmall),
+              Text(isCompleted ? 'Complete' : progressLabel, style: MFTextStyles.bodySmall),
               Text(
-                hasDeadline
-                    ? (isLate ? 'OVERDUE' : 'Due Wk ${milestone.byWeek} ($weeksLeft left)')
-                    : 'No deadline',
+                isCompleted
+                    ? 'Done'
+                    : isFailed
+                        ? 'Failed'
+                        : hasDeadline
+                            ? (isLate ? 'OVERDUE' : 'Due Wk ${milestone.byWeek} ($weeksLeft left)')
+                            : 'No deadline',
                 style: MFTextStyles.bodySmall.copyWith(
-                  color: isLate ? MFColors.neonPink : MFColors.textMuted,
+                  color: isCompleted
+                      ? MFColors.neonGreen
+                      : (isFailed || isLate)
+                          ? MFColors.neonPink
+                          : MFColors.textMuted,
                 ),
               ),
             ],
@@ -883,21 +946,84 @@ class _MilestoneRow extends StatelessWidget {
   }
 }
 
+// ─── All Milestones Table ──────────────────────────────────────────────────
+
+class MilestonesTableScreen extends StatelessWidget {
+  final GameState game;
+  const MilestonesTableScreen({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final warned = game.milestones.where((m) => m.status == MilestoneStatus.warned).toList();
+    final pending = game.milestones.where((m) => m.status == MilestoneStatus.pending).toList()
+      ..sort((a, b) =>
+          milestoneProgress(b, game).$1.compareTo(milestoneProgress(a, game).$1));
+    final completed = game.milestones.where((m) => m.status == MilestoneStatus.completed).toList();
+    final failed = game.milestones.where((m) => m.status == MilestoneStatus.failed).toList();
+
+    return Scaffold(
+      backgroundColor: MFColors.background,
+      appBar: AppBar(
+        title: const Text('ALL MILESTONES'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: MFColors.textSecondary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (warned.isNotEmpty) ...[
+            const _SectionHeader('NEEDS ATTENTION'),
+            const SizedBox(height: 8),
+            ...warned.map((m) => _MilestoneRow(milestone: m, game: game)),
+            const SizedBox(height: 16),
+          ],
+          if (pending.isNotEmpty) ...[
+            const _SectionHeader('IN PROGRESS'),
+            const SizedBox(height: 8),
+            ...pending.map((m) => _MilestoneRow(milestone: m, game: game)),
+            const SizedBox(height: 16),
+          ],
+          if (completed.isNotEmpty) ...[
+            _SectionHeader('COMPLETED (${completed.length})'),
+            const SizedBox(height: 8),
+            ...completed.map((m) => _MilestoneRow(milestone: m, game: game)),
+            const SizedBox(height: 16),
+          ],
+          if (failed.isNotEmpty) ...[
+            const _SectionHeader('MISSED'),
+            const SizedBox(height: 8),
+            ...failed.map((m) => _MilestoneRow(milestone: m, game: game)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _EndWeekButton extends StatelessWidget {
   final GameState game;
   final bool isLoading;
   final bool isRaidWeek;
+  final bool hasVisitedOtherTab;
   final VoidCallback onPressed;
 
   const _EndWeekButton({
     required this.game,
     required this.isLoading,
     required this.isRaidWeek,
+    required this.hasVisitedOtherTab,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Nudge color — orange until the player has actually looked at another
+    // tab this week, so ending the week blind (without checking domes,
+    // contracts, etc.) at least looks deliberate rather than a reflex tap.
+    final readyColor = hasVisitedOtherTab ? MFColors.neonCyan : MFColors.neonOrange;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -905,7 +1031,7 @@ class _EndWeekButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: isRaidWeek
               ? MFColors.borderSubtle
-              : MFColors.neonCyan,
+              : readyColor,
           foregroundColor: MFColors.background,
         ),
         onPressed: (isLoading || isRaidWeek) ? null : onPressed,

@@ -301,7 +301,6 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
 
     final resourceKey = switch (itemId) {
       'seeds_tier1' => 'seeds',
-      'seeds_tier2' => 'seeds',
       'glass' => 'glass',
       'chemicals' => 'chemicals',
       'ore' => 'ore',
@@ -1384,8 +1383,7 @@ class _BuyTab extends StatelessWidget {
 
     // (id, emoji, name, desc, pricePerUnit, batchSize)
     final items = [
-      ('seeds_tier1', '🌾', 'Tier 1 Seeds (×8)', 'Basic crop seeds', 1, 8),
-      ('seeds_tier2', '🌿', 'Tier 2 Seeds (×8)', 'Advanced crop seeds', 4, 8),
+      ('seeds_tier1', '🌾', 'Seeds (×8)', 'Crop seeds — works for any crop', 1, 8),
       ('glass', '🪟', 'Glass (×10)', 'Refined glass panels', 6, 10),
       ('chemicals', '⚗️', 'Chemicals (×5)', 'Industrial reagents', 8, 5),
       ('ore', '🪨', 'Raw Ore (×5)', 'Unprocessed mineral ore', 12, 5),
