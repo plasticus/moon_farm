@@ -10,8 +10,12 @@ import '../../theme/app_theme.dart';
 
 class WeekSummaryScreen extends ConsumerWidget {
   final WeekSummary summary;
+  // True only on the screen shown immediately after the game transitions
+  // into GameStatus.won this week — gates the one-time celebratory box
+  // below so it doesn't reappear on every subsequent week's summary.
+  final bool justWon;
 
-  const WeekSummaryScreen({super.key, required this.summary});
+  const WeekSummaryScreen({super.key, required this.summary, this.justWon = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -156,6 +160,39 @@ class WeekSummaryScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+                  ],
+
+                  // Win state — shown once, the week it happens
+                  if (justWon) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: MFColors.neonGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: MFColors.neonGreen),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('🏆', style: TextStyle(fontSize: 32)),
+                          const SizedBox(height: 8),
+                          Text(
+                            'CONTRACT PAID OFF',
+                            style: MFTextStyles.headlineMedium.copyWith(
+                              color: MFColors.neonGreen,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'You\'ve banked enough Star-Scrip to buy out the '
+                            'colony contract. This farm is yours now — keep '
+                            'farming as long as you like.',
+                            style: MFTextStyles.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
 
                   // Game over state

@@ -71,6 +71,7 @@ class MilestoneConfigService {
         rewardScrip: map['reward_scrip'] as int,
         failureMessage: map['failure_message'] as String? ?? '',
         failureDetail: map['failure_detail'] as String? ?? '',
+        isWinCondition: map['is_win_condition'] as bool? ?? false,
         status: MilestoneStatus.pending,
       );
     }).toList();

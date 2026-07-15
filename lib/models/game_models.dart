@@ -873,8 +873,8 @@ class Milestone {
   final String name;
   final String description;
   // 'volume_delivered' | 'power_capacity' | 'contracts_completed' |
-  // 'fauna_killed' | 'crop_diversity'. See EndWeekEngine._isMilestoneComplete
-  // for what `target` means for each type.
+  // 'fauna_killed' | 'crop_diversity' | 'scrip_balance'. See
+  // EndWeekEngine._isMilestoneComplete for what `target` means for each type.
   final String checkType;
   final double target;
   // Deadline week, inclusive. Null = achievement-style milestone with no
@@ -884,6 +884,11 @@ class Milestone {
   final MilestoneStatus status;
   final String failureMessage;
   final String failureDetail;
+  // If true, completing this milestone ends the game with GameStatus.won
+  // instead of just banking the reward. Exactly one milestone should set
+  // this. The game does not stop running afterward — status just flips to
+  // won and play continues (see EndWeekEngine Step 7).
+  final bool isWinCondition;
 
   const Milestone({
     required this.id,
@@ -896,6 +901,7 @@ class Milestone {
     required this.status,
     this.failureMessage = '',
     this.failureDetail = '',
+    this.isWinCondition = false,
   });
 
   Milestone copyWith({MilestoneStatus? status}) {
@@ -910,6 +916,7 @@ class Milestone {
       status: status ?? this.status,
       failureMessage: failureMessage,
       failureDetail: failureDetail,
+      isWinCondition: isWinCondition,
     );
   }
 }

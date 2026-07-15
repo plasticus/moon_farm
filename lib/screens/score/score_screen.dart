@@ -60,6 +60,8 @@ class ScoreScreen extends ConsumerWidget {
     final grade = _scoreGrade(score);
     final gradeColor = _gradeColor(grade);
     final config = GameConfigService.instance;
+    final won = game.status == GameStatus.won;
+    final headerColor = won ? MFColors.neonGreen : MFColors.neonPink;
 
     // Top 5 crops by harvest count
     final sortedCrops = game.cropHarvestCounts.entries.toList()
@@ -82,9 +84,9 @@ class ScoreScreen extends ConsumerWidget {
 
                       // ── Header ──────────────────────────────────────────
                       Text(
-                        'CONTRACT VOID',
+                        won ? 'FREE AND CLEAR' : 'CONTRACT VOID',
                         style: MFTextStyles.labelLarge.copyWith(
-                          color: MFColors.neonPink,
+                          color: headerColor,
                           fontSize: 11,
                           letterSpacing: 4,
                         ),
@@ -104,8 +106,28 @@ class ScoreScreen extends ConsumerWidget {
 
                       const SizedBox(height: 20),
 
-                      // ── Termination reason ───────────────────────────────
-                      if (game.terminationReason != null)
+                      // ── Termination reason / win message ─────────────────
+                      if (won)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: MFColors.neonGreen.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: MFColors.neonGreen.withValues(alpha: 0.4)),
+                          ),
+                          child: Text(
+                            'You paid off the colony contract in full at Week '
+                            '${game.currentWeek}. No more indentured shipments — '
+                            'this land is yours now.',
+                            style: MFTextStyles.bodySmall.copyWith(
+                                color: MFColors.neonGreen),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      else if (game.terminationReason != null)
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
@@ -241,29 +263,58 @@ class ScoreScreen extends ConsumerWidget {
                 ),
               ),
 
-              // ── Return button ─────────────────────────────────
+              // ── Return / keep playing buttons ───────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MFColors.neonCyan,
-                      foregroundColor: MFColors.background,
+                child: Column(
+                  children: [
+                    if (won) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MFColors.neonGreen,
+                            foregroundColor: MFColors.background,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('KEEP PLAYING',
+                              style: MFTextStyles.labelLarge.copyWith(
+                                  color: MFColors.background, letterSpacing: 1)),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      height: won ? 44 : 52,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                              color: won ? MFColors.borderDefault : MFColors.neonCyan),
+                          backgroundColor:
+                              won ? Colors.transparent : MFColors.neonCyan,
+                          foregroundColor: won
+                              ? MFColors.textSecondary
+                              : MFColors.background,
+                        ),
+                        onPressed: () {
+                          ref.read(activeGameProvider.notifier).clearGame();
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const MainMenuScreen()),
+                                (route) => false,
+                          );
+                        },
+                        child: Text('RETURN TO MAIN MENU',
+                            style: MFTextStyles.labelLarge.copyWith(
+                                color: won
+                                    ? MFColors.textSecondary
+                                    : MFColors.background,
+                                letterSpacing: 1)),
+                      ),
                     ),
-                    onPressed: () {
-                      ref.read(activeGameProvider.notifier).clearGame();
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (_) => const MainMenuScreen()),
-                            (route) => false,
-                      );
-                    },
-                    child: Text('RETURN TO MAIN MENU',
-                        style: MFTextStyles.labelLarge.copyWith(
-                            color: MFColors.background, letterSpacing: 1)),
-                  ),
+                  ],
                 ),
               ),
             ],

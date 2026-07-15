@@ -189,6 +189,9 @@ milestones:
       reward_scrip: 1200
 
   normal:
+    # ─── Cargo Delivery Quota (volume_delivered) ──────────────────────────
+    # The only group with deadlines — missing one is a strike on Normal.
+    # Targets grow ~1.7x per tier; by_week runs achievable-week x1.2 slack.
     - id: m1
       check_type: volume_delivered
       name: First Shipment
@@ -201,119 +204,321 @@ milestones:
 
     - id: m2
       check_type: volume_delivered
-      name: Steady Supply
-      description: Deliver 50m³ of cargo to the colony
-      target: 50
-      by_week: 40
-      reward_scrip: 300
-      failure_message: "Supply quotas were not met by Week 40."
-      failure_detail: "You delivered {actual}m³ of the required 50m³."
+      name: Initial Contract
+      description: Deliver 20m³ of cargo to the colony
+      target: 20
+      by_week: 30
+      reward_scrip: 200
+      failure_message: "Initial contract terms unmet by Week 30."
+      failure_detail: "You delivered {actual}m³ of the required 20m³."
 
     - id: m3
       check_type: volume_delivered
-      name: Colony Cornerstone
-      description: Deliver 150m³ of cargo to the colony
-      target: 150
-      by_week: 80
-      reward_scrip: 1000
-      failure_message: "The primary supply contract was not fulfilled by Week 80."
-      failure_detail: "You delivered {actual}m³ of the required 150m³."
+      name: Steady Supply
+      description: Deliver 35m³ of cargo to the colony
+      target: 35
+      by_week: 55
+      reward_scrip: 350
+      failure_message: "Supply quotas were not met by Week 55."
+      failure_detail: "You delivered {actual}m³ of the required 35m³."
 
     - id: m4
       check_type: volume_delivered
-      name: Operational Hub
-      description: Deliver 350m³ of cargo to the colony
-      target: 350
-      by_week: 120
-      reward_scrip: 2000
-      failure_message: "Logistics pipelines suffered a deficit at Week 120."
-      failure_detail: "You delivered {actual}m³ of the required 350m³."
+      name: Reliable Route
+      description: Deliver 60m³ of cargo to the colony
+      target: 60
+      by_week: 85
+      reward_scrip: 600
+      failure_message: "Route reliability targets missed by Week 85."
+      failure_detail: "You delivered {actual}m³ of the required 60m³."
 
     - id: m5
       check_type: volume_delivered
-      name: Freight Magnate
-      description: Deliver 750m³ of cargo to the colony
-      target: 750
-      by_week: 170
-      reward_scrip: 4500
-      failure_message: "The mid-tier commercial quota was missed at Week 170."
-      failure_detail: "You delivered {actual}m³ of the required 750m³."
+      name: Colony Cornerstone
+      description: Deliver 100m³ of cargo to the colony
+      target: 100
+      by_week: 115
+      reward_scrip: 1000
+      failure_message: "The primary supply contract was not fulfilled by Week 115."
+      failure_detail: "You delivered {actual}m³ of the required 100m³."
 
     - id: m6
       check_type: volume_delivered
-      name: Planetary Breadbasket
-      description: Deliver 1,500m³ of cargo to the colony
-      target: 1500
-      by_week: 220
-      reward_scrip: 8000
-      failure_message: "The colony's core reserve targets were abandoned at Week 220."
-      failure_detail: "You delivered {actual}m³ of the required 1,500m³."
+      name: Operational Hub
+      description: Deliver 170m³ of cargo to the colony
+      target: 170
+      by_week: 145
+      reward_scrip: 1700
+      failure_message: "Logistics pipelines suffered a deficit at Week 145."
+      failure_detail: "You delivered {actual}m³ of the required 170m³."
 
     - id: m7
+      check_type: volume_delivered
+      name: Regional Supplier
+      description: Deliver 280m³ of cargo to the colony
+      target: 280
+      by_week: 175
+      reward_scrip: 2800
+      failure_message: "Regional supply targets fell short at Week 175."
+      failure_detail: "You delivered {actual}m³ of the required 280m³."
+
+    - id: m8
+      check_type: volume_delivered
+      name: Freight Magnate
+      description: Deliver 470m³ of cargo to the colony
+      target: 470
+      by_week: 205
+      reward_scrip: 4500
+      failure_message: "The mid-tier commercial quota was missed at Week 205."
+      failure_detail: "You delivered {actual}m³ of the required 470m³."
+
+    - id: m9
+      check_type: volume_delivered
+      name: Bulk Logistics Partner
+      description: Deliver 800m³ of cargo to the colony
+      target: 800
+      by_week: 235
+      reward_scrip: 7000
+      failure_message: "Bulk logistics thresholds were abandoned at Week 235."
+      failure_detail: "You delivered {actual}m³ of the required 800m³."
+
+    - id: m10
+      check_type: volume_delivered
+      name: Planetary Breadbasket
+      description: Deliver 1,350m³ of cargo to the colony
+      target: 1350
+      by_week: 260
+      reward_scrip: 10000
+      failure_message: "The colony's core reserve targets were abandoned at Week 260."
+      failure_detail: "You delivered {actual}m³ of the required 1,350m³."
+
+    - id: m11
+      check_type: volume_delivered
+      name: Sector Powerhouse
+      description: Deliver 2,300m³ of cargo to the colony
+      target: 2300
+      by_week: 285
+      reward_scrip: 14000
+      failure_message: "Sector-wide production targets collapsed at Week 285."
+      failure_detail: "You delivered {actual}m³ of the required 2,300m³."
+
+    - id: m12
       check_type: volume_delivered
       name: Total Sector Dominance
       description: Deliver 4,000m³ of cargo to the colony
       target: 4000
-      by_week: 280
+      by_week: 300
       reward_scrip: 20000
-      failure_message: "The grand master industrial milestone collapsed at Week 280."
+      failure_message: "The grand master industrial milestone collapsed at Week 300."
       failure_detail: "You delivered {actual}m³ of the required 4,000m³."
 
-    - id: m8
+    # ─── Power Capacity (power_capacity) — no deadline ────────────────────
+    - id: m13
       check_type: power_capacity
       name: Power Grid
-      description: Reach 150 kW of total power production
-      target: 150
-      reward_scrip: 500
+      description: Reach 500 kW of total power production
+      target: 500
+      reward_scrip: 800
 
-    - id: m9
+    - id: m14
+      check_type: power_capacity
+      name: Grid Expansion
+      description: Reach 1,000 kW of total power production
+      target: 1000
+      reward_scrip: 1500
+
+    - id: m15
+      check_type: power_capacity
+      name: Industrial Grid
+      description: Reach 2,000 kW of total power production
+      target: 2000
+      reward_scrip: 3000
+
+    - id: m16
+      check_type: power_capacity
+      name: Megawatt Colony
+      description: Reach 5,000 kW of total power production
+      target: 5000
+      reward_scrip: 6000
+
+    # ─── Contracts Completed (contracts_completed) — no deadline ──────────
+    - id: m17
       check_type: contracts_completed
       name: Trusted Supplier
       description: Complete 10 contracts for Kovacs
       target: 10
       reward_scrip: 500
 
-    - id: m10
+    - id: m18
+      check_type: contracts_completed
+      name: Preferred Vendor
+      description: Complete 25 contracts for Kovacs
+      target: 25
+      reward_scrip: 1000
+
+    - id: m19
+      check_type: contracts_completed
+      name: Contract Veteran
+      description: Complete 50 contracts for Kovacs
+      target: 50
+      reward_scrip: 2000
+
+    - id: m20
+      check_type: contracts_completed
+      name: Logistics Backbone
+      description: Complete 100 contracts for Kovacs
+      target: 100
+      reward_scrip: 4000
+
+    - id: m21
+      check_type: contracts_completed
+      name: Supply Chain Anchor
+      description: Complete 200 contracts for Kovacs
+      target: 200
+      reward_scrip: 7000
+
+    - id: m22
+      check_type: contracts_completed
+      name: Contract Legend
+      description: Complete 300 contracts for Kovacs
+      target: 300
+      reward_scrip: 10000
+
+    # ─── Fauna Defeated (fauna_killed) — no deadline ───────────────────────
+    # Every target lands right on a raid-clear boundary (raids every 10
+    # weeks, deterministic spawn counts — see raids.yaml).
+    - id: m23
       check_type: fauna_killed
       name: Perimeter Defender
-      description: Defeat 100 fauna in raids
-      target: 100
-      reward_scrip: 500
+      description: Defeat 50 fauna in raids
+      target: 50
+      reward_scrip: 300
 
-    - id: m11
+    - id: m24
+      check_type: fauna_killed
+      name: Wall Veteran
+      description: Defeat 200 fauna in raids
+      target: 200
+      reward_scrip: 800
+
+    - id: m25
+      check_type: fauna_killed
+      name: Siege Breaker
+      description: Defeat 800 fauna in raids
+      target: 800
+      reward_scrip: 2000
+
+    - id: m26
+      check_type: fauna_killed
+      name: Bulwark Commander
+      description: Defeat 1,500 fauna in raids
+      target: 1500
+      reward_scrip: 4000
+
+    - id: m27
+      check_type: fauna_killed
+      name: Perimeter Legend
+      description: Defeat 2,700 fauna in raids
+      target: 2700
+      reward_scrip: 7000
+
+    - id: m28
+      check_type: fauna_killed
+      name: Apex Sentinel
+      description: Defeat 4,000 fauna in raids
+      target: 4000
+      reward_scrip: 12000
+
+    - id: m29
+      check_type: fauna_killed
+      name: Raid Marshal
+      description: Defeat 5,000 fauna in raids
+      target: 5000
+      reward_scrip: 16000
+
+    - id: m30
+      check_type: fauna_killed
+      name: Void Exterminator
+      description: Defeat 7,000 fauna in raids
+      target: 7000
+      reward_scrip: 22000
+
+    - id: m31
+      check_type: fauna_killed
+      name: Colony Shield
+      description: Defeat 9,000 fauna in raids
+      target: 9000
+      reward_scrip: 30000
+
+    - id: m32
+      check_type: fauna_killed
+      name: Undefeated Bastion
+      description: Defeat 12,000 fauna in raids
+      target: 12000
+      reward_scrip: 40000
+
+    - id: m33
+      check_type: fauna_killed
+      name: Fauna Eradicator
+      description: Defeat 15,000 fauna in raids
+      target: 15000
+      reward_scrip: 55000
+
+    - id: m34
+      check_type: fauna_killed
+      name: Immortal Sentinel
+      description: Defeat 20,000 fauna in raids
+      target: 20000
+      reward_scrip: 75000
+
+    # ─── Crop Diversity (crop_diversity) — no deadline ─────────────────────
+    # target holds the dome tier number (1-5), not a magnitude.
+    - id: m35
       check_type: crop_diversity
       name: Tier 1 Cultivator
       description: Harvest every Tier 1 crop at least once
       target: 1
-      reward_scrip: 200
+      reward_scrip: 1000
 
-    - id: m12
+    - id: m36
       check_type: crop_diversity
       name: Tier 2 Cultivator
       description: Harvest every Tier 2 crop at least once
       target: 2
-      reward_scrip: 400
+      reward_scrip: 2000
 
-    - id: m13
+    - id: m37
       check_type: crop_diversity
       name: Tier 3 Cultivator
       description: Harvest every Tier 3 crop at least once
       target: 3
-      reward_scrip: 600
+      reward_scrip: 3500
 
-    - id: m14
+    - id: m38
       check_type: crop_diversity
       name: Tier 4 Cultivator
       description: Harvest every Tier 4 crop at least once
       target: 4
-      reward_scrip: 900
+      reward_scrip: 5500
 
-    - id: m15
+    - id: m39
       check_type: crop_diversity
       name: Tier 5 Cultivator
       description: Harvest every Tier 5 crop at least once
       target: 5
-      reward_scrip: 1200
+      reward_scrip: 8000
+
+    # ─── Win Condition (scrip_balance) — no deadline ───────────────────────
+    # is_win_condition flips GameStatus to `won` on completion instead of
+    # just banking a reward. Deliberately current balance, not lifetime
+    # earnings — see design notes. Play continues after winning.
+    - id: m40
+      check_type: scrip_balance
+      name: Free and Clear
+      description: Hold 100,000 Star-Scrip at once — the contract is paid off, the farm is yours
+      target: 100000
+      reward_scrip: 0
+      is_win_condition: true
 
   hard:
     - id: m1

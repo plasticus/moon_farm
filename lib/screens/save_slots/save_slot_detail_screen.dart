@@ -329,10 +329,12 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
           _currentTab = 0;
           _hasVisitedOtherTab = false;
         });
+        final justWon = game.status != GameStatus.won &&
+            newState.status == GameStatus.won;
         debugPrint('[EndWeek] Pushing WeekSummaryScreen...');
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => WeekSummaryScreen(summary: summary),
+            builder: (_) => WeekSummaryScreen(summary: summary, justWon: justWon),
           ),
         );
         debugPrint('[EndWeek] WeekSummaryScreen closed.');
@@ -341,6 +343,12 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => ScoreScreen(game: newState)),
                 (route) => route.isFirst,
+          );
+        } else if (justWon && context.mounted) {
+          // Unlike termination, winning doesn't lock the player out — this
+          // is a one-time celebration screen. "Keep Playing" pops back here.
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ScoreScreen(game: newState)),
           );
         }
       }

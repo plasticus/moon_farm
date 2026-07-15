@@ -562,6 +562,7 @@ class EndWeekEngine {
     // ── Step 7: Milestone checks ──────────────────────────────────────────
     final updatedMilestones = <Milestone>[];
     var pendingStrikeIncrease = false;
+    var wonThisWeek = false;
 
     for (final milestone in s.milestones) {
       if (milestone.status != MilestoneStatus.pending) {
@@ -579,8 +580,14 @@ class EndWeekEngine {
           ),
           lifetimeScripEarned: s.lifetimeScripEarned + scripReward,
         );
-        milestoneUpdates.add('🎖️ Milestone complete: ${milestone.name} (+$scripReward 🎫)');
-        events.add('🎖️ Milestone complete: ${milestone.name}! Reward: $scripReward Star-Scrip');
+        if (milestone.isWinCondition) {
+          wonThisWeek = true;
+          milestoneUpdates.add('🏆 ${milestone.name}: the contract is paid off. This farm is yours.');
+          events.add('🏆 ${milestone.name}! You have bought out the colony contract — the farm is yours.');
+        } else {
+          milestoneUpdates.add('🎖️ Milestone complete: ${milestone.name} (+$scripReward 🎫)');
+          events.add('🎖️ Milestone complete: ${milestone.name}! Reward: $scripReward Star-Scrip');
+        }
         continue;
       }
 
@@ -626,6 +633,11 @@ class EndWeekEngine {
       newStatus = GameStatus.terminated;
       newTermReason = 'Three contract violations. The colony has terminated your agreement.';
       events.add('❌ Three strikes — the colony has terminated your contract.');
+    }
+    // A wall breach or strike-out this same week takes priority over a
+    // win — the contract voids before a payout could buy it out.
+    if (wonThisWeek && newStatus != GameStatus.terminated) {
+      newStatus = GameStatus.won;
     }
 
     s = s.copyWith(
@@ -765,6 +777,8 @@ class EndWeekEngine {
         return s.completedContracts.length >= m.target;
       case 'fauna_killed':
         return s.totalFaunaKilled >= m.target;
+      case 'scrip_balance':
+        return s.resources.starScrip >= m.target;
       case 'crop_diversity':
         // target holds the tier number here, not a magnitude — complete
         // once every crop in that tier has been harvested at least once.
