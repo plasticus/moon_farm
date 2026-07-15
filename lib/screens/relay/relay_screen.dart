@@ -110,21 +110,11 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
   // ─── Conversation management ──────────────────────────────────────────────
 
   void _initConversation(GameState game) {
-    final events = _getContextualEvents(game);
     final conv = KovacsEngine.startConversation(
       game: game,
       unlockedTopicIds: game.relay.unlockedTopicIds,
-      contextualEvents: events,
     );
     ref.read(kovacsConversationProvider.notifier).state = conv;
-  }
-
-  Set<String> _getContextualEvents(GameState game) {
-    final events = <String>{};
-    if (game.silosNearFull) events.add('silo_full');
-    if (game.isShipWindowOpen) events.add('ship_window_open');
-    // raid/milestone events would be passed in from game state
-    return events;
   }
 
   void _handlePlayerPicked(PlayerLine line, GameState game) {

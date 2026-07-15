@@ -119,7 +119,6 @@ class GameFactory {
       radioFeed: const [],
       relay: RelayTechnicianState(
         mood: 30,  // starts sour — he's not happy about this posting
-        seenRantTopics: [],
         availableContracts: [],
         contractsRefreshedThisWeek: false,
       ),

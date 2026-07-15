@@ -92,7 +92,6 @@ class KovacsEngine {
   static KovacsConversation startConversation({
     required GameState game,
     required Set<String> unlockedTopicIds,
-    required Set<String> contextualEvents,
   }) {
     final config = KovacsConfigService.instance;
     final mood = game.relay.mood;

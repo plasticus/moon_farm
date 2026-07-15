@@ -656,7 +656,7 @@ class DatabaseHelper {
   );
 
   Map<String, dynamic> _relayToJson(RelayTechnicianState r) => {
-    'mood': r.mood, 'seen_rant_topics': r.seenRantTopics,
+    'mood': r.mood,
     'available_contracts': r.availableContracts,
     'contracts_refreshed': r.contractsRefreshedThisWeek,
     'conversation_done_this_week': r.conversationDoneThisWeek,
@@ -665,7 +665,6 @@ class DatabaseHelper {
   RelayTechnicianState _relayFromJson(Map<String, dynamic> j) =>
       RelayTechnicianState(
         mood: (j['mood'] as num).toInt(),
-        seenRantTopics: List<String>.from(j['seen_rant_topics'] as List),
         availableContracts: List<String>.from(j['available_contracts'] as List),
         contractsRefreshedThisWeek: j['contracts_refreshed'] as bool,
         conversationDoneThisWeek:

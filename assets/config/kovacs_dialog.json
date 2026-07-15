@@ -6,7 +6,7 @@
     "unlocks: list of topic IDs this response makes available. Strict limit of ONE id per object to match singular engine injection.",
     "tier: 1 = always available, 2 = unlocked by a tier 1 topic baseline or progressive tier 2 chains.",
     "visible_label: what the player sees as the button text.",
-    "mood_hint: optional subtle hint shown AFTER the player has used this option 3+ times."
+    "mood_hint: optional subtle hint shown under Kovacs' reply every time this topic is picked."
   ],
 
   "topics": [
@@ -44,7 +44,7 @@
       "id": "ask_about_background",
       "tier": 1,
       "visible_label": "How did a guy with your crisp uniform end up routing manifests?",
-      "mood_change": -1,
+      "mood_change": 0,
       "mood_hint": "This clearly touches a heavy nerve about his career.",
       "response_pool": [
         "Seniority bottlenecks. Aced the command track, yet here I sit sorting logistics.",
@@ -92,7 +92,7 @@
       "id": "ask_about_noise",
       "tier": 1,
       "visible_label": "Is the background rumble on the station always this loud?",
-      "mood_change": -1,
+      "mood_change": 1,
       "mood_hint": "He hates the physical reality of his desk location.",
       "response_pool": [
         "The primary ventilation scrubber's right behind my partition. Constant noise.",
@@ -307,8 +307,8 @@
       "id": "ask_about_signal_lag",
       "tier": 1,
       "visible_label": "Is the sub-space latency dragging across the planet-side array today?",
-      "mood_change": -1,
-      "mood_hint": "He hates when operators state obvious network lag anomalies.",
+      "mood_change": 1,
+      "mood_hint": "He likes narrating the technical quirks of his own equipment.",
       "response_pool": [
         "It's a two-second bounce. Standard physics, operator. Can't rewrite reality.",
         "Lag's standard when the gas giant passes our primary solar orbit axis.",
@@ -582,8 +582,8 @@
       "id": "ask_about_freighter_crews",
       "tier": 2,
       "visible_label": "What do you think of the cargo transport pilots docking at the hub?",
-      "mood_change": -2,
-      "mood_hint": "He holds commercial pilots in very low regard.",
+      "mood_change": 2,
+      "mood_hint": "He holds commercial pilots in very low regard, and he's glad someone's asking.",
       "response_pool": [
         "Undisciplined. Ignore basic docking tracks and drift straight into transit lanes.",
         "Bus drivers with thrusters. Zero navigational elegance. Punch autopilot and pray.",
@@ -595,8 +595,8 @@
       "id": "rant_about_space_cadets",
       "tier": 2,
       "visible_label": "Do the pilots have any respect for the LC-4 Relay staff?",
-      "mood_change": -3,
-      "mood_hint": "He feels deeply underappreciated by the transit crews.",
+      "mood_change": 4,
+      "mood_hint": "He feels deeply underappreciated by the transit crews — venting to you helps.",
       "response_pool": [
         "None. Treat us like automated beacons. We guide ninety percent of transit paths.",
         "Call us desk operators. Meanwhile, we keep them from crashing into platforms.",

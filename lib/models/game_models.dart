@@ -943,7 +943,6 @@ class Monument {
 
 class RelayTechnicianState {
   final int mood; // 0-100
-  final List<String> seenRantTopics;
   final List<String> availableContracts; // 3 contract options
   final bool contractsRefreshedThisWeek;
   final Set<String> unlockedTopicIds;
@@ -951,7 +950,6 @@ class RelayTechnicianState {
 
   const RelayTechnicianState({
     required this.mood,
-    required this.seenRantTopics,
     required this.availableContracts,
     required this.contractsRefreshedThisWeek,
     this.unlockedTopicIds = const {},
@@ -980,7 +978,6 @@ class RelayTechnicianState {
 
   RelayTechnicianState copyWith({
     int? mood,
-    List<String>? seenRantTopics,
     List<String>? availableContracts,
     bool? contractsRefreshedThisWeek,
     Set<String>? unlockedTopicIds,
@@ -988,7 +985,6 @@ class RelayTechnicianState {
   }) {
     return RelayTechnicianState(
       mood: (mood ?? this.mood).clamp(0, 100),
-      seenRantTopics: seenRantTopics ?? this.seenRantTopics,
       availableContracts: availableContracts ?? this.availableContracts,
       contractsRefreshedThisWeek:
       contractsRefreshedThisWeek ?? this.contractsRefreshedThisWeek,

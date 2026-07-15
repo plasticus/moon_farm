@@ -11,7 +11,7 @@
 //   5. Neon Berry special decay (die if ready and not harvested)
 //   6. Silo overflow → compost
 //   7. Milestone checks
-//   8. Relay mood decay
+//   8. Relay weekly reset (contract/conversation flags — mood is untouched)
 //   9. Generate radio transmission
 //  10. Advance week counter
 //  11. Generate week summary
@@ -648,7 +648,7 @@ class EndWeekEngine {
     );
 
     // ── Step 9: Relay reset ───────────────────────────────────────────────────
-    // Mood only changes via conversation — no automated decay.
+    // Mood changes only through conversation picks — nothing here touches it.
     s = s.copyWith(
       relay: s.relay.copyWith(
         contractsRefreshedThisWeek: false,
