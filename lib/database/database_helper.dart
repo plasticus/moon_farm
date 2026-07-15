@@ -660,6 +660,7 @@ class DatabaseHelper {
     'available_contracts': r.availableContracts,
     'contracts_refreshed': r.contractsRefreshedThisWeek,
     'conversation_done_this_week': r.conversationDoneThisWeek,
+    'unlocked_topic_ids': r.unlockedTopicIds.toList(),
   };
 
   RelayTechnicianState _relayFromJson(Map<String, dynamic> j) =>
@@ -669,6 +670,11 @@ class DatabaseHelper {
         contractsRefreshedThisWeek: j['contracts_refreshed'] as bool,
         conversationDoneThisWeek:
         j['conversation_done_this_week'] as bool? ?? false,
+        // Older saves predate this field — default to empty rather than
+        // fail, same as conversationDoneThisWeek above.
+        unlockedTopicIds: j['unlocked_topic_ids'] != null
+            ? Set<String>.from(j['unlocked_topic_ids'] as List)
+            : const {},
       );
 
   Map<String, dynamic> _pendingSaleToJson(PendingSale p) => {
