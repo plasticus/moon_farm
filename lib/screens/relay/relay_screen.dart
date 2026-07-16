@@ -133,6 +133,13 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
 
     var updatedRelay = game.relay.copyWith(mood: result.newMood);
 
+    if (result.newMood >= 100 && !game.relay.hasReachedMaxMood) {
+      updatedRelay = updatedRelay.copyWith(hasReachedMaxMood: true);
+    }
+    if (result.newMood <= 0 && !game.relay.hasReachedMinMood) {
+      updatedRelay = updatedRelay.copyWith(hasReachedMinMood: true);
+    }
+
     if (result.newlyUnlockedTopicId != null) {
       final newUnlocked = Set<String>.from(game.relay.unlockedTopicIds)
         ..add(result.newlyUnlockedTopicId!);
@@ -235,8 +242,9 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
 
   // ── Scrap Dealer ────────────────────────────────────────────────────────
   // A separate buyer from Kovacs/the Space Colony — pays cash on the spot
-  // for raw metals/chemicals/components, bulk only, at a deliberately bad
-  // rate. No shipping delay, no contract paperwork, just a flat dump.
+  // for raw metals/chemicals/components/Z Soil/compost, bulk only, at a
+  // deliberately bad rate. No shipping delay, no contract paperwork, just
+  // a flat dump.
   void _doScrapSell(GameState game, String resourceKey) {
     final config = GameConfigService.instance;
     final bulk = config.scrapDealerBulkAmount;
@@ -248,6 +256,8 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       'chemicals' => game.resources.chemicals,
       'glass' => game.resources.glass,
       'components' => game.resources.components,
+      'z_soil' => game.resources.zSoil,
+      'compost' => game.resources.compost,
       _ => 0.0,
     };
     if (have < bulk) return;
@@ -257,6 +267,8 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
       'chemicals' => game.resources.copyWith(chemicals: game.resources.chemicals - bulk),
       'glass' => game.resources.copyWith(glass: game.resources.glass - bulk),
       'components' => game.resources.copyWith(components: game.resources.components - bulk),
+      'z_soil' => game.resources.copyWith(zSoil: game.resources.zSoil - bulk),
+      'compost' => game.resources.copyWith(compost: game.resources.compost - bulk),
       _ => game.resources,
     };
 
@@ -840,7 +852,9 @@ class _SellTab extends StatelessWidget {
     final scrapEligible = game.resources.metals >= scrapBulk ||
         game.resources.chemicals >= scrapBulk ||
         game.resources.glass >= scrapBulk ||
-        game.resources.components >= scrapBulk;
+        game.resources.components >= scrapBulk ||
+        game.resources.zSoil >= scrapBulk ||
+        game.resources.compost >= scrapBulk;
 
     return Column(
       children: [
@@ -1010,7 +1024,8 @@ class _SellTab extends StatelessWidget {
 
 // ─── Scrap Dealer ───────────────────────────────────────────────────────────
 // A separate, bulk-only buyer from Kovacs/the Space Colony — pays cash on
-// the spot for raw metals/chemicals/components at a deliberately bad rate.
+// the spot for raw metals/chemicals/components/Z Soil/compost at a
+// deliberately bad rate.
 
 class _ScrapDealerSection extends StatelessWidget {
   final GameState game;
@@ -1029,6 +1044,8 @@ class _ScrapDealerSection extends StatelessWidget {
       ('chemicals', '⚗️', 'Chemicals', game.resources.chemicals),
       ('glass', '🪟', 'Glass', game.resources.glass),
       ('components', '⚙️', 'Components', game.resources.components),
+      ('z_soil', '🌱', 'Z Soil', game.resources.zSoil),
+      ('compost', '♻️', 'Compost', game.resources.compost),
     ];
 
     return Container(
@@ -1127,9 +1144,9 @@ class _ScrapDealerSection extends StatelessWidget {
         title: const Text('Scrap Dealer'),
         content: Text(
           "Kovacs doesn't deal in raw scrap himself, but he knows someone "
-              "who does. This contact buys metals, chemicals, and components "
-              "by the truckload only — never a partial load — at "
-              "deliberately rough junkyard rates.\n\n"
+              "who does. This contact buys metals, chemicals, components, "
+              "Z Soil, and compost by the truckload only — never a partial "
+              "load — at deliberately rough junkyard rates.\n\n"
               "Since Kovacs brokers the deal on your behalf, the price you "
               "get reflects how he currently feels about you: stay on his "
               "good side for a better cut, or eat the worst of it when "

@@ -10,7 +10,9 @@ import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../widgets/animated_action_button.dart';
 import '../../config/monument_config_service.dart';
+import '../../engine/end_week_engine.dart';
 import '../raid/raid_screen.dart';
+import '../score/score_screen.dart';
 
 class HabitatScreen extends ConsumerStatefulWidget {
   const HabitatScreen({super.key});
@@ -20,7 +22,7 @@ class HabitatScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitatScreenState extends ConsumerState<HabitatScreen> {
-  int _section = 0; // 0=wall, 1=sentries, 2=grenades, 3=radio, 4=monuments, 5=stats
+  int _section = 0; // 0=wall, 1=sentries, 2=grenades, 3=radio, 4=monuments, 5=contract, 6=stats
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +48,8 @@ class _HabitatScreenState extends ConsumerState<HabitatScreen> {
       case 2: return _GrenadeSection(game: game, ref: ref);
       case 3: return _RadioSection(game: game);
       case 4: return _MonumentsSection(game: game, ref: ref);
-      case 5: return _StatsSection(game: game);
+      case 5: return _ContractSection(game: game, ref: ref);
+      case 6: return _StatsSection(game: game);
       default: return const SizedBox();
     }
   }
@@ -66,6 +69,7 @@ class _HabitatTabBar extends StatelessWidget {
       ('💥', 'GRENADES'),
       ('📻', 'RADIO'),
       ('🗿', 'MONUMENTS'),
+      ('📜', 'CONTRACT'),
       ('📊', 'STATS'),
     ];
 
@@ -1453,6 +1457,172 @@ class _GrenadeSection extends StatelessWidget {
   }
 }
 
+// ─── Contract Section ─────────────────────────────────────────────────────────
+
+class _ContractSection extends StatelessWidget {
+  final GameState game;
+  final WidgetRef ref;
+
+  const _ContractSection({required this.game, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final milestone = game.milestones.where((m) => m.isWinCondition).firstOrNull;
+
+    if (milestone == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text('📜\n\nNo contract on file.',
+              style: MFTextStyles.bodyMedium, textAlign: TextAlign.center),
+        ),
+      );
+    }
+
+    final target = milestone.target;
+    final current = game.resources.starScrip.toDouble();
+    final progress = (current / target).clamp(0.0, 1.0);
+    final isPaidOff = game.status == GameStatus.won;
+    final isEligible = current >= target;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('THE COLONY CONTRACT',
+            style: MFTextStyles.bodySmall.copyWith(
+                color: MFColors.textMuted, letterSpacing: 2)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MFColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: isPaidOff ? MFColors.neonGreen : MFColors.borderDefault),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Every shipment out of this dome belongs to the colony until '
+                'the contract is paid off in full. ${_formatTarget(target)} '
+                'Star-Scrip on hand, all at once, buys it out for good.',
+                style: MFTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              if (isPaidOff) ...[
+                Row(
+                  children: [
+                    const Text('✅', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Contract paid off. This farm is yours.',
+                          style: MFTextStyles.bodyLarge
+                              .copyWith(color: MFColors.neonGreen)),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    backgroundColor: MFColors.borderSubtle,
+                    valueColor: AlwaysStoppedAnimation(
+                        isEligible ? MFColors.neonGreen : MFColors.starScrip),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${game.resources.starScrip} / ${_formatTarget(target)} Star-Scrip',
+                  style: MFTextStyles.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isEligible
+                            ? 'You can buy out the contract now.'
+                            : 'Need ${_formatTarget(target - current)} more Star-Scrip.',
+                        style: MFTextStyles.bodySmall,
+                      ),
+                    ),
+                    AnimatedActionButton(
+                      label: 'BUY THE FARM',
+                      canAfford: isEligible,
+                      color: MFColors.neonGreen,
+                      missingText: isEligible
+                          ? ''
+                          : 'Need ${_formatTarget(target - current)} more Star-Scrip',
+                      onTap: () => _confirmBuyTheFarm(context),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTarget(double v) {
+    final i = v.round();
+    final s = i.toString();
+    final parts = <String>[];
+    for (int idx = s.length; idx > 0; idx -= 3) {
+      parts.insert(0, s.substring((idx - 3).clamp(0, s.length), idx));
+    }
+    return parts.join(',');
+  }
+
+  Future<void> _confirmBuyTheFarm(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MFColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          side: BorderSide(color: MFColors.neonGreen, width: 1),
+        ),
+        title: Text('BUY THE FARM?',
+            style: MFTextStyles.headlineMedium.copyWith(color: MFColors.neonGreen)),
+        content: Text(
+          'This pays off the colony contract in full. The operation is '
+          'yours — no more indentured shipments. You can keep farming '
+          'afterward if you want; this just ends the contract.',
+          style: MFTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('NOT YET', style: MFTextStyles.labelLarge),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('BUY IT OUT',
+                style: MFTextStyles.labelLarge.copyWith(color: MFColors.neonGreen)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final engine = EndWeekEngine();
+    final newState = engine.buyTheFarm(game);
+    if (newState.status != GameStatus.won) return; // not actually eligible
+
+    await ref.read(activeGameProvider.notifier).updateGame(newState);
+    if (!context.mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ScoreScreen(game: newState)),
+    );
+  }
+}
+
 // ─── Stats Section ────────────────────────────────────────────────────────────
 
 class _StatsSection extends StatelessWidget {
@@ -1468,7 +1638,7 @@ class _StatsSection extends StatelessWidget {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            game.farmName.toUpperCase(),
+            game.displayName.toUpperCase(),
             style: MFTextStyles.headlineLarge.copyWith(color: MFColors.neonCyan),
           ),
         ),

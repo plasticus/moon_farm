@@ -325,6 +325,10 @@ class KovacsEngine {
       'rant_about_space_cadets' => 'Elegance or not, they need to check their docking clips.',
       'ask_about_other_sectors' => 'Sounds like the regional hub infrastructure is struggling.',
       'ask_about_sector_yields' => 'Appreciate the macro data snapshot, Specialist.',
+      'press_honyocker_mockery' => 'Fair enough. I just figured there might be more to it.',
+      'honyocker_grief_reveal' => 'That\'s a hard thing to carry. I\'m glad you told me.',
+      'ask_about_freighter_envy' => 'Sure. Coordinating counts too, I guess.',
+      'admit_freighter_envy' => 'For what it\'s worth, you\'d have made a hell of a captain.',
       _ => moodDelta >= 0 ? 'Understood, Kovacs.' : 'Let\'s drop it.'
     };
 

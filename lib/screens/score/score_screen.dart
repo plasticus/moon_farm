@@ -93,7 +93,7 @@ class ScoreScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        game.farmName.toUpperCase(),
+                        game.displayName.toUpperCase(),
                         style: MFTextStyles.labelLarge.copyWith(fontSize: 18),
                         textAlign: TextAlign.center,
                       ),

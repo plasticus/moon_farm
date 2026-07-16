@@ -569,7 +569,9 @@
       "metals_price": 150,
       "chemicals_price": 150,
       "glass_price": 200,
-      "components_price": 400
+      "components_price": 400,
+      "z_soil_price": 100,
+      "compost_price": 80
     }
   },
   "farm_name_suggestions": [

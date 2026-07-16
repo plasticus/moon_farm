@@ -55,6 +55,11 @@ class SaveSlot {
     this.lastSaved,
     required this.isEmpty,
   });
+
+  // "4J" is the player's callsign in radio chatter and Kovacs' dialogue —
+  // appending it to the farm name wherever it's displayed makes it obvious
+  // those broadcasts are about you. Not stored, just shown.
+  String? get displayName => farmName != null ? '$farmName (4J)' : null;
 }
 
 // ─── Full Game State ──────────────────────────────────────────────────────────
@@ -88,6 +93,7 @@ class GameState {
   final List<RadioTransmission> radioFeed;
   final RelayTechnicianState relay;
   final double totalVolumeDeliveredM3;
+  final double totalScrapSoldDam3;
   final int lifetimeScripEarned;
   final int pendingContractScrip; // contract bonuses waiting for next shipment
   final int totalCropsHarvested;
@@ -144,6 +150,7 @@ class GameState {
     required this.radioFeed,
     required this.relay,
     required this.totalVolumeDeliveredM3,
+    this.totalScrapSoldDam3 = 0.0,
     required this.lifetimeScripEarned,
     this.pendingContractScrip = 0,
     required this.totalCropsHarvested,
@@ -192,6 +199,7 @@ class GameState {
     List<RadioTransmission>? radioFeed,
     RelayTechnicianState? relay,
     double? totalVolumeDeliveredM3,
+    double? totalScrapSoldDam3,
     int? lifetimeScripEarned,
     int? pendingContractScrip,
     int? totalCropsHarvested,
@@ -241,6 +249,7 @@ class GameState {
       radioFeed: radioFeed ?? this.radioFeed,
       relay: relay ?? this.relay,
       totalVolumeDeliveredM3: totalVolumeDeliveredM3 ?? this.totalVolumeDeliveredM3,
+      totalScrapSoldDam3: totalScrapSoldDam3 ?? this.totalScrapSoldDam3,
       lifetimeScripEarned: lifetimeScripEarned ?? this.lifetimeScripEarned,
       pendingContractScrip: pendingContractScrip ?? this.pendingContractScrip,
       totalCropsHarvested: totalCropsHarvested ?? this.totalCropsHarvested,
@@ -263,6 +272,11 @@ class GameState {
       lastSaved: lastSaved ?? this.lastSaved,
     );
   }
+
+  // "4J" is the player's callsign in radio chatter and Kovacs' dialogue —
+  // appending it to the farm name wherever it's displayed makes it obvious
+  // those broadcasts are about you. Not stored, just shown.
+  String get displayName => '$farmName (4J)';
 
   // Power calculations
   int get totalPowerProduction =>
@@ -873,7 +887,9 @@ class Milestone {
   final String name;
   final String description;
   // 'volume_delivered' | 'power_capacity' | 'contracts_completed' |
-  // 'fauna_killed' | 'crop_diversity' | 'scrip_balance'. See
+  // 'fauna_killed' | 'crop_diversity' | 'scrip_balance' | 'monuments_built' |
+  // 'scrap_baron' | 'full_automation' | 'kovacs_topic_unlocked' |
+  // 'kovacs_mood_max' | 'kovacs_mood_min'. See
   // EndWeekEngine._isMilestoneComplete for what `target` means for each type.
   final String checkType;
   final double target;
@@ -889,6 +905,9 @@ class Milestone {
   // this. The game does not stop running afterward — status just flips to
   // won and play continues (see EndWeekEngine Step 7).
   final bool isWinCondition;
+  // Only meaningful for check_type 'kovacs_topic_unlocked' — the topic id
+  // (see kovacs_dialog.json) that must appear in relay.unlockedTopicIds.
+  final String? topicId;
 
   const Milestone({
     required this.id,
@@ -902,6 +921,7 @@ class Milestone {
     this.failureMessage = '',
     this.failureDetail = '',
     this.isWinCondition = false,
+    this.topicId,
   });
 
   Milestone copyWith({MilestoneStatus? status}) {
@@ -917,6 +937,7 @@ class Milestone {
       failureMessage: failureMessage,
       failureDetail: failureDetail,
       isWinCondition: isWinCondition,
+      topicId: topicId,
     );
   }
 }
@@ -947,6 +968,10 @@ class RelayTechnicianState {
   final bool contractsRefreshedThisWeek;
   final Set<String> unlockedTopicIds;
   final bool conversationDoneThisWeek;
+  // One-shot flags, set the first time mood ever hits either extreme —
+  // mood itself fluctuates, so these are what a milestone can check.
+  final bool hasReachedMaxMood;
+  final bool hasReachedMinMood;
 
   const RelayTechnicianState({
     required this.mood,
@@ -954,6 +979,8 @@ class RelayTechnicianState {
     required this.contractsRefreshedThisWeek,
     this.unlockedTopicIds = const {},
     this.conversationDoneThisWeek = false,
+    this.hasReachedMaxMood = false,
+    this.hasReachedMinMood = false,
   });
 
   String get moodLabel {
@@ -982,6 +1009,8 @@ class RelayTechnicianState {
     bool? contractsRefreshedThisWeek,
     Set<String>? unlockedTopicIds,
     bool? conversationDoneThisWeek,
+    bool? hasReachedMaxMood,
+    bool? hasReachedMinMood,
   }) {
     return RelayTechnicianState(
       mood: (mood ?? this.mood).clamp(0, 100),
@@ -991,6 +1020,8 @@ class RelayTechnicianState {
       unlockedTopicIds: unlockedTopicIds ?? this.unlockedTopicIds,
       conversationDoneThisWeek:
       conversationDoneThisWeek ?? this.conversationDoneThisWeek,
+      hasReachedMaxMood: hasReachedMaxMood ?? this.hasReachedMaxMood,
+      hasReachedMinMood: hasReachedMinMood ?? this.hasReachedMinMood,
     );
   }
 }

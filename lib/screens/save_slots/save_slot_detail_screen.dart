@@ -110,7 +110,7 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                             MaterialPageRoute(builder: (_) => const DevToolsScreen()),
                           ),
                           child: Text(
-                            game.farmName.toUpperCase(),
+                            game.displayName.toUpperCase(),
                             style: MFTextStyles.labelLarge,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,

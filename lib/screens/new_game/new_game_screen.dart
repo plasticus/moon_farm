@@ -153,7 +153,7 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
-              maxLength: 32,
+              maxLength: 27,
               style: MFTextStyles.bodyLarge,
               decoration: InputDecoration(
                 hintText: 'Name your operation...',
@@ -162,6 +162,10 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
               ),
               onChanged: (_) => setState(() => _nameError = null),
               textCapitalization: TextCapitalization.words,
+            ),
+            Text(
+              'Displays as "${_nameController.text.isEmpty ? 'Your Farm' : _nameController.text} (4J)" — that\'s your callsign. Radio chatter and Kovacs both use it.',
+              style: MFTextStyles.bodySmall.copyWith(color: MFColors.textMuted),
             ),
             const SizedBox(height: 32),
 

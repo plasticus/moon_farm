@@ -515,10 +515,225 @@ milestones:
     - id: m40
       check_type: scrip_balance
       name: Free and Clear
-      description: Hold 100,000 Star-Scrip at once — the contract is paid off, the farm is yours
-      target: 100000
+      description: Hold 250,000 Star-Scrip at once — the contract is paid off, the farm is yours
+      target: 250000
       reward_scrip: 0
       is_win_condition: true
+
+    # ─── Monuments Built (monuments_built) — no deadline ───────────────────
+    - id: m41
+      check_type: monuments_built
+      name: First Monument
+      description: Build your first monument
+      target: 1
+      reward_scrip: 1500
+
+    - id: m42
+      check_type: monuments_built
+      name: Monument Builder
+      description: Build 4 monuments
+      target: 4
+      reward_scrip: 3500
+
+    - id: m43
+      check_type: monuments_built
+      name: Monument Collection
+      description: Build 8 monuments
+      target: 8
+      reward_scrip: 7000
+
+    - id: m44
+      check_type: monuments_built
+      name: Monument Legacy
+      description: Build 15 monuments
+      target: 15
+      reward_scrip: 13000
+
+    # ─── Scrap Baron (scrap_baron) — no deadline ────────────────────────────
+    - id: m45
+      check_type: scrap_baron
+      name: Scrap Runner
+      description: Sell 5dam³ of scrap to Kovacs, lifetime
+      target: 5
+      reward_scrip: 600
+
+    - id: m46
+      check_type: scrap_baron
+      name: Scrap Trader
+      description: Sell 20dam³ of scrap to Kovacs, lifetime
+      target: 20
+      reward_scrip: 2000
+
+    - id: m47
+      check_type: scrap_baron
+      name: Scrap Baron
+      description: Sell 45dam³ of scrap to Kovacs, lifetime
+      target: 45
+      reward_scrip: 4500
+
+    - id: m48
+      check_type: scrap_baron
+      name: Scrap Tycoon
+      description: Sell 80dam³ of scrap to Kovacs, lifetime
+      target: 80
+      reward_scrip: 8500
+
+    # ─── Full Automation (full_automation) — no deadline ────────────────────
+    # target = number of domes simultaneously running a maxed Mk4 bot.
+    # No hard cap on dome count exists (only a price ceiling past dome 11),
+    # so the top tiers are deliberately long-tail, same treatment as the
+    # Fauna Defeated stretch goals.
+    - id: m49
+      check_type: full_automation
+      name: First Autopilot
+      description: Run Mk4 bots in 4 domes at once
+      target: 4
+      reward_scrip: 2000
+
+    - id: m50
+      check_type: full_automation
+      name: Automated Cluster
+      description: Run Mk4 bots in 8 domes at once
+      target: 8
+      reward_scrip: 4000
+
+    - id: m51
+      check_type: full_automation
+      name: Automation Network
+      description: Run Mk4 bots in 12 domes at once
+      target: 12
+      reward_scrip: 7000
+
+    - id: m52
+      check_type: full_automation
+      name: Automation Grid
+      description: Run Mk4 bots in 16 domes at once
+      target: 16
+      reward_scrip: 11000
+
+    - id: m53
+      check_type: full_automation
+      name: Automation Sprawl
+      description: Run Mk4 bots in 20 domes at once
+      target: 20
+      reward_scrip: 16000
+
+    - id: m54
+      check_type: full_automation
+      name: Automation Empire
+      description: Run Mk4 bots in 24 domes at once
+      target: 24
+      reward_scrip: 22000
+
+    - id: m55
+      check_type: full_automation
+      name: Automation Dominion
+      description: Run Mk4 bots in 28 domes at once
+      target: 28
+      reward_scrip: 29000
+
+    - id: m56
+      check_type: full_automation
+      name: Automation Singularity
+      description: Run Mk4 bots in 32 domes at once
+      target: 32
+      reward_scrip: 37000
+
+    - id: m57
+      check_type: full_automation
+      name: Automation Ascendant
+      description: Run Mk4 bots in 36 domes at once
+      target: 36
+      reward_scrip: 46000
+
+    - id: m58
+      check_type: full_automation
+      name: Total Automation
+      description: Run Mk4 bots in 40 domes at once
+      target: 40
+      reward_scrip: 56000
+
+    # ─── Kovacs Dialogue Unlocks (kovacs_topic_unlocked) — no deadline ─────
+    # One milestone per major conversation chain — target is unused,
+    # completion is purely "does topic_id appear in unlockedTopicIds".
+    - id: m59
+      check_type: kovacs_topic_unlocked
+      name: Coffee Confidant
+      description: Unlock the offer to grow Kovacs real coffee
+      target: 1
+      topic_id: offer_coffee_help
+      reward_scrip: 500
+
+    - id: m60
+      check_type: kovacs_topic_unlocked
+      name: Command Track
+      description: Learn about Kovacs' captaincy ambitions
+      target: 1
+      topic_id: ask_about_captaincy
+      reward_scrip: 500
+
+    - id: m61
+      check_type: kovacs_topic_unlocked
+      name: Meet Barnaby
+      description: Unlock the chance to see Barnaby the cat
+      target: 1
+      topic_id: ask_about_cat
+      reward_scrip: 500
+
+    - id: m62
+      check_type: kovacs_topic_unlocked
+      name: Honyocker Watch
+      description: Unlock Kovacs' gossip about other farmers' failures
+      target: 1
+      topic_id: ask_about_honyockers
+      reward_scrip: 500
+
+    - id: m63
+      check_type: kovacs_topic_unlocked
+      name: Form 77-A
+      description: Unlock Kovacs' complaint-form stories
+      target: 1
+      topic_id: ask_about_complaints
+      reward_scrip: 400
+
+    - id: m64
+      check_type: kovacs_topic_unlocked
+      name: Zero-G Barnaby
+      description: Unlock the story of Barnaby during a gravity failure
+      target: 1
+      topic_id: share_weightless_barnaby
+      reward_scrip: 300
+
+    - id: m65
+      check_type: kovacs_topic_unlocked
+      name: Let Him Vent
+      description: Unlock Kovacs venting about disrespectful pilots
+      target: 1
+      topic_id: rant_about_space_cadets
+      reward_scrip: 500
+
+    - id: m66
+      check_type: kovacs_topic_unlocked
+      name: Macro Data
+      description: Unlock Kovacs' sector-wide yield comparisons
+      target: 1
+      topic_id: ask_about_sector_yields
+      reward_scrip: 400
+
+    # ─── Kovacs Mood Extremes — no deadline ─────────────────────────────────
+    - id: m67
+      check_type: kovacs_mood_max
+      name: Elated
+      description: Get Kovacs' mood all the way to 100
+      target: 1
+      reward_scrip: 3000
+
+    - id: m68
+      check_type: kovacs_mood_min
+      name: Rock Bottom
+      description: Get Kovacs' mood all the way down to 0
+      target: 1
+      reward_scrip: 2500
 
   hard:
     - id: m1

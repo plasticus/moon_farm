@@ -72,6 +72,7 @@ class MilestoneConfigService {
         failureMessage: map['failure_message'] as String? ?? '',
         failureDetail: map['failure_detail'] as String? ?? '',
         isWinCondition: map['is_win_condition'] as bool? ?? false,
+        topicId: map['topic_id'] as String?,
         status: MilestoneStatus.pending,
       );
     }).toList();

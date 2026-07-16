@@ -834,7 +834,7 @@ class _FilledSlotContent extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      slot.farmName ?? 'Unknown Farm',
+                      slot.displayName ?? 'Unknown Farm',
                       style: MFTextStyles.labelLarge,
                       overflow: TextOverflow.ellipsis,
                     ),

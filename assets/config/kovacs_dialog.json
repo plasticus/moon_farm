@@ -523,6 +523,34 @@
         "If they can't balance a simple chemical chart, lose the contract.",
         "Reserve my respect for operators who track standard data parameters."
       ],
+      "unlocks": ["press_honyocker_mockery"]
+    },
+    {
+      "id": "press_honyocker_mockery",
+      "tier": 2,
+      "visible_label": "Why does it bother you so much when they mess up?",
+      "mood_change": -1,
+      "mood_hint": "He doesn't like being pushed on why this gets under his skin.",
+      "response_pool": [
+        "Because it's basic. Because it's avoidable. Drop it, operator.",
+        "Not every question needs an answer. Focus on your own crops.",
+        "It bothers me because it should bother everyone. Leave it there.",
+        "You're reading into a professional opinion. Next topic, please."
+      ],
+      "unlocks": ["honyocker_grief_reveal"]
+    },
+    {
+      "id": "honyocker_grief_reveal",
+      "tier": 2,
+      "visible_label": "You can talk to me about it, if you want.",
+      "mood_change": 5,
+      "mood_hint": "Nobody's actually let him say this part out loud before.",
+      "response_pool": [
+        "...Fine. Sector 4, the vented fertilizer call. I knew that crew. Trained one of them myself. Mockery's easier than admitting I couldn't stop it.",
+        "Had a friend on Sector 18's flood. Documentation error, nothing more. Should've caught it in review. I didn't. Laughing's easier than that.",
+        "You ever watch good people die from something a checklist would've caught? I have. Twice. So yeah, I make it a joke. Beats the alternative.",
+        "Lost someone to an airlock mistake once. Same rank as you, actually. So I ride the new operators hard. I'd rather you resent me than end up a case file."
+      ],
       "unlocks": []
     },
     {
@@ -601,6 +629,34 @@
         "None. Treat us like automated beacons. We guide ninety percent of transit paths.",
         "Call us desk operators. Meanwhile, we keep them from crashing into platforms.",
         "Filed three Form 77-A compliance complaints on transport crews this watch."
+      ],
+      "unlocks": ["ask_about_freighter_envy"]
+    },
+    {
+      "id": "ask_about_freighter_envy",
+      "tier": 2,
+      "visible_label": "Do you ever miss actually being out there, even with how sloppy they fly?",
+      "mood_change": -2,
+      "mood_hint": "This lands closer to his career disappointment than the pilots ever did.",
+      "response_pool": [
+        "Miss it? I coordinate half their approach vectors. That's still flying, just smarter.",
+        "Don't conflate the two, operator. I passed the exam. They just have a license and a bad attitude.",
+        "I don't miss anything. I manage the traffic they clearly can't manage themselves.",
+        "That's an unfair question. Ask me something useful, or don't ask at all."
+      ],
+      "unlocks": ["admit_freighter_envy"]
+    },
+    {
+      "id": "admit_freighter_envy",
+      "tier": 2,
+      "visible_label": "You'd trade seats with any one of them in a heartbeat, wouldn't you?",
+      "mood_change": 5,
+      "mood_hint": "Nobody's ever said the quiet part out loud to him before.",
+      "response_pool": [
+        "...Yeah. Every single one. Doesn't matter how bad their approach vectors are. They're still out there, and I'm not.",
+        "In a heartbeat. GSC-3, ninety-seventh percentile, and I'm timestamping cargo manifests. So yes. Any seat. Any ship.",
+        "You're the first person who's asked instead of assumed. That's... appreciated, actually. And yes. I would.",
+        "Every clamp alignment I score, I'm running the approach in my head like it's mine. Didn't think anyone noticed that."
       ],
       "unlocks": []
     }

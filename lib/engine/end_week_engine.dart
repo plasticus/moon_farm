@@ -28,6 +28,27 @@ import 'radio_trigger_engine.dart';
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
 
+  /// Manually triggers the win-condition milestone — called from the
+  /// Habitat > Contract screen's "Buy the Farm" button. Never fires on its
+  /// own from processEndWeek; the player has to choose the moment. Returns
+  /// the state unchanged if there's no pending win-condition milestone, it's
+  /// already been completed, or the balance target hasn't been met yet.
+  GameState buyTheFarm(GameState s) {
+    final idx = s.milestones.indexWhere((m) => m.isWinCondition);
+    if (idx == -1) return s;
+    final milestone = s.milestones[idx];
+    if (milestone.status != MilestoneStatus.pending) return s;
+    if (!_isMilestoneComplete(s, milestone)) return s;
+
+    final updatedMilestones = List<Milestone>.from(s.milestones);
+    updatedMilestones[idx] = milestone.copyWith(status: MilestoneStatus.completed);
+
+    return s.copyWith(
+      milestones: updatedMilestones,
+      status: GameStatus.won,
+    );
+  }
+
   /// Computes the actual harvested yield (units) for a cell, factoring in:
   ///  - decay: healthPercent acts as a yield multiplier (100 = full)
   ///  - fertilizer: each application stacks fertilizerBonus multiplicatively
@@ -326,10 +347,11 @@ class EndWeekEngine {
 
       // Combine all scrap pickups into one grouped line using dam³,
       // matching the dashboard Outgoing Shipments display.
+      double scrapDam3 = 0;
       if (scrapSaleCount > 0) {
         final bulk = _config.scrapDealerBulkAmount;
-        final totalDam = (scrapSaleCount * bulk / 1000).toStringAsFixed(1);
-        events.add('🔧 Scrap pickup: ${totalDam}dam³ → +$scrapTotalScrip 🎫');
+        scrapDam3 = scrapSaleCount * bulk / 1000;
+        events.add('🔧 Scrap pickup: ${scrapDam3.toStringAsFixed(1)}dam³ → +$scrapTotalScrip 🎫');
       }
       // Migration safety net: older saves may still be carrying a
       // pre-existing pendingContractScrip balance from before contract
@@ -346,6 +368,7 @@ class EndWeekEngine {
         pendingSales: [],
         pendingContractScrip: 0,
         lifetimeScripEarned: s.lifetimeScripEarned + earned,
+        totalScrapSoldDam3: s.totalScrapSoldDam3 + scrapDam3,
       );
       resourceChanges['star_scrip'] = earned.toDouble();
     }
@@ -562,10 +585,17 @@ class EndWeekEngine {
     // ── Step 7: Milestone checks ──────────────────────────────────────────
     final updatedMilestones = <Milestone>[];
     var pendingStrikeIncrease = false;
-    var wonThisWeek = false;
 
     for (final milestone in s.milestones) {
       if (milestone.status != MilestoneStatus.pending) {
+        updatedMilestones.add(milestone);
+        continue;
+      }
+
+      // Win-condition milestones never auto-complete here, no matter how
+      // long the target's been met — the player has to choose to buy out
+      // the contract from Habitat > Contract. See buyTheFarm() below.
+      if (milestone.isWinCondition) {
         updatedMilestones.add(milestone);
         continue;
       }
@@ -580,14 +610,8 @@ class EndWeekEngine {
           ),
           lifetimeScripEarned: s.lifetimeScripEarned + scripReward,
         );
-        if (milestone.isWinCondition) {
-          wonThisWeek = true;
-          milestoneUpdates.add('🏆 ${milestone.name}: the contract is paid off. This farm is yours.');
-          events.add('🏆 ${milestone.name}! You have bought out the colony contract — the farm is yours.');
-        } else {
-          milestoneUpdates.add('🎖️ Milestone complete: ${milestone.name} (+$scripReward 🎫)');
-          events.add('🎖️ Milestone complete: ${milestone.name}! Reward: $scripReward Star-Scrip');
-        }
+        milestoneUpdates.add('🎖️ Milestone complete: ${milestone.name} (+$scripReward 🎫)');
+        events.add('🎖️ Milestone complete: ${milestone.name}! Reward: $scripReward Star-Scrip');
         continue;
       }
 
@@ -633,11 +657,6 @@ class EndWeekEngine {
       newStatus = GameStatus.terminated;
       newTermReason = 'Three contract violations. The colony has terminated your agreement.';
       events.add('❌ Three strikes — the colony has terminated your contract.');
-    }
-    // A wall breach or strike-out this same week takes priority over a
-    // win — the contract voids before a payout could buy it out.
-    if (wonThisWeek && newStatus != GameStatus.terminated) {
-      newStatus = GameStatus.won;
     }
 
     s = s.copyWith(
@@ -785,6 +804,21 @@ class EndWeekEngine {
         final tierCrops = _config.getCropsByTier(m.target.toInt());
         if (tierCrops.isEmpty) return false;
         return tierCrops.every((c) => (s.cropHarvestCounts[c.id] ?? 0) > 0);
+      case 'monuments_built':
+        return s.monuments.length >= m.target;
+      case 'scrap_baron':
+        return s.totalScrapSoldDam3 >= m.target;
+      case 'full_automation':
+        // Domes running a maxed-out (Mk4) bot — the ceiling defined by
+        // upgrades_domebots.yaml, matched here as a literal since that's
+        // the same "Mk4" the config comments call the automation ceiling.
+        return s.domes.where((d) => d.domeBot?.level == 4).length >= m.target;
+      case 'kovacs_topic_unlocked':
+        return m.topicId != null && s.relay.unlockedTopicIds.contains(m.topicId);
+      case 'kovacs_mood_max':
+        return s.relay.hasReachedMaxMood;
+      case 'kovacs_mood_min':
+        return s.relay.hasReachedMinMood;
       case 'volume_delivered':
       default:
         return s.totalVolumeDeliveredM3 >= m.target;

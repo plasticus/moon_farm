@@ -314,6 +314,7 @@ class DatabaseHelper {
       'radio_feed': state.radioFeed.map(_radioToJson).toList(),
       'relay': _relayToJson(state.relay),
       'total_volume_delivered_m3': state.totalVolumeDeliveredM3,
+      'total_scrap_sold_dam3': state.totalScrapSoldDam3,
       'lifetime_solars_earned': state.lifetimeScripEarned,
       'pending_contract_scrip': state.pendingContractScrip,
       'total_crops_harvested': state.totalCropsHarvested,
@@ -370,6 +371,7 @@ class DatabaseHelper {
       radioFeed: (json['radio_feed'] as List).map((r) => _radioFromJson(r as Map<String, dynamic>)).toList(),
       relay: _relayFromJson(json['relay'] as Map<String, dynamic>),
       totalVolumeDeliveredM3: (json['total_volume_delivered_m3'] as num).toDouble(),
+      totalScrapSoldDam3: (json['total_scrap_sold_dam3'] as num?)?.toDouble() ?? 0.0,
       lifetimeScripEarned: (json['lifetime_solars_earned'] as num).toInt(),
       pendingContractScrip: (json['pending_contract_scrip'] as num?)?.toInt() ?? 0,
       totalCropsHarvested: (json['total_crops_harvested'] as num).toInt(),
@@ -603,6 +605,7 @@ class DatabaseHelper {
     'check_type': m.checkType, 'target': m.target, 'by_week': m.byWeek,
     'reward_scrip': m.rewardScrip, 'status': m.status.name,
     'failure_message': m.failureMessage, 'failure_detail': m.failureDetail,
+    'is_win_condition': m.isWinCondition, 'topic_id': m.topicId,
   };
 
   Milestone _milestoneFromJson(Map<String, dynamic> j) => Milestone(
@@ -615,6 +618,10 @@ class DatabaseHelper {
     status: MilestoneStatus.values.firstWhere((e) => e.name == j['status']),
     failureMessage: j['failure_message'] as String? ?? '',
     failureDetail: j['failure_detail'] as String? ?? '',
+    // Older saves predate both fields — safe defaults, same pattern used
+    // elsewhere in this file for fields added after a save already existed.
+    isWinCondition: j['is_win_condition'] as bool? ?? false,
+    topicId: j['topic_id'] as String?,
   );
 
   Map<String, dynamic> _monumentToJson(Monument m) => {
@@ -661,6 +668,8 @@ class DatabaseHelper {
     'contracts_refreshed': r.contractsRefreshedThisWeek,
     'conversation_done_this_week': r.conversationDoneThisWeek,
     'unlocked_topic_ids': r.unlockedTopicIds.toList(),
+    'has_reached_max_mood': r.hasReachedMaxMood,
+    'has_reached_min_mood': r.hasReachedMinMood,
   };
 
   RelayTechnicianState _relayFromJson(Map<String, dynamic> j) =>
@@ -675,6 +684,8 @@ class DatabaseHelper {
         unlockedTopicIds: j['unlocked_topic_ids'] != null
             ? Set<String>.from(j['unlocked_topic_ids'] as List)
             : const {},
+        hasReachedMaxMood: j['has_reached_max_mood'] as bool? ?? false,
+        hasReachedMinMood: j['has_reached_min_mood'] as bool? ?? false,
       );
 
   Map<String, dynamic> _pendingSaleToJson(PendingSale p) => {
