@@ -326,7 +326,8 @@ z_soil_processor:
 
 # ─── GLASS FURNACE ───────────────────────────────────────────────────────────
 # Converts sand into glass. Sand is plentiful; this machine is worth building early.
-# Uses water for tempering, 1 at level 1 rising by 1 every 2 levels (5 at level 10).
+# Uses water for tempering, 1 at level 1 rising by 1 every 2 levels, tapering back
+# down to 3 at Mk10 as the recipe becomes sand-starved instead.
 
 glass_furnace:
   name: Glass Furnace
@@ -450,7 +451,7 @@ glass_furnace:
       power_draw_kwh: 50
       recipe_in:
         sand: 1
-        water: 5
+        water: 3
       recipe_out:
         glass: 12
 

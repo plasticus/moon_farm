@@ -22,7 +22,7 @@ crops:
     growth_weeks: 2
     water_per_week: 2
     calories_per_unit: 22
-    base_scrip_per_m3: 32
+    base_scrip_per_m3: 20
     compost_yield: 2
     decay_rate: 0.1
     description: Translucent leafy greens. Guzzles water.
@@ -86,7 +86,7 @@ crops:
     growth_weeks: 3
     water_per_week: 2
     calories_per_unit: 8
-    base_scrip_per_m3: 63
+    base_scrip_per_m3: 39
     compost_yield: 3
     decay_rate: 0.2
     description: Thrives on mechanical runoff.
@@ -102,7 +102,7 @@ crops:
     growth_weeks: 4
     water_per_week: 3
     calories_per_unit: 18
-    base_scrip_per_m3: 55
+    base_scrip_per_m3: 60
     compost_yield: 6
     decay_rate: 0.2
     description: Rupture into high-nitrogen mulch when harvested.
@@ -118,7 +118,7 @@ crops:
     growth_weeks: 4
     water_per_week: 3
     calories_per_unit: 20
-    base_scrip_per_m3: 70
+    base_scrip_per_m3: 68
     compost_yield: 5
     decay_rate: 0.2
     description: Fleshy gourds that turn to mulch when cut.
@@ -134,7 +134,7 @@ crops:
     growth_weeks: 4
     water_per_week: 5
     calories_per_unit: 10
-    base_scrip_per_m3: 46
+    base_scrip_per_m3: 76
     compost_yield: 14
     decay_rate: 0.2
     description: Hollow inedible rind. Perfect for compost.
@@ -150,7 +150,7 @@ crops:
     growth_weeks: 5
     water_per_week: 4
     calories_per_unit: 45
-    base_scrip_per_m3: 64
+    base_scrip_per_m3: 105
     compost_yield: 7
     decay_rate: 0.2
     description: Expands aggressively. Forms dense foliage blocks.
@@ -166,7 +166,7 @@ crops:
     growth_weeks: 5
     water_per_week: 4
     calories_per_unit: 28
-    base_scrip_per_m3: 326
+    base_scrip_per_m3: 250
     compost_yield: 2
     decay_rate: 0.3
     description: Small clusters of intensely bright berries.
@@ -182,7 +182,7 @@ crops:
     growth_weeks: 6
     water_per_week: 5
     calories_per_unit: 45
-    base_scrip_per_m3: 281
+    base_scrip_per_m3: 360
     compost_yield: 2
     decay_rate: 0.3
     description: Radiates electric green. Needs perfect hydration.
@@ -198,7 +198,7 @@ crops:
     growth_weeks: 7
     water_per_week: 3
     calories_per_unit: 22
-    base_scrip_per_m3: 353
+    base_scrip_per_m3: 490
     compost_yield: 1
     decay_rate: 0.3
     description: Transparent crystalline leaves. Premium corporate decor.
@@ -214,7 +214,7 @@ crops:
     growth_weeks: 8
     water_per_week: 6
     calories_per_unit: 65
-    base_scrip_per_m3: 217
+    base_scrip_per_m3: 400
     compost_yield: 10
     decay_rate: 0.3
     description: Heavy fruits with shifting neon color bands.
@@ -297,13 +297,13 @@ crops:
     growth_weeks: 4
     water_per_week: 3
     calories_per_unit: 8
-    base_scrip_per_m3: 35
+    base_scrip_per_m3: 320
     compost_yield: 16
     decay_rate: 0.3
     description: A sprawling vine that overruns its bed within weeks, leaving rich mulch in its wake.
     note: Fast growth. High compost yield. Low food value.
     fertilizer_bonus: 1.2
-    volume_m3: 0.6
+    volume_m3: 1.0
     resource_yield_amount: 0
 
   - id: prism_pepper
@@ -313,7 +313,7 @@ crops:
     growth_weeks: 9
     water_per_week: 5
     calories_per_unit: 90
-    base_scrip_per_m3: 1150
+    base_scrip_per_m3: 1350
     compost_yield: 2
     decay_rate: 0.4
     description: Each pod refracts grow-lamp spectra into a flavor that shifts with every bite. Corporate buyers pay well for the novelty.
@@ -329,7 +329,7 @@ crops:
     growth_weeks: 4
     water_per_week: 5
     calories_per_unit: 120
-    base_scrip_per_m3: 800
+    base_scrip_per_m3: 600
     compost_yield: 2
     decay_rate: 0.5
     description: A lab-refined mycelium strain that matures in half the time without sacrificing yield.
@@ -403,7 +403,7 @@ crops:
     description: A voracious cherry-bearing vine that devours its bed even faster than Tangleberry, leaving mountains of mulch behind.
     note: Extreme compost yield. Fastest growth of any Tier 5 crop. Low food value.
     fertilizer_bonus: 1.2
-    volume_m3: 0.6
+    volume_m3: 1.0
     resource_yield_amount: 0
 
   - id: halo_fruit

@@ -10,9 +10,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum RaidSpeed {
+  slow(0.75, 'Slow'),
   normal(1.0, 'Normal'),
-  fast(2.0, 'Fast'),
-  turbo(3.0, 'Turbo');
+  fast(1.5, 'Fast');
 
   final double multiplier;
   final String label;

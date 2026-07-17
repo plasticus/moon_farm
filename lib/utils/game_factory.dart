@@ -270,7 +270,12 @@ class GameFactory {
         ? 1
         : domes.map((d) => d.tier).reduce((a, b) => a > b ? a : b);
 
-    final availableCrops = config.getCropsForDomeTier(maxDomeTier);
+    // Resource crops (moss/chitin/meat) don't produce a sellable silo unit,
+    // so they can't fulfill a contract — exclude them from the pool.
+    final availableCrops = config
+        .getCropsForDomeTier(maxDomeTier)
+        .where((c) => c.yieldsResource == null)
+        .toList();
     if (availableCrops.isEmpty) return [];
 
     // Shuffle and pick 3 different crops for variety
