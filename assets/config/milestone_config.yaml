@@ -8,15 +8,19 @@
 #   id:                 unique string key
 #   check_type:         'volume_delivered' | 'power_capacity' |
 #                        'contracts_completed' | 'fauna_killed' |
-#                        'crop_diversity' — see EndWeekEngine._isMilestoneComplete
-#                        for what `target` means for each type. Omit for
-#                        volume_delivered (that's the default).
+#                        'crop_diversity' | 'contract_diversity' — see
+#                        EndWeekEngine._isMilestoneComplete for what `target`
+#                        means for each type. Omit for volume_delivered
+#                        (that's the default).
 #   name:               display name
 #   description:        shown in milestone list
 #   target:             meaning depends on check_type — m³ for
 #                        volume_delivered, kW for power_capacity, a count
 #                        for contracts_completed/fauna_killed, or the crop
-#                        tier number (1-5) for crop_diversity
+#                        tier number (1-5) for crop_diversity/contract_diversity.
+#                        contract_diversity only counts sellable crops in that
+#                        tier (skips moss/chitin/meat resource crops, which
+#                        can't generate contracts).
 #   by_week:             deadline week (inclusive). OMIT this field entirely
 #                        for achievement-style milestones (anything other
 #                        than volume_delivered) — no deadline means no
@@ -187,6 +191,44 @@ milestones:
       description: Harvest every Tier 5 crop at least once
       target: 5
       reward_scrip: 1200
+
+    # ─── Contract Diversity (contract_diversity) — no deadline ────────────
+    # target holds the tier number. Only sellable crops count — Tier 4/5
+    # each have resource-only crops (moss/chitin/meat) excluded.
+    - id: m16
+      check_type: contract_diversity
+      name: Tier 1 Contractor
+      description: Complete a contract for every sellable Tier 1 crop
+      target: 1
+      reward_scrip: 300
+
+    - id: m17
+      check_type: contract_diversity
+      name: Tier 2 Contractor
+      description: Complete a contract for every sellable Tier 2 crop
+      target: 2
+      reward_scrip: 600
+
+    - id: m18
+      check_type: contract_diversity
+      name: Tier 3 Contractor
+      description: Complete a contract for every sellable Tier 3 crop
+      target: 3
+      reward_scrip: 1000
+
+    - id: m19
+      check_type: contract_diversity
+      name: Tier 4 Contractor
+      description: Complete a contract for every sellable Tier 4 crop
+      target: 4
+      reward_scrip: 1500
+
+    - id: m20
+      check_type: contract_diversity
+      name: Tier 5 Contractor
+      description: Complete a contract for every sellable Tier 5 crop
+      target: 5
+      reward_scrip: 2000
 
   normal:
     # ─── Cargo Delivery Quota (volume_delivered) ──────────────────────────
@@ -507,6 +549,44 @@ milestones:
       description: Harvest every Tier 5 crop at least once
       target: 5
       reward_scrip: 8000
+
+    # ─── Contract Diversity (contract_diversity) — no deadline ────────────
+    # target holds the tier number. Only sellable crops count — Tier 4/5
+    # each have resource-only crops (moss/chitin/meat) excluded.
+    - id: m69
+      check_type: contract_diversity
+      name: Tier 1 Contractor
+      description: Complete a contract for every sellable Tier 1 crop
+      target: 1
+      reward_scrip: 1500
+
+    - id: m70
+      check_type: contract_diversity
+      name: Tier 2 Contractor
+      description: Complete a contract for every sellable Tier 2 crop
+      target: 2
+      reward_scrip: 3000
+
+    - id: m71
+      check_type: contract_diversity
+      name: Tier 3 Contractor
+      description: Complete a contract for every sellable Tier 3 crop
+      target: 3
+      reward_scrip: 5000
+
+    - id: m72
+      check_type: contract_diversity
+      name: Tier 4 Contractor
+      description: Complete a contract for every sellable Tier 4 crop
+      target: 4
+      reward_scrip: 7500
+
+    - id: m73
+      check_type: contract_diversity
+      name: Tier 5 Contractor
+      description: Complete a contract for every sellable Tier 5 crop
+      target: 5
+      reward_scrip: 10000
 
     # ─── Win Condition (scrip_balance) — no deadline ───────────────────────
     # is_win_condition flips GameStatus to `won` on completion instead of
@@ -861,3 +941,41 @@ milestones:
       description: Harvest every Tier 5 crop at least once
       target: 5
       reward_scrip: 1200
+
+    # ─── Contract Diversity (contract_diversity) — no deadline ────────────
+    # target holds the tier number. Only sellable crops count — Tier 4/5
+    # each have resource-only crops (moss/chitin/meat) excluded.
+    - id: m16
+      check_type: contract_diversity
+      name: Tier 1 Contractor
+      description: Complete a contract for every sellable Tier 1 crop
+      target: 1
+      reward_scrip: 300
+
+    - id: m17
+      check_type: contract_diversity
+      name: Tier 2 Contractor
+      description: Complete a contract for every sellable Tier 2 crop
+      target: 2
+      reward_scrip: 600
+
+    - id: m18
+      check_type: contract_diversity
+      name: Tier 3 Contractor
+      description: Complete a contract for every sellable Tier 3 crop
+      target: 3
+      reward_scrip: 1000
+
+    - id: m19
+      check_type: contract_diversity
+      name: Tier 4 Contractor
+      description: Complete a contract for every sellable Tier 4 crop
+      target: 4
+      reward_scrip: 1500
+
+    - id: m20
+      check_type: contract_diversity
+      name: Tier 5 Contractor
+      description: Complete a contract for every sellable Tier 5 crop
+      target: 5
+      reward_scrip: 2000

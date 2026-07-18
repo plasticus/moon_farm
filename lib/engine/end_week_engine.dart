@@ -804,6 +804,18 @@ class EndWeekEngine {
         final tierCrops = _config.getCropsByTier(m.target.toInt());
         if (tierCrops.isEmpty) return false;
         return tierCrops.every((c) => (s.cropHarvestCounts[c.id] ?? 0) > 0);
+      case 'contract_diversity':
+        // target holds the tier number, same as crop_diversity — complete
+        // once a contract has been fulfilled for every SELLABLE crop in
+        // that tier. Resource crops (yields_resource != null: moss/chitin/
+        // meat) never generate contracts, so they're excluded here too.
+        final sellableTierCrops = _config
+            .getCropsByTier(m.target.toInt())
+            .where((c) => c.yieldsResource == null)
+            .toList();
+        if (sellableTierCrops.isEmpty) return false;
+        return sellableTierCrops.every(
+            (c) => s.completedContracts.any((ct) => ct.cropId == c.id));
       case 'monuments_built':
         return s.monuments.length >= m.target;
       case 'scrap_baron':

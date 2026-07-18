@@ -556,13 +556,7 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
             ],
           ),
           const SizedBox(height: 8),
-          ...(game.milestones
-                  .where((m) => m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned)
-                  .toList()
-                ..sort((a, b) =>
-                    milestoneProgress(b, game).$1.compareTo(milestoneProgress(a, game).$1)))
-              .take(5)
-              .map((m) => _MilestoneRow(milestone: m, game: game)),
+          ...dashboardMilestones(game).map((m) => _MilestoneRow(milestone: m, game: game)),
           const SizedBox(height: 24),
         ],
       ), // ListView
@@ -839,6 +833,57 @@ class _PendingDeliveriesCard extends StatelessWidget {
   }
 }
 
+/// Kovacs relationship/dialogue milestones — flavor, not farm progress.
+/// Excluded from the condensed Dashboard preview so they don't crowd out
+/// the crop-tier and near-complete milestones; still visible on the full
+/// "VIEW ALL" milestones table.
+const _dashboardHiddenCheckTypes = {
+  'kovacs_topic_unlocked',
+  'kovacs_mood_max',
+  'kovacs_mood_min',
+};
+
+/// How close (0.0-1.0) a milestone's progress must be before it's "in the
+/// neighborhood of completing" enough to fill a non-pinned Dashboard slot.
+const _dashboardNearThreshold = 0.15;
+
+/// Picks up to 5 milestones for the Dashboard's condensed preview:
+///   1. Always pins the lowest-tier incomplete crop_diversity and
+///      contract_diversity milestone (if any) — the player should always
+///      see what's next for both harvesting and contracting, regardless
+///      of how far off it is.
+///   2. Fills remaining slots with other pending/warned milestones that
+///      are at least [_dashboardNearThreshold] complete, closest first —
+///      so the list never pads out with milestones nowhere near done.
+/// Kovacs milestones (see [_dashboardHiddenCheckTypes]) never appear here.
+List<Milestone> dashboardMilestones(GameState game) {
+  final eligible = game.milestones
+      .where((m) =>
+          (m.status == MilestoneStatus.pending || m.status == MilestoneStatus.warned) &&
+          !_dashboardHiddenCheckTypes.contains(m.checkType))
+      .toList();
+
+  Milestone? lowestTierOf(String checkType) {
+    final matches = eligible.where((m) => m.checkType == checkType).toList()
+      ..sort((a, b) => a.target.compareTo(b.target));
+    return matches.firstOrNull;
+  }
+
+  final pinned = [lowestTierOf('crop_diversity'), lowestTierOf('contract_diversity')]
+      .whereType<Milestone>()
+      .toList();
+  final pinnedIds = pinned.map((m) => m.id).toSet();
+
+  final others = eligible
+      .where((m) => !pinnedIds.contains(m.id))
+      .where((m) => milestoneProgress(m, game).$1 >= _dashboardNearThreshold)
+      .toList()
+    ..sort((a, b) =>
+        milestoneProgress(b, game).$1.compareTo(milestoneProgress(a, game).$1));
+
+  return [...pinned, ...others].take(5).toList();
+}
+
 /// (progress 0.0-1.0, "current / target" label) — shape depends on
 /// checkType, since "current" means something different for each. Shared
 /// by the Dashboard summary (for "closest to done" sorting) and both
@@ -859,6 +904,16 @@ class _PendingDeliveriesCard extends StatelessWidget {
       final discovered = tierCrops.where((c) => (game.cropHarvestCounts[c.id] ?? 0) > 0).length;
       final total = tierCrops.isEmpty ? 1 : tierCrops.length;
       return (discovered / total, 'Tier ${m.target.toInt()}: $discovered / $total crops');
+    case 'contract_diversity':
+      final tierCrops = GameConfigService.instance
+          .getCropsByTier(m.target.toInt())
+          .where((c) => c.yieldsResource == null)
+          .toList();
+      final fulfilled = tierCrops
+          .where((c) => game.completedContracts.any((ct) => ct.cropId == c.id))
+          .length;
+      final total = tierCrops.isEmpty ? 1 : tierCrops.length;
+      return (fulfilled / total, 'Tier ${m.target.toInt()}: $fulfilled / $total crops');
     case 'volume_delivered':
     default:
       final current = game.totalVolumeDeliveredM3;
