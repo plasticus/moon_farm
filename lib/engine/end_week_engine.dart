@@ -28,6 +28,28 @@ import 'radio_trigger_engine.dart';
 class EndWeekEngine {
   final GameConfigService _config = GameConfigService.instance;
 
+  /// Flips permanent 'discovered_X' flags in unlockedFeatures the first
+  /// time the player ever holds Moss, Mycoculture, or Lattice Moss — used
+  /// to both reveal their Resources-grid tiles (moss/mycoculture; Lattice
+  /// Moss has no grid tile, it's a silo crop) and complete the matching
+  /// discovery milestones. Safe to call after any action that could
+  /// produce one of these — harvest, refine, whatever comes later — since
+  /// it's a no-op once a flag is already set.
+  GameState checkResourceDiscoveries(GameState s) {
+    var features = s.unlockedFeatures;
+    void discover(String key) {
+      if (!features.contains(key)) features = [...features, key];
+    }
+
+    if (s.resources.moss > 0) discover('discovered_moss');
+    if (s.resources.mycoculture > 0) discover('discovered_mycoculture');
+    if ((s.siloInventory['lattice_moss'] ?? 0) > 0) discover('discovered_lattice_moss');
+
+    return identical(features, s.unlockedFeatures)
+        ? s
+        : s.copyWith(unlockedFeatures: features);
+  }
+
   /// Manually triggers the win-condition milestone — called from the
   /// Habitat > Contract screen's "Buy the Farm" button. Never fires on its
   /// own from processEndWeek; the player has to choose the moment. Returns
@@ -646,6 +668,12 @@ class EndWeekEngine {
     // ── Step 6: Silo overflow → compost ───────────────────────────────────
     // (Full silo handling deferred to Phase 3 when selling is implemented)
 
+    // ── Step 6b: Resource discovery flags ───────────────────────────────
+    // Catches anything bot-harvest (Step 4b) or Auto-Refine (Step 0c)
+    // produced this week — runs before Step 7 so a fresh discovery can
+    // complete its milestone the same week, not one week late.
+    s = checkResourceDiscoveries(s);
+
     // ── Step 7: Milestone checks ──────────────────────────────────────────
     final updatedMilestones = <Milestone>[];
     var pendingStrikeIncrease = false;
@@ -879,6 +907,13 @@ class EndWeekEngine {
         return s.domes.where((d) => d.domeBot?.level == 4).length >= m.target;
       case 'kovacs_topic_unlocked':
         return m.topicId != null && s.relay.unlockedTopicIds.contains(m.topicId);
+      case 'feature_unlocked':
+        // Reuses topic_id as a generic "check this id is present" key —
+        // same shape as kovacs_topic_unlocked, just checking
+        // unlockedFeatures instead of relay.unlockedTopicIds. Used for
+        // the discovered_moss/discovered_mycoculture/discovered_lattice_moss
+        // flags set by checkResourceDiscoveries().
+        return m.topicId != null && s.unlockedFeatures.contains(m.topicId);
       case 'kovacs_mood_max':
         return s.relay.hasReachedMaxMood;
       case 'kovacs_mood_min':

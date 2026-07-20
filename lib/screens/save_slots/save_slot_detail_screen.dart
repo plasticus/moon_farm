@@ -507,7 +507,7 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
           const SizedBox(height: 16),
           const _SectionHeader('RESOURCES'),
           const SizedBox(height: 8),
-          _ResourceGrid(resources: game.resources),
+          _ResourceGrid(resources: game.resources, unlockedFeatures: game.unlockedFeatures),
           const SizedBox(height: 16),
           const _SectionHeader('INFRASTRUCTURE'),
           const SizedBox(height: 8),
@@ -587,7 +587,8 @@ class _SectionHeader extends StatelessWidget {
 
 class _ResourceGrid extends StatelessWidget {
   final Resources resources;
-  const _ResourceGrid({required this.resources});
+  final List<String> unlockedFeatures;
+  const _ResourceGrid({required this.resources, required this.unlockedFeatures});
 
   @override
   Widget build(BuildContext context) {
@@ -606,8 +607,14 @@ class _ResourceGrid extends StatelessWidget {
       ('🌾', 'Seeds',      '${resources.seeds}', MFColors.neonGreen),
       ('🥩', 'Meat',       '${resources.meat.toInt()}', const Color(0xFFEF5350)),
       ('🦴', 'Chitin',     '${resources.chitin.toInt()}', const Color(0xFFBCAAA4)),
-      ('🟩', 'Moss',       '${resources.moss.toInt()}', MFColors.neonGreen),
-      ('🧫', 'Mycoculture', '${resources.mycoculture.toInt()}', MFColors.neonPurple),
+      // Moss and Mycoculture stay off the grid entirely until first
+      // acquired — no point showing a permanent "0" tile for something
+      // tied to a late-game Tier 5 / Mycoculture Vat chain most saves
+      // never touch.
+      if (unlockedFeatures.contains('discovered_moss'))
+        ('🟩', 'Moss', '${resources.moss.toInt()}', MFColors.neonGreen),
+      if (unlockedFeatures.contains('discovered_mycoculture'))
+        ('🧫', 'Mycoculture', '${resources.mycoculture.toInt()}', MFColors.neonPurple),
     ];
 
     return GridView.builder(

@@ -9,6 +9,7 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/radio_trigger_engine.dart';
+import '../../engine/end_week_engine.dart';
 import '../../widgets/confirm_dialog.dart';
 
 /// Mk-level quality color. Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5+=orange
@@ -367,6 +368,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       // immediately, rather than waiting for the next End Week.
       updatedGame = checkRadioTriggers(updatedGame);
     }
+
+    // Reveal Moss/Mycoculture/Lattice Moss the instant they're first
+    // acquired, rather than waiting for the next End Week to notice.
+    updatedGame = EndWeekEngine().checkResourceDiscoveries(updatedGame);
 
     // Resource crops (moss, chitin, metals, etc.) land straight in
     // Resources, not the silo — the harvest message needs to say so,
