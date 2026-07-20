@@ -205,36 +205,22 @@ class EndWeekEngine {
     // ── Step 0c: Auto-Refine (Mk10 machines craft max possible automatically) ──
         {
       final upgrades = UpgradeConfigService.instance;
+      final gameConfig = GameConfigService.instance;
       var resources = s.resources;
+      var silo = Map<String, double>.from(s.siloInventory);
       final autoRefineLog = <String>[];
 
-      Resources subtract(Resources r, String key, double amt) {
-        return switch (key) {
-          'compost' => r.copyWith(compost: r.compost - amt),
-          'ore' => r.copyWith(ore: r.ore - amt),
-          'moon_dirt' => r.copyWith(moonDirt: r.moonDirt - amt),
-          'chemicals' => r.copyWith(chemicals: r.chemicals - amt),
-          'water' => r.copyWith(water: r.water - amt),
-          'sand' => r.copyWith(sand: r.sand - amt),
-          'metals' => r.copyWith(metals: r.metals - amt),
-          'glass' => r.copyWith(glass: r.glass - amt),
-          'components' => r.copyWith(components: r.components - amt),
-          _ => r,
-        };
-      }
+      // Ingredients/outputs can be either a Resources field (metals,
+      // chemicals, ...) or a crop id living in the silo (hyper_mycelium,
+      // mycelium_prime, lattice_moss, ...) — same dual-source lookup the
+      // manual Refinery crafting UI uses (_getHave/_craft in
+      // refinery_screen.dart), so recipes referencing crop ids actually
+      // work here instead of silently reading 0.
+      bool isCrop(String key) => gameConfig.getCrop(key) != null;
 
-      Resources add(Resources r, String key, double amt) {
-        return switch (key) {
-          'z_soil' => r.copyWith(zSoil: r.zSoil + amt),
-          'metals' => r.copyWith(metals: r.metals + amt),
-          'glass' => r.copyWith(glass: r.glass + amt),
-          'components' => r.copyWith(components: r.components + amt),
-          'compost' => r.copyWith(compost: r.compost + amt),
-          _ => r,
-        };
-      }
-
-      double getHave(Resources r, String key) {
+      double getHave(String key) {
+        if (isCrop(key)) return silo[key] ?? 0;
+        final r = resources;
         return switch (key) {
           'compost' => r.compost,
           'ore' => r.ore,
@@ -245,8 +231,86 @@ class EndWeekEngine {
           'metals' => r.metals,
           'glass' => r.glass,
           'components' => r.components,
+          'z_soil' => r.zSoil,
+          'moss' => r.moss,
+          'chitin' => r.chitin,
+          'meat' => r.meat,
+          'mycoculture' => r.mycoculture,
           _ => 0,
         };
+      }
+
+      void subtract(String key, double amt) {
+        if (isCrop(key)) {
+          silo[key] = (silo[key] ?? 0) - amt;
+          return;
+        }
+        final r = resources;
+        resources = switch (key) {
+          'compost' => r.copyWith(compost: r.compost - amt),
+          'ore' => r.copyWith(ore: r.ore - amt),
+          'moon_dirt' => r.copyWith(moonDirt: r.moonDirt - amt),
+          'chemicals' => r.copyWith(chemicals: r.chemicals - amt),
+          'water' => r.copyWith(water: r.water - amt),
+          'sand' => r.copyWith(sand: r.sand - amt),
+          'metals' => r.copyWith(metals: r.metals - amt),
+          'glass' => r.copyWith(glass: r.glass - amt),
+          'components' => r.copyWith(components: r.components - amt),
+          'z_soil' => r.copyWith(zSoil: r.zSoil - amt),
+          'moss' => r.copyWith(moss: r.moss - amt),
+          'chitin' => r.copyWith(chitin: r.chitin - amt),
+          'meat' => r.copyWith(meat: r.meat - amt),
+          'mycoculture' => r.copyWith(mycoculture: r.mycoculture - amt),
+          _ => r,
+        };
+      }
+
+      void add(String key, double amt) {
+        if (isCrop(key)) {
+          silo[key] = (silo[key] ?? 0) + amt;
+          return;
+        }
+        final r = resources;
+        resources = switch (key) {
+          'compost' => r.copyWith(compost: r.compost + amt),
+          'ore' => r.copyWith(ore: r.ore + amt),
+          'moon_dirt' => r.copyWith(moonDirt: r.moonDirt + amt),
+          'chemicals' => r.copyWith(chemicals: r.chemicals + amt),
+          'water' => r.copyWith(water: r.water + amt),
+          'sand' => r.copyWith(sand: r.sand + amt),
+          'metals' => r.copyWith(metals: r.metals + amt),
+          'glass' => r.copyWith(glass: r.glass + amt),
+          'components' => r.copyWith(components: r.components + amt),
+          'z_soil' => r.copyWith(zSoil: r.zSoil + amt),
+          'moss' => r.copyWith(moss: r.moss + amt),
+          'chitin' => r.copyWith(chitin: r.chitin + amt),
+          'meat' => r.copyWith(meat: r.meat + amt),
+          'mycoculture' => r.copyWith(mycoculture: r.mycoculture + amt),
+          _ => r,
+        };
+      }
+
+      // Runs one recipe as many times as ingredients allow, mutating
+      // resources/silo in place. Returns how many batches actually ran.
+      int runRecipe(Map<String, dynamic> recipeIn, Map<String, dynamic> recipeOut) {
+        if (recipeIn.isEmpty) return 0;
+        int maxN = 999;
+        for (final e in recipeIn.entries) {
+          final needed = (e.value as num).toDouble();
+          if (needed <= 0) continue;
+          final n = (getHave(e.key) / needed).floor();
+          if (n < maxN) maxN = n;
+        }
+        maxN = maxN.clamp(0, 999);
+        if (maxN <= 0) return 0;
+
+        for (final e in recipeIn.entries) {
+          subtract(e.key, (e.value as num).toDouble() * maxN);
+        }
+        for (final e in recipeOut.entries) {
+          add(e.key, (e.value as num).toDouble() * maxN);
+        }
+        return maxN;
       }
 
       for (final refinery in s.refineries) {
@@ -254,33 +318,33 @@ class EndWeekEngine {
           if (machine.level < 10 || !machine.autoRefine) continue;
           final levelCfg = upgrades.getMachineLevel(machine.yamlKey, machine.level);
           if (levelCfg == null) continue;
+
+          // Machines like the Mycoculture Vat carry two independent
+          // recipes (a base one and a rarer "Prime" one sharing some
+          // ingredients, e.g. chemicals). Prime runs first since its
+          // ingredients (mycelium_prime/lattice_moss) have no other use,
+          // so it shouldn't get starved by the base recipe hogging
+          // whatever's shared between them.
+          final recipeInPrime = Map<String, dynamic>.from(levelCfg['recipe_in_prime'] as Map? ?? {});
+          final recipeOutPrime = Map<String, dynamic>.from(levelCfg['recipe_out_prime'] as Map? ?? {});
+          final primeN = runRecipe(recipeInPrime, recipeOutPrime);
+
           final recipeIn = Map<String, dynamic>.from(levelCfg['recipe_in'] as Map? ?? {});
           final recipeOut = Map<String, dynamic>.from(levelCfg['recipe_out'] as Map? ?? {});
-          if (recipeIn.isEmpty) continue;
+          final baseN = runRecipe(recipeIn, recipeOut);
 
-          int maxN = 999;
-          for (final e in recipeIn.entries) {
-            final needed = (e.value as num).toDouble();
-            if (needed <= 0) continue;
-            final have = getHave(resources, e.key);
-            final n = (have / needed).floor();
-            if (n < maxN) maxN = n;
+          if (primeN > 0 && baseN > 0) {
+            autoRefineLog.add('${machine.emoji} ${machine.name} ×$baseN + ×$primeN Prime');
+          } else if (primeN > 0) {
+            autoRefineLog.add('${machine.emoji} ${machine.name} ×$primeN Prime');
+          } else if (baseN > 0) {
+            autoRefineLog.add('${machine.emoji} ${machine.name} ×$baseN');
           }
-          maxN = maxN.clamp(0, 999);
-          if (maxN <= 0) continue;
-
-          for (final e in recipeIn.entries) {
-            resources = subtract(resources, e.key, (e.value as num).toDouble() * maxN);
-          }
-          for (final e in recipeOut.entries) {
-            resources = add(resources, e.key, (e.value as num).toDouble() * maxN);
-          }
-          autoRefineLog.add('${machine.emoji} ${machine.name} ×$maxN');
         }
       }
 
       if (autoRefineLog.isNotEmpty) {
-        s = s.copyWith(resources: resources);
+        s = s.copyWith(resources: resources, siloInventory: silo);
         events.add('🔁 Auto-Refine: ${autoRefineLog.join(', ')}');
       }
     }

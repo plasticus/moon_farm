@@ -305,8 +305,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     var newResources = game.resources;
 
     // Resource crops deposit raw materials; food crops go to silo.
+    double resourceYieldAmt = 0;
     if (crop.yieldsResource != null) {
       final amt = crop.resourceYieldAmount * yieldAmount;
+      resourceYieldAmt = amt;
       switch (crop.yieldsResource!) {
         case 'metals':
           newResources = newResources.copyWith(metals: newResources.metals + amt);
@@ -366,10 +368,18 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       updatedGame = checkRadioTriggers(updatedGame);
     }
 
+    // Resource crops (moss, chitin, metals, etc.) land straight in
+    // Resources, not the silo — the harvest message needs to say so,
+    // otherwise it reads like it went somewhere it didn't.
+    final destinationText = crop.yieldsResource != null
+        ? '+${resourceYieldAmt.toStringAsFixed(1)} '
+            '${crop.yieldsResource!.replaceAll('_', ' ')}.'
+        : 'stored in silo. Sell via Relay.';
+
     // First harvest of the game gets a special callout
     if (newHarvestCount == 1) {
       _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
-      _snack(ref.context, '🏆 First Harvest! ${crop.name} stored in silo.');
+      _snack(ref.context, '🏆 First Harvest! ${crop.name} $destinationText');
       return;
     }
 
@@ -377,7 +387,7 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     if (vatJustUnlocked) {
       _snack(ref.context, "🧫 What did you find there, farmer? Mycoculture Vat unlocked at the Refinery!");
     } else {
-      _snack(ref.context, '✅ ${crop.name} stored in silo. Sell via Relay.');
+      _snack(ref.context, '✅ ${crop.name} $destinationText');
     }
   }
 
