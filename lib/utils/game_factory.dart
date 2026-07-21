@@ -440,6 +440,11 @@ class GameFactory {
       siloInventory: {'crystalline_beans': 82.9},
       totalVolumeDeliveredM3: 2074.75,
       totalCropsHarvested: 383,
+      // Back-filled lifetime totals, not activity from "this week" — pin
+      // the week-start snapshots to match so the first End Week on this
+      // preset doesn't report a fake Week 75 spike in the summary.
+      weekBaselineVolumeDeliveredM3: 2074.75,
+      weekBaselineCropsHarvested: 383,
       totalRaidsDefended: 7,
       totalFaunaKilled: 3013,
       totalChitinCollected: 684,

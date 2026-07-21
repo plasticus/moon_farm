@@ -318,8 +318,12 @@ class DatabaseHelper {
       'lifetime_solars_earned': state.lifetimeScripEarned,
       'pending_contract_scrip': state.pendingContractScrip,
       'total_crops_harvested': state.totalCropsHarvested,
+      'total_crops_planted': state.totalCropsPlanted,
       'total_compost_generated': state.totalCompostGenerated,
       'crop_harvest_counts': state.cropHarvestCounts,
+      'week_baseline_crops_harvested': state.weekBaselineCropsHarvested,
+      'week_baseline_volume_delivered_m3': state.weekBaselineVolumeDeliveredM3,
+      'week_baseline_crops_planted': state.weekBaselineCropsPlanted,
       'termination_reason': state.terminationReason,
       'next_raid_week': state.nextRaidWeek,
       'raid_defended_this_week': state.raidDefendedThisWeek,
@@ -375,9 +379,19 @@ class DatabaseHelper {
       lifetimeScripEarned: (json['lifetime_solars_earned'] as num).toInt(),
       pendingContractScrip: (json['pending_contract_scrip'] as num?)?.toInt() ?? 0,
       totalCropsHarvested: (json['total_crops_harvested'] as num).toInt(),
+      totalCropsPlanted: (json['total_crops_planted'] as num?)?.toInt() ?? 0,
       totalCompostGenerated: (json['total_compost_generated'] as num).toInt(),
       cropHarvestCounts: (json['crop_harvest_counts'] as Map?)
           ?.map((k, v) => MapEntry(k.toString(), (v as num).toInt())) ?? {},
+      // Old saves predate these snapshots — default to the current lifetime
+      // totals so the first End Week after loading reports a 0 delta
+      // instead of a one-time spike of the player's entire history.
+      weekBaselineCropsHarvested: (json['week_baseline_crops_harvested'] as num?)?.toInt()
+          ?? (json['total_crops_harvested'] as num).toInt(),
+      weekBaselineVolumeDeliveredM3: (json['week_baseline_volume_delivered_m3'] as num?)?.toDouble()
+          ?? (json['total_volume_delivered_m3'] as num).toDouble(),
+      weekBaselineCropsPlanted: (json['week_baseline_crops_planted'] as num?)?.toInt()
+          ?? (json['total_crops_planted'] as num?)?.toInt() ?? 0,
       terminationReason: json['termination_reason'] as String?,
       nextRaidWeek: (json['next_raid_week'] as num).toInt(),
       raidDefendedThisWeek: json['raid_defended_this_week'] as bool,
@@ -450,7 +464,7 @@ class DatabaseHelper {
     'scrip_received': s.scripReceived,
     'scrip_spent': s.scripSpent,
     'crops_harvested': s.cropsHarvested,
-    'crops_died': s.cropsDied,
+    'crops_planted': s.cropsPlanted,
     'volume_to_colony_m3': s.volumeToColonyM3,
     'milestone_updates': s.milestoneUpdates,
     'contract_updates': s.contractUpdates,
@@ -467,7 +481,7 @@ class DatabaseHelper {
     scripReceived: (j['scrip_received'] as num).toInt(),
     scripSpent: (j['scrip_spent'] as num).toInt(),
     cropsHarvested: (j['crops_harvested'] as num).toInt(),
-    cropsDied: (j['crops_died'] as num).toInt(),
+    cropsPlanted: (j['crops_planted'] as num?)?.toInt() ?? 0,
     volumeToColonyM3: (j['volume_to_colony_m3'] as num).toDouble(),
     milestoneUpdates: List<String>.from(j['milestone_updates'] as List? ?? []),
     contractUpdates: List<String>.from(j['contract_updates'] as List? ?? []),

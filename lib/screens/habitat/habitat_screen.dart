@@ -68,7 +68,7 @@ class _HabitatTabBar extends StatelessWidget {
       ('🔫', 'SENTRIES'),
       ('💥', 'GRENADES'),
       ('📻', 'RADIO'),
-      ('🗿', 'MONUMENTS'),
+      ('🗿', 'MNMTS'),
       ('📜', 'CONTRACT'),
       ('📊', 'STATS'),
     ];
@@ -776,6 +776,16 @@ class _WallSection extends StatelessWidget {
           child: Text('🚨 Pheromone bait deployed! Local swarm incoming...'),
         ),
         backgroundColor: MFColors.neonPink,
+        behavior: SnackBarBehavior.floating,
+        // This snackbar appears on top of the RaidScreen we just pushed —
+        // its ad banner sits in the bottom ~18% of the battlefield (see
+        // RaidScreen._wallY). Clear that with room to spare instead of
+        // letting the default bottom-anchored snackbar cover the ad.
+        margin: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).size.height * 0.22,
+        ),
       ),
     );
   }

@@ -97,8 +97,19 @@ class GameState {
   final int lifetimeScripEarned;
   final int pendingContractScrip; // contract bonuses waiting for next shipment
   final int totalCropsHarvested;
+  final int totalCropsPlanted;
   final int totalCompostGenerated;
   final Map<String, int> cropHarvestCounts; // cropId -> times harvested
+  // Snapshots of the three lifetime counters above (plus delivered volume),
+  // taken at the end of the last completed week. Harvesting, shipping, and
+  // planting are all instant player actions that happen anytime during the
+  // week — not something the end-of-week loop itself ever counts — so
+  // WeekSummary's Harvested/Delivered/Planted stats are these lifetime
+  // totals minus their snapshot, diffed once per week in
+  // EndWeekEngine.processEndWeek.
+  final int weekBaselineCropsHarvested;
+  final double weekBaselineVolumeDeliveredM3;
+  final int weekBaselineCropsPlanted;
   final String? terminationReason; // set when game ends
   final int nextRaidWeek;
   final bool raidDefendedThisWeek;
@@ -154,8 +165,12 @@ class GameState {
     required this.lifetimeScripEarned,
     this.pendingContractScrip = 0,
     required this.totalCropsHarvested,
+    this.totalCropsPlanted = 0,
     required this.totalCompostGenerated,
     this.cropHarvestCounts = const {},
+    this.weekBaselineCropsHarvested = 0,
+    this.weekBaselineVolumeDeliveredM3 = 0.0,
+    this.weekBaselineCropsPlanted = 0,
     this.terminationReason,
     required this.nextRaidWeek,
     required this.raidDefendedThisWeek,
@@ -203,8 +218,12 @@ class GameState {
     int? lifetimeScripEarned,
     int? pendingContractScrip,
     int? totalCropsHarvested,
+    int? totalCropsPlanted,
     int? totalCompostGenerated,
     Map<String, int>? cropHarvestCounts,
+    int? weekBaselineCropsHarvested,
+    double? weekBaselineVolumeDeliveredM3,
+    int? weekBaselineCropsPlanted,
     String? terminationReason,
     int? nextRaidWeek,
     bool? raidDefendedThisWeek,
@@ -253,9 +272,16 @@ class GameState {
       lifetimeScripEarned: lifetimeScripEarned ?? this.lifetimeScripEarned,
       pendingContractScrip: pendingContractScrip ?? this.pendingContractScrip,
       totalCropsHarvested: totalCropsHarvested ?? this.totalCropsHarvested,
+      totalCropsPlanted: totalCropsPlanted ?? this.totalCropsPlanted,
       totalCompostGenerated:
       totalCompostGenerated ?? this.totalCompostGenerated,
       cropHarvestCounts: cropHarvestCounts ?? this.cropHarvestCounts,
+      weekBaselineCropsHarvested:
+      weekBaselineCropsHarvested ?? this.weekBaselineCropsHarvested,
+      weekBaselineVolumeDeliveredM3:
+      weekBaselineVolumeDeliveredM3 ?? this.weekBaselineVolumeDeliveredM3,
+      weekBaselineCropsPlanted:
+      weekBaselineCropsPlanted ?? this.weekBaselineCropsPlanted,
       terminationReason: terminationReason ?? this.terminationReason,
       nextRaidWeek: nextRaidWeek ?? this.nextRaidWeek,
       raidDefendedThisWeek: raidDefendedThisWeek ?? this.raidDefendedThisWeek,
@@ -1093,7 +1119,7 @@ class WeekSummary {
   final int scripReceived;
   final int scripSpent;
   final int cropsHarvested;
-  final int cropsDied;
+  final int cropsPlanted;
   final double volumeToColonyM3;
   final List<String> milestoneUpdates;
   final List<String> contractUpdates;
@@ -1114,7 +1140,7 @@ class WeekSummary {
     required this.scripReceived,
     required this.scripSpent,
     required this.cropsHarvested,
-    required this.cropsDied,
+    required this.cropsPlanted,
     required this.volumeToColonyM3,
     required this.milestoneUpdates,
     required this.contractUpdates,

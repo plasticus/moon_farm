@@ -84,11 +84,11 @@ class WeekSummaryScreen extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _StatBox(
-                          icon: '💀',
-                          label: 'Died',
-                          value: '${summary.cropsDied}',
-                          color: summary.cropsDied > 0
-                              ? MFColors.neonPink
+                          icon: '🌱',
+                          label: 'Planted',
+                          value: '${summary.cropsPlanted}',
+                          color: summary.cropsPlanted > 0
+                              ? MFColors.neonGreen
                               : MFColors.textMuted,
                         ),
                       ),

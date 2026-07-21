@@ -426,6 +426,7 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
         seeds: game.resources.seeds - 1,
         zSoil: game.resources.zSoil - 1,
       ),
+      plantedDelta: 1,
     );
   }
 
@@ -473,8 +474,9 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       Dome dome,
       int domeIndex,
       CropCell updatedCell,
-      Resources updatedResources,
-      ) {
+      Resources updatedResources, {
+      int plantedDelta = 0,
+      }) {
     final updatedCells = List<CropCell>.from(dome.cells);
     updatedCells[updatedCell.position] = updatedCell;
     final updatedDome = dome.copyWith(cells: updatedCells);
@@ -482,7 +484,11 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     updatedDomes[domeIndex] = updatedDome;
 
     ref.read(activeGameProvider.notifier).updateGameLocal(
-      game.copyWith(domes: updatedDomes, resources: updatedResources),
+      game.copyWith(
+        domes: updatedDomes,
+        resources: updatedResources,
+        totalCropsPlanted: game.totalCropsPlanted + plantedDelta,
+      ),
     );
   }
 
@@ -1191,7 +1197,7 @@ class _DomeInfoFooter extends StatelessWidget {
       }
     }
 
-    final allGood = needWater == 0 && needFert == 0 &&
+    final allGood = emptyCount == 0 && needWater == 0 && needFert == 0 &&
         readyCount == 0 && deadCount == 0;
 
     return Container(

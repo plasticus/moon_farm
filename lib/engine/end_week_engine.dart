@@ -105,9 +105,6 @@ class EndWeekEngine {
     final events = <String>[];
     final robotActions = <String>[];
     int scripReceived = 0;
-    int cropsHarvested = 0;
-    int cropsDied = 0;
-    double volumeToColony = 0;
     final milestoneUpdates = <String>[];
     final contractUpdates = <String>[];
     final resourceChanges = <String, double>{};
@@ -452,10 +449,7 @@ class EndWeekEngine {
       updatedDomesAfterGrowth.add(dome.copyWith(cells: updatedCells));
     }
 
-    s = s.copyWith(
-      domes: updatedDomesAfterGrowth,
-      totalCropsHarvested: s.totalCropsHarvested + cropsHarvested,
-    );
+    s = s.copyWith(domes: updatedDomesAfterGrowth);
 
     // ── Step 4b: Bot harvest (runs right after growth tick, so crops that just
     //    became ready THIS week get harvested immediately — player sees empty
@@ -610,7 +604,8 @@ class EndWeekEngine {
           ),
           lifetimeScripEarned: s.lifetimeScripEarned + scripReward,
         );
-        milestoneUpdates.add('🎖️ Milestone complete: ${milestone.name} (+$scripReward 🎫)');
+        milestoneUpdates.add(
+            '🎖️ Milestone complete: ${milestone.name} — ${milestone.description} (+$scripReward 🎫)');
         events.add('🎖️ Milestone complete: ${milestone.name}! Reward: $scripReward Star-Scrip');
         continue;
       }
@@ -763,13 +758,28 @@ class EndWeekEngine {
         .toList();
 
     // ── Step 12: Build summary ────────────────────────────────────────────
+    // Harvesting, shipping, and planting are all instant player actions that
+    // can happen anytime during the week (dome tap-to-harvest/plant, Relay
+    // ship/sell) — not something this engine's own steps count as they
+    // happen. So "this week's" amount is the lifetime counter (fully
+    // up to date at this point, including this pass's bot harvest/plant)
+    // minus the snapshot taken at the end of the LAST week.
+    final cropsHarvestedThisWeek = s.totalCropsHarvested - s.weekBaselineCropsHarvested;
+    final cropsPlantedThisWeek = s.totalCropsPlanted - s.weekBaselineCropsPlanted;
+    final volumeDeliveredThisWeek = s.totalVolumeDeliveredM3 - s.weekBaselineVolumeDeliveredM3;
+    s = s.copyWith(
+      weekBaselineCropsHarvested: s.totalCropsHarvested,
+      weekBaselineCropsPlanted: s.totalCropsPlanted,
+      weekBaselineVolumeDeliveredM3: s.totalVolumeDeliveredM3,
+    );
+
     final summary = WeekSummary(
       week: state.currentWeek,
       scripReceived: scripReceived,
       scripSpent: 0,
-      cropsHarvested: cropsHarvested,
-      cropsDied: cropsDied,
-      volumeToColonyM3: volumeToColony,
+      cropsHarvested: cropsHarvestedThisWeek,
+      cropsPlanted: cropsPlantedThisWeek,
+      volumeToColonyM3: volumeDeliveredThisWeek,
       milestoneUpdates: milestoneUpdates,
       contractUpdates: contractUpdates,
       raidOccurred: false,

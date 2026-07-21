@@ -291,8 +291,11 @@ class _RelayScreenState extends ConsumerState<RelayScreen> {
     _showMsg('Scrap hauler loads up. Pickup — and payout — lands Week ${game.nextShipWindowWeek}.');
   }
 
-  void _doBuy(String itemId, int quantity, int costPerUnit, GameState game) {
-    final totalCost = costPerUnit * quantity;
+  // totalCost is the exact price already shown on the buy button — charge
+  // that number verbatim. Recomputing it from a rounded per-unit price here
+  // used to silently overcharge (e.g. a 7-scrip button would charge 8),
+  // which could also reject a purchase the button showed as affordable.
+  void _doBuy(String itemId, int quantity, int totalCost, GameState game) {
     if (game.resources.starScrip < totalCost) {
       _showMsg('"Insufficient Star-Scrip. Don\'t waste my time."');
       return;
@@ -1463,8 +1466,7 @@ class _BuyTab extends StatelessWidget {
                       price: price1,
                       canAfford: canAfford1,
                       color: const Color(0xFF00838F), // medium teal
-                      onTap: () => onBuy(id, batchSize,
-                          (price1 / batchSize).ceil(), game),
+                      onTap: () => onBuy(id, batchSize, price1, game),
                     ),
                     if (showX5) ...[
                       const SizedBox(width: 6),
@@ -1473,8 +1475,7 @@ class _BuyTab extends StatelessWidget {
                         price: price5,
                         canAfford: canAfford5,
                         color: const Color(0xFF0097A7), // medium-bright teal
-                        onTap: () => onBuy(id, batchSize * 5,
-                            (price5 / (batchSize * 5)).ceil(), game),
+                        onTap: () => onBuy(id, batchSize * 5, price5, game),
                       ),
                     ],
                     if (showX10) ...[
@@ -1484,8 +1485,7 @@ class _BuyTab extends StatelessWidget {
                         price: price10,
                         canAfford: canAfford10,
                         color: const Color(0xFF00BCD4), // bright teal
-                        onTap: () => onBuy(id, batchSize * 10,
-                            (price10 / (batchSize * 10)).ceil(), game),
+                        onTap: () => onBuy(id, batchSize * 10, price10, game),
                       ),
                     ],
                   ],
@@ -1629,7 +1629,9 @@ class _ContractsTab extends ConsumerWidget {
               style: MFTextStyles.bodySmall
                   .copyWith(color: MFColors.textMuted, letterSpacing: 2)),
           const SizedBox(height: 8),
-          ...game.completedContracts.take(3).map((c) => _ContractCard(
+          // Newly completed contracts are appended, so the last 3 (shown
+          // most-recent-first) are the latest — not the first 3 ever done.
+          ...game.completedContracts.reversed.take(3).map((c) => _ContractCard(
             contract: c,
             game: game,
             isActive: false,
