@@ -915,7 +915,7 @@ class Milestone {
   // 'volume_delivered' | 'power_capacity' | 'contracts_completed' |
   // 'fauna_killed' | 'crop_diversity' | 'scrip_balance' | 'monuments_built' |
   // 'scrap_baron' | 'full_automation' | 'kovacs_topic_unlocked' |
-  // 'kovacs_mood_max' | 'kovacs_mood_min'. See
+  // 'kovacs_mood_max' | 'kovacs_mood_min' | 'feature_unlocked'. See
   // EndWeekEngine._isMilestoneComplete for what `target` means for each type.
   final String checkType;
   final double target;
@@ -931,8 +931,10 @@ class Milestone {
   // this. The game does not stop running afterward — status just flips to
   // won and play continues (see EndWeekEngine Step 7).
   final bool isWinCondition;
-  // Only meaningful for check_type 'kovacs_topic_unlocked' — the topic id
-  // (see kovacs_dialog.json) that must appear in relay.unlockedTopicIds.
+  // A generic "id that must be present in a set" key, reused across two
+  // check_types: 'kovacs_topic_unlocked' checks relay.unlockedTopicIds
+  // (topic ids from kovacs_dialog.json); 'feature_unlocked' checks
+  // GameState.unlockedFeatures (e.g. 'discovered_moss').
   final String? topicId;
 
   const Milestone({

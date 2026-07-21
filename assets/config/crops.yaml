@@ -349,11 +349,7 @@ crops:
     compost_yield: 0
     decay_rate: 0.4
     description: An engineered moss lattice that propagates in a fraction of the time Matrix Moss needs.
-    note: Yields Moss much faster than Matrix Moss. Pairs 1:1 with Mycelium Prime for Vat throughput.
-    fertilizer_bonus: 1.1
-    volume_m3: 0.8
-    yields_resource: moss
-    resource_yield_amount: 15
+    note: A distinct silo crop, not a Moss substitute — pairs 1:1 with Mycelium Prime as the Mycoculture Vat's Prime Recipe ingredient. Matrix Moss is what feeds the base recipe's Moss requirement.
 
   - id: marrow_bloom
     name: Marrow Bloom

@@ -9,6 +9,7 @@ import '../../providers/game_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../config/game_config_service.dart';
 import '../../engine/radio_trigger_engine.dart';
+import '../../engine/end_week_engine.dart';
 import '../../widgets/confirm_dialog.dart';
 
 /// Mk-level quality color. Mk1=gray, Mk2=green, Mk3=blue, Mk4=purple, Mk5+=orange
@@ -305,8 +306,10 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     var newResources = game.resources;
 
     // Resource crops deposit raw materials; food crops go to silo.
+    double resourceYieldAmt = 0;
     if (crop.yieldsResource != null) {
       final amt = crop.resourceYieldAmount * yieldAmount;
+      resourceYieldAmt = amt;
       switch (crop.yieldsResource!) {
         case 'metals':
           newResources = newResources.copyWith(metals: newResources.metals + amt);
@@ -366,10 +369,22 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
       updatedGame = checkRadioTriggers(updatedGame);
     }
 
+    // Reveal Moss/Mycoculture/Lattice Moss the instant they're first
+    // acquired, rather than waiting for the next End Week to notice.
+    updatedGame = EndWeekEngine().checkResourceDiscoveries(updatedGame);
+
+    // Resource crops (moss, chitin, metals, etc.) land straight in
+    // Resources, not the silo — the harvest message needs to say so,
+    // otherwise it reads like it went somewhere it didn't.
+    final destinationText = crop.yieldsResource != null
+        ? '+${resourceYieldAmt.toStringAsFixed(1)} '
+            '${crop.yieldsResource!.replaceAll('_', ' ')}.'
+        : 'stored in silo. Sell via Relay.';
+
     // First harvest of the game gets a special callout
     if (newHarvestCount == 1) {
       _updateCellInGame(ref, updatedGame, dome, domeIndex, cell.cleared());
-      _snack(ref.context, '🏆 First Harvest! ${crop.name} stored in silo.');
+      _snack(ref.context, '🏆 First Harvest! ${crop.name} $destinationText');
       return;
     }
 
@@ -377,7 +392,7 @@ class _DomeScreenState extends ConsumerState<DomeScreen>
     if (vatJustUnlocked) {
       _snack(ref.context, "🧫 What did you find there, farmer? Mycoculture Vat unlocked at the Refinery!");
     } else {
-      _snack(ref.context, '✅ ${crop.name} stored in silo. Sell via Relay.');
+      _snack(ref.context, '✅ ${crop.name} $destinationText');
     }
   }
 

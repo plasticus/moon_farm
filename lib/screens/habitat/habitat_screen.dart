@@ -571,6 +571,9 @@ class _WallSection extends StatelessWidget {
         ],
 
         const SizedBox(height: 16),
+        _buildTriggerRaidSection(context),
+
+        const SizedBox(height: 16),
         Text('WALL HISTORY',
             style: MFTextStyles.bodySmall
                 .copyWith(color: MFColors.textMuted, letterSpacing: 2)),
@@ -590,9 +593,6 @@ class _WallSection extends StatelessWidget {
             ],
           ),
         ),
-
-        const SizedBox(height: 16),
-        _buildTriggerRaidSection(context),
       ],
     );
   }
@@ -626,9 +626,9 @@ class _WallSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bait a raid using meat and chemicals. '
-                    'Earn extra chitin and meat. '
-                    'You must defend before ending the week.',
+                'Bait the local fauna into an early raid by mixing up '
+                    'some meat and local chemicals. The raid defense '
+                    'will begin immediately.',
                 style: MFTextStyles.bodySmall
                     .copyWith(color: MFColors.textMuted),
               ),
