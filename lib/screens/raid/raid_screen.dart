@@ -44,7 +44,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
   late List<_Projectile> _projectiles;
   late int _wallHp;
   late int _wallMaxHp;
-  late int _timeRemaining; // seconds
   late Map<String, int> _grenadeInventory;
   String? _selectedGrenadeId;
 
@@ -123,7 +122,6 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
     _spawnInterval = (raidConfig.raidDurationMax / _maxFauna)
         .clamp(minInterval, baseInterval);
 
-    _timeRemaining = raidConfig.raidDurationMax.toInt();
     _fauna = [];
     _grenades = [];
     _effects = [];
@@ -671,7 +669,7 @@ class _RaidScreenState extends ConsumerState<RaidScreen> {
             _RaidHUD(
               wallHp: _wallHp,
               wallMaxHp: _wallMaxHp,
-              timeRemaining: _timeRemaining,
+              currentWeek: widget.game.currentWeek,
               faunaRemaining: (_maxFauna - _totalSpawned) + _fauna.length,
               totalFauna: _maxFauna,
             ),
@@ -803,12 +801,12 @@ class _Projectile {
 // ─── HUD ──────────────────────────────────────────────────────────────────────
 
 class _RaidHUD extends StatelessWidget {
-  final int wallHp, wallMaxHp, timeRemaining, faunaRemaining, totalFauna;
+  final int wallHp, wallMaxHp, currentWeek, faunaRemaining, totalFauna;
 
   const _RaidHUD({
     required this.wallHp,
     required this.wallMaxHp,
-    required this.timeRemaining,
+    required this.currentWeek,
     required this.faunaRemaining,
     required this.totalFauna,
   });
@@ -850,11 +848,11 @@ class _RaidHUD extends StatelessWidget {
           const SizedBox(width: 16),
           Column(
             children: [
-              Text('$timeRemaining',
+              Text('$currentWeek',
                   style: const TextStyle(
                       color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold,
                       fontFamily: 'monospace')),
-              const Text('SEC', style: TextStyle(color: Colors.white38, fontSize: 8)),
+              const Text('WEEK', style: TextStyle(color: Colors.white38, fontSize: 8)),
             ],
           ),
           const SizedBox(width: 16),

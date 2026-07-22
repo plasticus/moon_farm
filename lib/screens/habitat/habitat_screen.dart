@@ -1141,18 +1141,30 @@ class _SentriesSection extends StatelessWidget {
                     onTap: canAfford
                         ? () => _buildSentry(context, cfg)
                         : () {
-                      if (!hasPower) {
-                        ScaffoldMessenger.of(context).clearSnackBars();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: GestureDetector(
-                            onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                            child: Text(
-                                '⚡ Not enough power. Needs $powerNeeded kW, '
-                                    'only ${game.powerSurplus} kW spare.'),
-                          ),
-                              duration: const Duration(seconds: 3)),
-                        );
+                      final parts = <String>[];
+                      if (game.resources.metals < costMetals) {
+                        parts.add('${costMetals - game.resources.metals.toInt()} metals');
                       }
+                      if (game.resources.components < costComponents) {
+                        parts.add('${costComponents - game.resources.components.toInt()} comp');
+                      }
+                      if (game.resources.chitin < costChitin) {
+                        parts.add('${costChitin - game.resources.chitin.toInt()} chitin');
+                      }
+                      if (game.resources.mycoculture < costMycoculture) {
+                        parts.add('${costMycoculture - game.resources.mycoculture.toInt()} mycoculture');
+                      }
+                      if (!hasPower) {
+                        parts.add('${powerNeeded - game.powerSurplus} kW spare');
+                      }
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: GestureDetector(
+                          onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                          child: Text('Need: ${parts.join(', ')}'),
+                        ),
+                            duration: const Duration(seconds: 3)),
+                      );
                     },
                     child: _ActionButton(
                         label: 'BUILD', canAfford: canAfford, color: MFColors.neonCyan),
