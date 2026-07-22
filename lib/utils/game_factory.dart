@@ -310,21 +310,27 @@ class GameFactory {
     }).toList();
   }
 
-  // ─── Dev75 Preset ─────────────────────────────────────────────────────────
-  // Modelled from a real Normal-difficulty playthrough save: "Apex Acreage W75"
-  // exported by Corey on 2026-06-23. Values taken directly from that save.
+  // ─── Dev70 Preset ─────────────────────────────────────────────────────────
+  // Modelled from a real Normal-difficulty playthrough save: "Vertex Harvest
+  // Pod W70" exported by Corey on 2026-07-22. Values taken directly from
+  // that save.
   //
-  // Key scenario: 9 domes (8x T3, 1x T4), mixed sentries, no Mycoculture Vat
-  // yet, water purifier Mk6, 10x balanced Mk3 drones. Mycoculture unlock is
-  // the test target — the preset lands you right where the real grind begins.
-  static GameState createDev75Preset({required int slotNumber}) {
+  // Key scenario: 9x T3 domes, all Mk4 bots, defense wall Mk4, water
+  // purifier Mk8, refinery fully specced (composter/smelter/component
+  // fabricator/z-soil processor/glass furnace all built) but still no
+  // Mycoculture Vat this late — same unresolved gap Dev75 was chasing,
+  // just from a later, independently-played save. No monuments built yet
+  // either, and the win-condition milestone (Free and Clear) is still
+  // pending despite 105K+ scrip on hand — useful for testing the
+  // Habitat > Contract "Buy the Farm" flow near its actual trigger point.
+  static GameState createDev70Preset({required int slotNumber}) {
     final baseline = createNewGame(
       slotNumber: slotNumber,
-      farmName: 'Dev75 — Apex Acreage',
+      farmName: 'Dev70 — Vertex Harvest Pod',
       difficulty: Difficulty.normal,
     );
 
-    const currentWeek = 75;
+    const currentWeek = 70;
 
     int powerFor(String machineKey, int level) {
       final cfg = UpgradeConfigService.instance.getMachineLevel(machineKey, level);
@@ -352,73 +358,94 @@ class GameFactory {
       );
     }
 
-    // 8x T3 + 1x T4, all Mk4 bots, cells empty
-    final domes = [
-      ...List.generate(8, (i) => makeDome('Dome ${i + 1}', 3)),
-      makeDome('Dome 9', 4),
-    ];
+    // 9x T3, all Mk4 bots, cells empty
+    final domes = List.generate(9, (i) => makeDome('Dome ${i + 1}', 3));
 
-    // Sentries from real save: Mk2 x2, Mk3 x1, Mk4 x1, Mk5 x1
+    // Sentries from real save: Mk4 x1, Mk3 x2, Mk5 x2
     final sentries = [
-      makeSentry(2), makeSentry(2),
-      makeSentry(3),
       makeSentry(4),
+      makeSentry(3),
+      makeSentry(5),
+      makeSentry(3),
       makeSentry(5),
     ];
 
-    // Refinery from real save — no Vat, that is what we are testing
+    // Refinery from real save — every machine built out except the Vat
     final refinery = Refinery(
-      id: 'refinery_dev75', tier: 1, powerDraw: 0,
+      id: 'refinery_dev70', tier: 1, powerDraw: 8,
       unlockedRecipes: const ['compost_to_zsoil'],
       machines: [
-        RefineryMachine(type: MachineType.composter, level: 2,
-            powerDraw: powerFor('composter', 2)),
+        RefineryMachine(type: MachineType.composter, level: 3,
+            powerDraw: powerFor('composter', 3)),
         RefineryMachine(type: MachineType.smelter, level: 10,
-            powerDraw: powerFor('smelter', 10)),
-        RefineryMachine(type: MachineType.zSoilProcessor, level: 2,
-            powerDraw: powerFor('z_soil_processor', 2)),
-        RefineryMachine(type: MachineType.glassFurnace, level: 10,
-            powerDraw: powerFor('glass_furnace', 10)),
+            powerDraw: powerFor('smelter', 10), autoRefine: true),
         RefineryMachine(type: MachineType.componentFabricator, level: 10,
             powerDraw: powerFor('component_fabricator', 10)),
+        RefineryMachine(type: MachineType.zSoilProcessor, level: 10,
+            powerDraw: powerFor('z_soil_processor', 10)),
+        RefineryMachine(type: MachineType.glassFurnace, level: 10,
+            powerDraw: powerFor('glass_furnace', 10), autoRefine: true),
       ],
     );
 
-    // Power from real save: 11 solar, 8 wind, 5 geothermal
+    // Power from real save: 10 solar, 10 wind, 6 geothermal
     final powerSources = [
-      ...List.generate(11, (_) => createPowerSource(PowerSourceType.solarArray)),
-      ...List.generate(8,  (_) => createPowerSource(PowerSourceType.windTurbine)),
-      ...List.generate(5,  (_) => createPowerSource(PowerSourceType.geothermalTap)),
+      ...List.generate(10, (_) => createPowerSource(PowerSourceType.solarArray)),
+      ...List.generate(10, (_) => createPowerSource(PowerSourceType.windTurbine)),
+      ...List.generate(6,  (_) => createPowerSource(PowerSourceType.geothermalTap)),
     ];
 
-    // 10x Mk3 balanced drones (no assigned resource = balanced split)
+    // 10x Mk3 drones — real save had 5 balanced, 2 ore, 3 chemicals
     final droneCfg = (_config.getOperationsBuildings()['mining_drone']['tiers'] as List)
         .cast<Map<String, dynamic>>()
         .firstWhere((t) => t['tier'] == 3);
-    final drones = List.generate(10, (_) => MiningDrone(
-      id: _uuid.v4(), tier: 3,
+    MiningDrone makeDrone(String? assigned) => MiningDrone(
+      id: _uuid.v4(), tier: 3, assignedResource: assigned,
       outputPerWeek: (droneCfg['output_per_week'] as num).toDouble(),
       powerDraw: droneCfg['power_draw_kwh'] as int,
-    ));
+    );
+    final drones = [
+      ...List.generate(5, (_) => makeDrone(null)),
+      ...List.generate(2, (_) => makeDrone('ore')),
+      ...List.generate(3, (_) => makeDrone('chemicals')),
+    ];
 
-    // Resources from real save (mycoculture stays at 0 — that is the goal)
+    // Resources from real save (mycoculture stays at 0 — no Vat yet)
     final resources = baseline.resources.copyWith(
-      starScrip: 11990, metals: 4220, components: 53, chemicals: 2121,
-      glass: 2881, chitin: 291, mycoculture: 0,
-      moonDirt: 676, sand: 49, ore: 105, water: 1050,
-      compost: 9, zSoil: 149, seeds: 123, meat: 117, moss: 0,
+      starScrip: 105469, metals: 2507, components: 843, chemicals: 1443.5,
+      glass: 1788, chitin: 262, mycoculture: 0,
+      moonDirt: 814.5, sand: 35.5, ore: 91.5, water: 6886,
+      compost: 720, zSoil: 562, seeds: 232, meat: 83.32340621948242, moss: 0,
     );
 
-    // Milestones: m1-m6 complete, m7 pending — matches real save
+    // Milestones: matched by NAME against the real save's completed list,
+    // not id — that save's milestone list predates a later fix for a
+    // duplicate-id collision (two unrelated milestone batches both landed
+    // on m69-m71 independently), so id-matching would silently mismatch.
+    const completedNames = {
+      'First Shipment', 'Initial Contract', 'Steady Supply', 'Reliable Route',
+      'Colony Cornerstone', 'Operational Hub', 'Regional Supplier',
+      'Freight Magnate', 'Bulk Logistics Partner', 'Planetary Breadbasket',
+      'Power Grid', 'Grid Expansion', 'Trusted Supplier',
+      'Perimeter Defender', 'Wall Veteran', 'Siege Breaker',
+      'Bulwark Commander', 'Perimeter Legend',
+      'Tier 1 Cultivator', 'Tier 2 Cultivator',
+      'Tier 1 Contractor', 'Tier 2 Contractor',
+      'Scrap Runner', 'Scrap Trader', 'First Autopilot', 'Automated Cluster',
+      'Coffee Confidant', 'Command Track', 'Meet Barnaby', 'Form 77-A',
+      'Let Him Vent', 'Macro Data', 'Elated',
+    };
     final milestones = MilestoneConfigService.instance
         .getMilestones(Difficulty.normal)
         .map((m) => m.copyWith(
-          status: m.id == 'm7' ? MilestoneStatus.pending : MilestoneStatus.completed,
+          status: completedNames.contains(m.name)
+              ? MilestoneStatus.completed
+              : MilestoneStatus.pending,
         ))
         .toList();
 
-    // Radio: back-fill week triggers up to W75, scrap_dealer discovered.
-    // Mycoculture triggers NOT fired (not unlocked yet in real save).
+    // Radio: back-fill week triggers up to W70, scrap_dealer discovered.
+    // Mycoculture triggers NOT fired (Vat not unlocked yet in real save).
     final radioTriggers = RadioConfigService.instance.triggers;
     final firedTriggers = <String>{
       'opening_transmission',
@@ -437,25 +464,41 @@ class GameFactory {
       miningDrones: drones,
       resources: resources,
       milestones: milestones,
-      siloInventory: {'crystalline_beans': 82.9},
-      totalVolumeDeliveredM3: 2074.75,
-      totalCropsHarvested: 383,
+      defenseWall: baseline.defenseWall.copyWith(level: 4, currentHp: 492, maxHp: 500),
+      grenades: const GrenadeInventory(counts: {'flashbang': 5}, benchLevel: 1),
+      siloInventory: const {},
+      totalVolumeDeliveredM3: 2113.3901937805176,
+      totalScrapSoldDam3: 27.0,
+      totalCropsHarvested: 344,
+      totalCropsPlanted: 258,
       // Back-filled lifetime totals, not activity from "this week" — pin
       // the week-start snapshots to match so the first End Week on this
-      // preset doesn't report a fake Week 75 spike in the summary.
-      weekBaselineVolumeDeliveredM3: 2074.75,
-      weekBaselineCropsHarvested: 383,
-      totalRaidsDefended: 7,
-      totalFaunaKilled: 3013,
-      totalChitinCollected: 684,
+      // preset doesn't report a fake Week 70 spike in the summary.
+      weekBaselineVolumeDeliveredM3: 2113.3901937805176,
+      weekBaselineCropsHarvested: 344,
+      weekBaselineCropsPlanted: 258,
+      totalRaidsDefended: 6,
+      totalFaunaKilled: 3110,
+      totalChitinCollected: 701,
       totalCompostGenerated: 0,
       unlockedFeatures: const ['scrap_dealer'],
       firedRadioTriggers: firedTriggers,
-      relay: baseline.relay.copyWith(mood: 99, conversationDoneThisWeek: false),
-      nextShipWindowWeek: 76,
+      relay: baseline.relay.copyWith(
+        mood: 100,
+        hasReachedMaxMood: true,
+        conversationDoneThisWeek: false,
+        unlockedTopicIds: const {
+          'ask_about_complaints', 'ask_about_hobbies', 'threaten_with_complaint',
+          'ask_about_coffee', 'ask_about_freighter_crews', 'rant_about_space_cadets',
+          'offer_coffee_help', 'mock_coffee', 'ask_about_freighter_envy',
+          'ask_about_cat', 'admit_freighter_envy', 'ask_about_captaincy',
+          'ask_about_ionuke', 'ask_about_sector_yields',
+        },
+      ),
+      nextShipWindowWeek: 72,
       shipmentsThisWindow: 0,
-      waterPurifierLevel: 6,
-      nextRaidWeek: 80,
+      waterPurifierLevel: 8,
+      nextRaidWeek: 70,
     );
 
     return checkRadioTriggers(preset);

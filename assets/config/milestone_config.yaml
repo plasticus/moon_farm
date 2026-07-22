@@ -818,7 +818,7 @@ milestones:
     # ─── Discovery (feature_unlocked) — no deadline ─────────────────────────
     # topic_id reuses GameState.unlockedFeatures, set the first time the
     # player ever holds one of these (see EndWeekEngine.checkResourceDiscoveries).
-    - id: m69
+    - id: m74
       check_type: feature_unlocked
       name: What Is This Stuff?
       description: Harvest Moss for the first time
@@ -826,7 +826,7 @@ milestones:
       topic_id: discovered_moss
       reward_scrip: 500
 
-    - id: m70
+    - id: m75
       check_type: feature_unlocked
       name: Vat-Grown
       description: Produce Mycoculture for the first time
@@ -834,7 +834,7 @@ milestones:
       topic_id: discovered_mycoculture
       reward_scrip: 500
 
-    - id: m71
+    - id: m76
       check_type: feature_unlocked
       name: A Finer Lattice
       description: Harvest Lattice Moss for the first time

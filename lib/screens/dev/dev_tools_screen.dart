@@ -160,9 +160,9 @@ class DevToolsScreen extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 _DevButton(
-                  'Load Dev75 → Slot 3',
+                  'Load Dev70 → Slot 3',
                   MFColors.neonOrange,
-                  () => _loadDev75Preset(context, ref),
+                  () => _loadDev70Preset(context, ref),
                 ),
               ],
             ),
@@ -306,8 +306,8 @@ class DevToolsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _loadDev75Preset(BuildContext context, WidgetRef ref) async {
-    final preset = GameFactory.createDev75Preset(slotNumber: 3);
+  Future<void> _loadDev70Preset(BuildContext context, WidgetRef ref) async {
+    final preset = GameFactory.createDev70Preset(slotNumber: 3);
     final db = DatabaseHelper.instance;
     await db.ensureSlotExists(3);
     await db.saveGameState(preset);
@@ -322,7 +322,7 @@ class DevToolsScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: GestureDetector(
         onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        child: const Text('Dev75 preset saved to Slot 3. Back out to the main menu to load it.'),
+        child: const Text('Dev70 preset saved to Slot 3. Back out to the main menu to load it.'),
       ), duration: const Duration(seconds: 4)),
     );
   }
