@@ -247,13 +247,32 @@ class GameFactory {
     return _contractTierTargetQty[highest]! + ((tier - highest) * 10);
   }
 
-  /// Randomized target quantity for a contract, ±20% of the tier's base
-  /// amount (e.g. T1 base 10 → 8-12, T2 base 20 → 16-24), rounded to a
-  /// whole number so contracts feel less identical week to week.
-  static int _targetQtyForTier(int tier) {
-    final base = _baseTargetQtyForTier(tier);
-    final low = (base * 0.8).round();
-    final high = (base * 1.2).round();
+  /// Randomized target quantity for a contract, scaled so the *cargo
+  /// volume* a contract asks for is consistent within a tier — not the
+  /// raw unit count. Using the tier's base unit count directly (as a flat
+  /// number of units regardless of crop) let a bulky crop like Nebula
+  /// Melons (1.1m³/unit) out-earn a compact, high-value crop like
+  /// Crystalline Beans (0.3m³/unit, but 2x+ the scrip per m³) on the same
+  /// "units requested" contract, which inverted the crops' intended value
+  /// ordering. Converting the tier's base quantity to a target volume
+  /// (using the tier's average crop volume as the reference) and then
+  /// re-deriving quantity from THIS crop's volume keeps total cargo size
+  /// comparable across crops in a tier, so base_scrip_per_m3 differences
+  /// actually come through in the reward.
+  static int _targetQtyForCrop(CropConfig crop, GameConfigService config) {
+    final base = _baseTargetQtyForTier(crop.tier);
+    final tierCrops = config
+        .getCropsByTier(crop.tier)
+        .where((c) => c.yieldsResource == null)
+        .toList();
+    final avgVolume = tierCrops.isEmpty
+        ? crop.volumeM3
+        : tierCrops.map((c) => c.volumeM3).reduce((a, b) => a + b) / tierCrops.length;
+    final targetVolume = base * avgVolume;
+    final rawQty = (targetVolume / crop.volumeM3).round().clamp(1, 999999);
+
+    final low = (rawQty * 0.8).round();
+    final high = (rawQty * 1.2).round();
     return low + _rng.nextInt(high - low + 1);
   }
 
@@ -283,7 +302,7 @@ class GameFactory {
     final picked = shuffled.take(3).toList();
 
     return picked.map((crop) {
-      final baseQty = _targetQtyForTier(crop.tier);
+      final baseQty = _targetQtyForCrop(crop, config);
 
       // Market value = what the player would get selling this quantity
       // at Kovacs' regular rate: baseScrip (per m³) × units × m³ per unit.
@@ -352,14 +371,34 @@ class GameFactory {
 
     final domeBotMk4 = UpgradeConfigService.instance.domeBotLevels
         .firstWhere((l) => l['level'] == 4);
-    Dome makeDome(String name, int tier) {
+    List<CropCell> plantedCells(String cropId, int weeksGrown, int fertilizeCount, int lastFertilizeWeek) =>
+        List.generate(8, (i) => CropCell(
+          position: i, cropId: cropId, state: CropState.growing,
+          weeksGrown: weeksGrown, fertilizeCount: fertilizeCount,
+          lastFertilizeWeek: lastFertilizeWeek,
+        ));
+    Dome makeDome(String name, int tier, List<CropCell> cells) {
       return _createNewDome(name: name, tier: tier).copyWith(
         domeBot: DomeBot(level: 4, powerDraw: domeBotMk4['power_draw_kwh'] as int),
+        cells: cells,
       );
     }
 
-    // 9x T3, all Mk4 bots, cells empty
-    final domes = List.generate(9, (i) => makeDome('Dome ${i + 1}', 3));
+    // 9x T3, all Mk4 bots, cells match the real save's Week 70 plantings
+    // exactly (all still growing, none ready) — the Tier 3 Cultivator/
+    // Contractor grind (glow_stalks, glass_fronds, nebula_melons) that was
+    // actually in progress on Corey's phone at export time.
+    final domes = [
+      makeDome('Dome 1', 3, plantedCells('glow_stalks', 2, 1, 0)),
+      makeDome('Dome 2', 3, plantedCells('glow_stalks', 1, 1, 0)),
+      makeDome('Dome 3', 3, plantedCells('glow_stalks', 3, 1, 0)),
+      makeDome('Dome 4', 3, plantedCells('glass_fronds', 4, 2, 3)),
+      makeDome('Dome 5', 3, plantedCells('glass_fronds', 3, 1, 0)),
+      makeDome('Dome 6', 3, plantedCells('glass_fronds', 4, 2, 3)),
+      makeDome('Dome 7', 3, plantedCells('nebula_melons', 7, 2, 3)),
+      makeDome('Dome 8', 3, plantedCells('nebula_melons', 3, 1, 0)),
+      makeDome('Dome 9', 3, plantedCells('nebula_melons', 7, 2, 3)),
+    ];
 
     // Sentries from real save: Mk4 x1, Mk3 x2, Mk5 x2
     final sentries = [
@@ -455,9 +494,27 @@ class GameFactory {
           t['id'] as String,
     }.toList();
 
+    // The 2 contracts actually active in the real save at export time —
+    // both 0 delivered, matching the still-growing glow_stalks/glass_fronds.
+    final activeContracts = [
+      Contract(
+        id: _uuid.v4(), title: 'Glow-Stalks Order',
+        description: 'The colony requests 28 units of Glow-Stalks. Pays 21% above market.',
+        cropId: 'glow_stalks', requiredAmount: 28, currentAmount: 0,
+        rewardScrip: 7339, status: ContractStatus.active, weekAccepted: 62,
+      ),
+      Contract(
+        id: _uuid.v4(), title: 'Glass-Fronds Order',
+        description: 'The colony requests 36 units of Glass-Fronds. Pays 16% above market.',
+        cropId: 'glass_fronds', requiredAmount: 36, currentAmount: 0,
+        rewardScrip: 10232, status: ContractStatus.active, weekAccepted: 64,
+      ),
+    ];
+
     final preset = baseline.copyWith(
       currentWeek: currentWeek,
       domes: domes,
+      activeContracts: activeContracts,
       laserSentries: sentries,
       refineries: [refinery],
       powerSources: powerSources,
