@@ -921,6 +921,16 @@ List<Milestone> dashboardMilestones(GameState game) {
           .length;
       final total = tierCrops.isEmpty ? 1 : tierCrops.length;
       return (fulfilled / total, 'Tier ${m.target.toInt()}: $fulfilled / $total crops');
+    case 'buyout_condition':
+      // Two independent thresholds — progress is whichever is further
+      // behind, since both must be met at once to actually buy out.
+      final scripProgress = game.resources.starScrip / m.target;
+      final mycoTarget = m.secondaryTarget ?? 0;
+      final mycoProgress = mycoTarget <= 0 ? 1.0 : game.resources.mycoculture / mycoTarget;
+      final overall = scripProgress < mycoProgress ? scripProgress : mycoProgress;
+      return (overall,
+          '${game.resources.starScrip.toInt()} / ${m.target.toInt()} scrip, '
+          '${game.resources.mycoculture.toInt()} / ${mycoTarget.toInt()} myco');
     case 'volume_delivered':
     default:
       final current = game.totalVolumeDeliveredM3;

@@ -16,6 +16,7 @@ import '../new_game/new_game_screen.dart';
 import '../save_slots/save_slot_detail_screen.dart';
 import '../../widgets/space_background.dart';
 import '../settings/settings_screen.dart';
+import '../leaderboard/leaderboard_screen.dart';
 
 // Top-level so both MainMenuScreen and _ExportImportSection can reach it.
 const _launcher = MethodChannel('monster.oaf.moon_farm/launcher');
@@ -176,6 +177,16 @@ class MainMenuScreen extends ConsumerWidget {
               ),
             ],
           ), // Column
+              Positioned(
+                top: 4,
+                left: 4,
+                child: IconButton(
+                  icon: Icon(Icons.emoji_events, color: MFColors.textSecondary),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+                  ),
+                ),
+              ),
               Positioned(
                 top: 4,
                 right: 4,

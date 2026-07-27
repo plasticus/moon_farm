@@ -36,7 +36,7 @@ class ScoreScreen extends ConsumerWidget {
     return (base + combat + economy + survival + raids - penalty).clamp(0, 999999999);
   }
 
-  static String _scoreGrade(int score) {
+  static String scoreGrade(int score) {
     if (score >= 500000) return 'S';
     if (score >= 200000) return 'A';
     if (score >= 100000) return 'B';
@@ -45,7 +45,7 @@ class ScoreScreen extends ConsumerWidget {
     return 'F';
   }
 
-  static Color _gradeColor(String grade) => switch (grade) {
+  static Color gradeColor(String grade) => switch (grade) {
     'S' => const Color(0xFFFFD700),   // gold
     'A' => const Color(0xFF00BCD4),   // cyan
     'B' => const Color(0xFF66BB6A),   // green
@@ -57,8 +57,8 @@ class ScoreScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final score = calculateScore(game);
-    final grade = _scoreGrade(score);
-    final gradeColor = _gradeColor(grade);
+    final grade = scoreGrade(score);
+    final gradeColorValue = gradeColor(grade);
     final config = GameConfigService.instance;
     final won = game.status == GameStatus.won;
     final headerColor = won ? MFColors.neonGreen : MFColors.neonPink;
@@ -152,10 +152,10 @@ class ScoreScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             vertical: 20, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: gradeColor.withValues(alpha: 0.06),
+                          color: gradeColorValue.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: gradeColor.withValues(alpha: 0.4)),
+                              color: gradeColorValue.withValues(alpha: 0.4)),
                         ),
                         child: Column(
                           children: [
@@ -167,7 +167,7 @@ class ScoreScreen extends ConsumerWidget {
                             Text(
                               _formatScore(score),
                               style: TextStyle(
-                                color: gradeColor,
+                                color: gradeColorValue,
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 2,
@@ -178,13 +178,13 @@ class ScoreScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 6),
                               decoration: BoxDecoration(
-                                color: gradeColor.withValues(alpha: 0.15),
+                                color: gradeColorValue.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 'GRADE  $grade',
                                 style: TextStyle(
-                                  color: gradeColor,
+                                  color: gradeColorValue,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                   letterSpacing: 4,

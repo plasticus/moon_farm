@@ -915,10 +915,15 @@ class Milestone {
   // 'volume_delivered' | 'power_capacity' | 'contracts_completed' |
   // 'fauna_killed' | 'crop_diversity' | 'scrip_balance' | 'monuments_built' |
   // 'scrap_baron' | 'full_automation' | 'kovacs_topic_unlocked' |
-  // 'kovacs_mood_max' | 'kovacs_mood_min' | 'feature_unlocked'. See
-  // EndWeekEngine._isMilestoneComplete for what `target` means for each type.
+  // 'kovacs_mood_max' | 'kovacs_mood_min' | 'feature_unlocked' |
+  // 'buyout_condition'. See EndWeekEngine._isMilestoneComplete for what
+  // `target` (and `secondaryTarget`) mean for each type.
   final String checkType;
   final double target;
+  // Second numeric threshold, only used by 'buyout_condition' so far
+  // (resources.mycoculture, alongside `target` for starScrip). Null for
+  // every other check_type.
+  final double? secondaryTarget;
   // Deadline week, inclusive. Null = achievement-style milestone with no
   // deadline — it just waits until completed, never warned/failed/terminated.
   final int? byWeek;
@@ -943,6 +948,7 @@ class Milestone {
     required this.description,
     this.checkType = 'volume_delivered',
     required this.target,
+    this.secondaryTarget,
     this.byWeek,
     required this.rewardScrip,
     required this.status,
@@ -959,6 +965,7 @@ class Milestone {
       description: description,
       checkType: checkType,
       target: target,
+      secondaryTarget: secondaryTarget,
       byWeek: byWeek,
       rewardScrip: rewardScrip,
       status: status ?? this.status,

@@ -67,6 +67,7 @@ class MilestoneConfigService {
         description: map['description'] as String,
         checkType: map['check_type'] as String? ?? 'volume_delivered',
         target: (map['target'] as num).toDouble(),
+        secondaryTarget: (map['secondary_target'] as num?)?.toDouble(),
         byWeek: map['by_week'] as int?,
         rewardScrip: map['reward_scrip'] as int,
         failureMessage: map['failure_message'] as String? ?? '',

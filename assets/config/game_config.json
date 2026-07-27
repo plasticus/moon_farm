@@ -1107,7 +1107,8 @@
       "base_scrip_cost": 500,
       "rate": 1.8,
       "cap": 100000,
-      "cap_at_count": 11
+      "cap_at_count": 11,
+      "post_cap_rate": 1.15
     },
     "material_cost": {
       "glass": 20,

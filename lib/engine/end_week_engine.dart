@@ -900,6 +900,10 @@ class EndWeekEngine {
         return s.totalFaunaKilled >= m.target;
       case 'scrip_balance':
         return s.resources.starScrip >= m.target;
+      case 'buyout_condition':
+        // Win condition: both thresholds at once, not lifetime totals.
+        return s.resources.starScrip >= m.target &&
+            s.resources.mycoculture >= (m.secondaryTarget ?? 0);
       case 'crop_diversity':
         // target holds the tier number here, not a magnitude — complete
         // once every crop in that tier has been harvested at least once.

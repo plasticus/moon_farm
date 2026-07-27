@@ -1501,11 +1501,21 @@ class _ContractSection extends StatelessWidget {
       );
     }
 
-    final target = milestone.target;
-    final current = game.resources.starScrip.toDouble();
-    final progress = (current / target).clamp(0.0, 1.0);
+    final scripTarget = milestone.target;
+    final mycoTarget = milestone.secondaryTarget ?? 0;
+    final currentScrip = game.resources.starScrip.toDouble();
+    final currentMyco = game.resources.mycoculture;
+    final scripProgress = (currentScrip / scripTarget).clamp(0.0, 1.0);
+    final mycoProgress = mycoTarget <= 0 ? 1.0 : (currentMyco / mycoTarget).clamp(0.0, 1.0);
     final isPaidOff = game.status == GameStatus.won;
-    final isEligible = current >= target;
+    final scripEligible = currentScrip >= scripTarget;
+    final mycoEligible = currentMyco >= mycoTarget;
+    final isEligible = scripEligible && mycoEligible;
+
+    final missingParts = [
+      if (!scripEligible) '${_formatTarget(scripTarget - currentScrip)} more Star-Scrip',
+      if (!mycoEligible) '${_formatTarget(mycoTarget - currentMyco)} more Mycoculture',
+    ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1527,8 +1537,9 @@ class _ContractSection extends StatelessWidget {
             children: [
               Text(
                 'Every shipment out of this dome belongs to the colony until '
-                'the contract is paid off in full. ${_formatTarget(target)} '
-                'Star-Scrip on hand, all at once, buys it out for good.',
+                'the contract is paid off in full. ${_formatTarget(scripTarget)} '
+                'Star-Scrip and ${_formatTarget(mycoTarget)} Mycoculture on '
+                'hand, all at once, buys it out for good.',
                 style: MFTextStyles.bodyMedium,
               ),
               const SizedBox(height: 16),
@@ -1548,16 +1559,32 @@ class _ContractSection extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: scripProgress,
                     minHeight: 10,
                     backgroundColor: MFColors.borderSubtle,
                     valueColor: AlwaysStoppedAnimation(
-                        isEligible ? MFColors.neonGreen : MFColors.starScrip),
+                        scripEligible ? MFColors.neonGreen : MFColors.starScrip),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${game.resources.starScrip} / ${_formatTarget(target)} Star-Scrip',
+                  '${game.resources.starScrip} / ${_formatTarget(scripTarget)} Star-Scrip',
+                  style: MFTextStyles.bodySmall,
+                ),
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: mycoProgress,
+                    minHeight: 10,
+                    backgroundColor: MFColors.borderSubtle,
+                    valueColor: AlwaysStoppedAnimation(
+                        mycoEligible ? MFColors.neonGreen : MFColors.neonPurple),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${currentMyco.toInt()} / ${_formatTarget(mycoTarget)} Mycoculture',
                   style: MFTextStyles.bodySmall,
                 ),
                 const SizedBox(height: 16),
@@ -1567,7 +1594,7 @@ class _ContractSection extends StatelessWidget {
                       child: Text(
                         isEligible
                             ? 'You can buy out the contract now.'
-                            : 'Need ${_formatTarget(target - current)} more Star-Scrip.',
+                            : 'Need ${missingParts.join(' and ')}.',
                         style: MFTextStyles.bodySmall,
                       ),
                     ),
@@ -1575,9 +1602,7 @@ class _ContractSection extends StatelessWidget {
                       label: 'BUY THE FARM',
                       canAfford: isEligible,
                       color: MFColors.neonGreen,
-                      missingText: isEligible
-                          ? ''
-                          : 'Need ${_formatTarget(target - current)} more Star-Scrip',
+                      missingText: isEligible ? '' : 'Need ${missingParts.join(', ')}',
                       onTap: () => _confirmBuyTheFarm(context),
                     ),
                   ],
@@ -1665,6 +1690,54 @@ class _StatsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
+
+        if (game.status != GameStatus.active) ...[
+          Builder(builder: (context) {
+            final score = ScoreScreen.calculateScore(game);
+            final grade = ScoreScreen.scoreGrade(score);
+            final color = ScoreScreen.gradeColor(grade);
+            final won = game.status == GameStatus.won;
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    won ? 'FREE AND CLEAR — FINAL SCORE' : 'CONTRACT VOID — FINAL SCORE',
+                    style: MFTextStyles.bodySmall.copyWith(
+                        color: MFColors.textMuted, letterSpacing: 2, fontSize: 9),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$score',
+                    style: TextStyle(
+                        color: color, fontSize: 36, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'GRADE  $grade',
+                      style: TextStyle(
+                          color: color, fontWeight: FontWeight.bold,
+                          fontSize: 13, letterSpacing: 3),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
 
         _StatCard('LIFETIME STATS', [
           _StatRow('Weeks Survived', '${game.currentWeek}'),

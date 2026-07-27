@@ -616,7 +616,8 @@ class DatabaseHelper {
 
   Map<String, dynamic> _milestoneToJson(Milestone m) => {
     'id': m.id, 'name': m.name, 'description': m.description,
-    'check_type': m.checkType, 'target': m.target, 'by_week': m.byWeek,
+    'check_type': m.checkType, 'target': m.target,
+    'secondary_target': m.secondaryTarget, 'by_week': m.byWeek,
     'reward_scrip': m.rewardScrip, 'status': m.status.name,
     'failure_message': m.failureMessage, 'failure_detail': m.failureDetail,
     'is_win_condition': m.isWinCondition, 'topic_id': m.topicId,
@@ -627,6 +628,7 @@ class DatabaseHelper {
     description: j['description'] as String,
     checkType: j['check_type'] as String? ?? 'volume_delivered',
     target: (j['target'] as num).toDouble(),
+    secondaryTarget: (j['secondary_target'] as num?)?.toDouble(),
     byWeek: (j['by_week'] as num?)?.toInt(),
     rewardScrip: (j['reward_scrip'] as num).toInt(),
     status: MilestoneStatus.values.firstWhere((e) => e.name == j['status']),

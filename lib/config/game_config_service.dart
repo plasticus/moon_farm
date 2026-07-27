@@ -331,10 +331,15 @@ class GameConfigService {
     final rate = (cfg['rate'] as num).toDouble();
     final cap = (cfg['cap'] as num).toInt();
     final capAtCount = cfg['cap_at_count'] as int;
+    final postCapRate = (cfg['post_cap_rate'] as num?)?.toDouble() ?? 1.0;
 
-    // Soft cap: once you've reached the configured dome number, price
-    // stops climbing entirely and just sits flat at `cap` forever after.
-    if (domeNumber >= capAtCount) return cap;
+    // Past the configured dome number, growth slows way down (postCapRate,
+    // e.g. 1.15x/dome) instead of stopping dead at `cap` — keeps dome
+    // spam from becoming a flat, unlimited-supply purchase once a player's
+    // economy outgrows the pre-cap curve, without the earlier hard wall.
+    if (domeNumber >= capAtCount) {
+      return (cap * pow(postCapRate, domeNumber - capAtCount)).round();
+    }
 
     final n = domeNumber < 2 ? 2 : domeNumber;
     final cost = base * pow(rate, n - 2);

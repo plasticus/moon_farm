@@ -588,15 +588,19 @@ milestones:
       target: 5
       reward_scrip: 10000
 
-    # ─── Win Condition (scrip_balance) — no deadline ───────────────────────
+    # ─── Win Condition (buyout_condition) — no deadline ────────────────────
     # is_win_condition flips GameStatus to `won` on completion instead of
-    # just banking a reward. Deliberately current balance, not lifetime
-    # earnings — see design notes. Play continues after winning.
+    # just banking a reward. Deliberately current balances, not lifetime
+    # totals — see design notes. Play continues after winning. Requires
+    # BOTH target (starScrip) and secondary_target (mycoculture) at once —
+    # 250k scrip alone proved too easy to hit without any real end-game
+    # push, so the buyout now also demands a Mycoculture Vat stockpile.
     - id: m40
-      check_type: scrip_balance
+      check_type: buyout_condition
       name: Free and Clear
-      description: Hold 250,000 Star-Scrip at once — the contract is paid off, the farm is yours
-      target: 250000
+      description: Hold 1,000,000 Star-Scrip and 500 Mycoculture at once — the contract is paid off, the farm is yours
+      target: 1000000
+      secondary_target: 500
       reward_scrip: 0
       is_win_condition: true
 
