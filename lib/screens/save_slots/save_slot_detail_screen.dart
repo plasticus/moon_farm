@@ -23,6 +23,7 @@ import '../refinery/refinery_screen.dart';
 import '../../widgets/space_background.dart';
 import '../settings/settings_screen.dart';
 import '../../providers/settings_providers.dart';
+import '../leaderboard/leaderboard_screen.dart';
 
 class SaveSlotDetailScreen extends ConsumerStatefulWidget {
   const SaveSlotDetailScreen({super.key});
@@ -127,6 +128,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                             child: Text('Save Game', style: MFTextStyles.bodyLarge),
                           ),
                           PopupMenuItem(
+                            value: 'leaderboard',
+                            child: Text('Leaderboard', style: MFTextStyles.bodyLarge),
+                          ),
+                          PopupMenuItem(
                             value: 'settings',
                             child: Text('Settings', style: MFTextStyles.bodyLarge),
                           ),
@@ -147,6 +152,10 @@ class _SaveSlotDetailScreenState extends ConsumerState<SaveSlotDetailScreen> {
                                 )),
                               );
                             }
+                          } else if (val == 'leaderboard') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+                            );
                           } else if (val == 'settings') {
                             Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => const SettingsScreen()),
